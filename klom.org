@@ -1,8 +1,8 @@
 * [[https://twitter.com/kltblom][Kristian Blom]]: does recent (20 years?) change in US income distribution matter?
 
-he [[https://twitter.com/kltblom/status/932394678241988609][showed a PDF]], from Financial Times (originally from Pew Trust).  i
-don't see where to get that data.  but, [[https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls][Census Bureau]] has something
-that breaks down by each fifth and top 5%.
+he [[https://twitter.com/kltblom/status/932394678241988609][showed a PDF]] (1971-2015), from Financial Times (based on data from
+Pew Trust).  i don't see where to get that data.  but, [[https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls][Census Bureau]]
+has something that breaks down by each fifth and top 5%.
 
 #+BEGIN_SRC R :session ss :var tseries=tseries
 colnames(tseries) <- c("year", "number", "lowest", "second", "third", "fourth", "llimittop5")
@@ -85,3 +85,66 @@ he has about 50 buckets.  i have 6.  sigh.
 | 2015 | 125819 | 23088 | 44061 | 72911 | 118480 | 217172 |
 | 2016 | 126224 | 24002 | 45600 | 74869 | 121018 | 225251 |
 
+a [[https://fas.org/sgp/crs/misc/RS20811.pdf][report]] from the Congressional Research Service gives nice numbers
+for 2012.  this probably comes from (the 2012-version of) [[https://www.census.gov/data/tables/time-series/demo/income-poverty/cps-hinc/hinc-06.html][hinc-06]],
+from the Census Bureau.  sadly, hinc-06.xls seems to go back only a
+few years.
+
+hinc-06.xls: 2017 2016 2015 2014 2013
+hinc-06_000.xls: 2012
+new06_000.txt: 2003
+
+[[https://usa.ipums.org/usa/][ipums.org]] is some sort of data service.  (it uses [[http://www.nber.org/data/current-population-survey-data.html][NBER data]].)  the
+ipums data is unaggregated.  about 2MB for a file (1995).  and, of
+course, many variables i don't understand.  plus, in nominal dollars.
+but, the fact that it is unaggregated means that one can put in real
+dollars *before* binning.  (though, when looking at a CDF, one can
+convert each year's bin's into real dollars after the fact without
+affecting things.)
+
+[[http://www.pressure.to/works/hbai_in_r/][households below average income]] analysis in R.  for UK data, however.
+
+[[https://www.kdnuggets.com/2014/06/data-visualization-census-data-with-r.html][data-visualization-census-data-with-r]].  old, broken links, etc.
+
+[[https://www.r-bloggers.com/how-to-make-maps-with-census-data-in-r/][how-to-make-maps-with-census-data-in-r]] is newer.
+
+[[http://users.stat.umn.edu/~almquist/software.html][Zach Almquist]] has 10-year census data.
+
+[[https://www.bls.gov/cps/][BLS]] CPS page.  however, "All self-employed persons are excluded,
+regardless of whether their businesses are incorporated."
+
+the [[https://statisticalatlas.com/United-States/Household-Income][Statistical Atlas]] has nice graphics (though maybe not time
+series).  from American Community (?) Survey.
+
+[[https://www.cbpp.org/research/poverty-and-inequality/a-guide-to-statistics-on-historical-trends-in-income-inequality][a-guide-to-statistics-on-historical-trends-in-income-inequality]].
+
+the [[https://www.cbo.gov/publication/51361][CBO]] has data, but mostly quintile-level.
+
+[[https://cps.ipums.org/cps-action/downloads/extract_files/cps_00002.xml][IPUMS columns]]:
+- YEAR
+- [[https://cps.ipums.org/cps-action/variables/SERIAL][SERIAL]]: household serial number
+- [[https://cps.ipums.org/cps-action/variables/HWTSUPP#codes_section][HWTSUPP]]: household weight, Supplement
+- [[https://cps.ipums.org/cps-action/variables/CPSID#codes_section][CPSID]]: CPS household record
+- [[https://cps.ipums.org/cps-action/variables/ASECFLAG][ASECFLAG]]: flag for ASEC
+- [[https://cps.ipums.org/cps-action/variables/HHINCOME][HHINCOME]]: total household income
+- [[https://cps.ipums.org/cps-action/variables/MONTH][MONTH]]: the calendar month of the CPS interview
+- [[https://cps.ipums.org/cps-action/variables/PERNUM][PERNUM]]: person number in sample unit
+- [[https://cps.ipums.org/cps-action/variables/CPSIDP][CPSIDP]]: CPSID, person record
+- [[https://cps.ipums.org/cps-action/variables/WTSUPP#description_section][WTSUPP]]: supplement weight
+
+to format one file:
+#+BEGIN_SRC sh :results output
+  ((zcat ipums/cps_00001.csv.gz | head -1 | sed 'sx"xxg' | sed s'x,x xg');
+   (zcat ipums/cps_00001.csv.gz | tail -n+1 | sed s'x,x xg' | sort -n -k6)) |
+      column -t
+#+END_SRC
+
+#+RESULTS:
+
+** deflating
+
+need to change from nominal to real dollars.  [[https://www.dallasfed.org/research/basics/nominal.cfm][Dallas Fed]] has some
+explanation.
+
+[[https://cps.ipums.org/cps/cpi99.shtml][IPUMS]] has a variable, [[https://cps.ipums.org/cps-action/variables/CPI99][CPI99]], that can be used to convert everything
+to/from 1999 dollars.
