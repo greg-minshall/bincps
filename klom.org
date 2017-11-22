@@ -148,3 +148,33 @@ explanation.
 
 [[https://cps.ipums.org/cps/cpi99.shtml][IPUMS]] has a variable, [[https://cps.ipums.org/cps-action/variables/CPI99][CPI99]], that can be used to convert everything
 to/from 1999 dollars.
+
+#+BEGIN_SRC awk :shebang "#!/usr/bin/awk -f" :tangle realize
+  BEGIN {
+      FS = ",";
+      OFS = ",";
+  }
+
+  FNR == 1 {
+      fileno++;
+      if (fileno == 2) {
+          print $0 OFS "\"RHHINCOME1999\"";
+      }
+      next;
+  }
+
+  fileno == 1 {
+      realities[$1] = $2;
+  }
+
+  fileno == 2 {
+      if ($7 == "") {
+          $7 = 0;                 # make later stage processing easier
+      }
+      print $0 OFS realities[$1]*$7;
+  }
+#+END_SRC
+
+#+BEGIN_SRC sh :shebang "#!/usr/bin/env bash" :results none
+./realize <(zcat ipums/cps_00004.csv.gz) <(zcat ipums/cps_00002.csv.gz)
+#+END_SRC
