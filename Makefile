@@ -5,3 +5,8 @@ RSERIES = ipums/rseries.csv.gz
 
 $(RSERIES): $(DEFLATORS) $(SERIES)
 	bash -c "./realize <(zcat $(DEFLATORS)) <(zcat $(SERIES))" | gzip > $(RSERIES)
+
+clean:
+	@echo run \"make realclean\" to remove $(RSERIES)
+realclean:
+	rm $(RSERIES)
