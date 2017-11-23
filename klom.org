@@ -178,3 +178,9 @@ to/from 1999 dollars.
 #+BEGIN_SRC sh :shebang "#!/usr/bin/env bash" :results none
 ./realize <(zcat ipums/cps_00004.csv.gz) <(zcat ipums/cps_00002.csv.gz)
 #+END_SRC
+
+i'll probably have to recode all this as an R script.  how to read a
+gzipped file?  [[http://grokbase.com/t/r/r-help/016v155pth/r-read-data-in-from-gzipped-file][one set of thoughts]].
+: x <- gzfile("./ipums/cps_00004.csv.gz", open="r")
+: y <- read.csv(x, header=TRUE)
+does the right thing
