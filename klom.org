@@ -228,3 +228,15 @@ data as follows:
 
 IPUMS-CPS, University of Minnesota, www.ipums.org
 #+END_QUOTE
+
+real file is: ./ipums/cps_00006.csv.gz
+#+BEGIN_SRC R :session ss :var fname="./ipums/19712014.csv.gz"
+  x <- gzfile(fname, open="r")
+  dset <- read.csv(x, header=TRUE)
+  dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
+  # sort
+  dset <- dset[order(dset$YEAR, dset$HHINCOME1999),]
+#+END_SRC
+
+#+RESULTS:
+
