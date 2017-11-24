@@ -240,6 +240,8 @@ real file is: ./ipums/cps_00006.csv.gz
   # years are factors in our usage
   dset$YEAR <- as.factor(dset$YEAR)
   dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
+  # http://answers.popdata.org/2014-WTSUPP-appears-doubled-q2066078.aspx
+  dset <- dset[HFLAG==0,]
   # sort
   dset <- dset[order(dset$YEAR, dset$HHINCOME1999),]
   # negative incomes?  describe
