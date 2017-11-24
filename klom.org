@@ -141,13 +141,6 @@ to format one file:
 
 #+RESULTS:
 
-** deflating
-
-need to change from nominal to real dollars.  [[https://www.dallasfed.org/research/basics/nominal.cfm][Dallas Fed]] has some
-explanation.
-
-[[https://cps.ipums.org/cps/cpi99.shtml][IPUMS]] has a variable, [[https://cps.ipums.org/cps-action/variables/CPI99][CPI99]], that can be used to convert everything
-to/from 1999 dollars.
 
 #+BEGIN_SRC awk :shebang "#!/usr/bin/awk -f" :tangle realize
   BEGIN {
@@ -181,6 +174,57 @@ to/from 1999 dollars.
 
 i'll probably have to recode all this as an R script.  how to read a
 gzipped file?  [[http://grokbase.com/t/r/r-help/016v155pth/r-read-data-in-from-gzipped-file][one set of thoughts]].
-: x <- gzfile("./ipums/cps_00004.csv.gz", open="r")
+: x <- gzfile("./ipums/cps_00006.csv.gz", open="r")
 : y <- read.csv(x, header=TRUE)
-does the right thing
+does the right thing.
+
+getting a file from IPUMS, extract request like this:
+#+BEGIN_QUOTE
+
+EXTRACT REQUEST (HELP)
+
+SAMPLES:56 (show) [samples have notes] Change
+VARIABLES:12(show) Change
+DATA FORMAT: .csv  Change
+STRUCTURE: Rectangular (person)  Change
+ESTIMATED SIZE:642.4 MB 
+ 
+OPTIONS
+
+
+Data quality flags are not available for any of the variables you've
+selected.
+
+Case selection is not available for any of the variables you've
+selected.
+
+Attach data from mother, father, spouse or household head as a new
+variable (for example, education of mother).  Describe your extract
+#+end_quote
+
+** deflating
+
+need to change from nominal to real dollars.  [[https://www.dallasfed.org/research/basics/nominal.cfm][Dallas Fed]] has some
+explanation.
+
+[[https://cps.ipums.org/cps/cpi99.shtml][IPUMS]] has a variable, [[https://cps.ipums.org/cps-action/variables/CPI99][CPI99]], that can be used to convert everything
+to/from 1999 dollars.
+
+
+** citing IPUMS
+
+#+BEGIN_QUOTE
+Publications and research reports based on the IPUMS-CPS database must
+cite it appropriately. The citation should include the following:
+
+Sarah Flood, Miriam King, Steven Ruggles, and J. Robert
+Warren. Integrated Public Use Microdata Series, Current Population
+Survey: Version 5.0 [dataset]. Minneapolis, MN: University of
+Minnesota, 2017.  https://doi.org/10.18128/D030.V5.0
+
+For policy briefs or articles in the popular press that use the
+IPUMS-CPS database, we recommend that you cite the use of IPUMS-CPS
+data as follows:
+
+IPUMS-CPS, University of Minnesota, www.ipums.org
+#+END_QUOTE
