@@ -233,11 +233,11 @@ real file is: ./ipums/cps_00006.csv.gz
 #+BEGIN_SRC R :session ss :var fname="./ipums/19712014.csv.gz"
   docums <- function (s) {
     cumwtsupp = sum(dset[s,]$WTSUPP)
-    dset[s,]$CUMWTSUPP <-- cumsum(dset[s,]$WTSUPP)
-    dset[s,]$CUMPCTWTSUPP <-- dset[s,]$CUMWTSUPP/cumwtsupp
+    dset[s,]$CUMWTSUPP <<- cumsum(dset[s,]$WTSUPP)
+    dset[s,]$CUMPCTWTSUPP <<- dset[s,]$CUMWTSUPP/cumwtsupp
     cumhwtsupp = sum(dset[s,]$HWTSUPP)
-    dset[s,]$CUMHWTSUPP <-- cumsum(dset[s,]$HWTSUPP)
-    dset[s,]$CUMPCTHWTSUPP <-- dset[s,]$CUMHWTSUPP/cumhwtsupp
+    dset[s,]$CUMHWTSUPP <<- cumsum(dset[s,]$HWTSUPP)
+    dset[s,]$CUMPCTHWTSUPP <<- dset[s,]$CUMHWTSUPP/cumhwtsupp
   }  
 
   require(ggplot2)
