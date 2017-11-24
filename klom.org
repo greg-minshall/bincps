@@ -231,11 +231,26 @@ IPUMS-CPS, University of Minnesota, www.ipums.org
 
 real file is: ./ipums/cps_00006.csv.gz
 #+BEGIN_SRC R :session ss :var fname="./ipums/19712014.csv.gz"
+  TOOHIGH = 10000000
+
   x <- gzfile(fname, open="r")
   dset <- read.csv(x, header=TRUE)
   dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
   # sort
   dset <- dset[order(dset$YEAR, dset$HHINCOME1999),]
+  # negative incomes?  describe
+  nrow(dset[dset$HHINCOME1999<0,])
+  summary(dset[dset$HHINCOME1999<0,"HHINCOME1999"])
+  # now, get rid of negative incomes
+  dset <- dset[dset$HHINCOME1999 >= 0,]
+  # unrealistically (?) high incomes?  describe
+  nrow(dset[dset$HHINCOME1999>TOOHIGH],])
+  # (use HHINCOME, since we'd like to understand *reported* [recorded?]
+  # value)
+  summary(dset[dset$HHINCOME1999>TOOHIGH,c("YEAR","HHINCOME")])
+                                          # now, get rid of all of those
+  dset <- dset[dset$HHINCOME1999 <= TOOHIGH,]
+  # bin
 #+END_SRC
 
 #+RESULTS:
