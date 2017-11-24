@@ -230,6 +230,7 @@ IPUMS-CPS, University of Minnesota, www.ipums.org
 #+END_QUOTE
 
 real file is: ./ipums/cps_00006.csv.gz
+#+name: everylittlebit
 #+BEGIN_SRC R :session ss :var fname="./ipums/19712014.csv.gz"
   docums <- function (s) {
     cumwtsupp = sum(dset[s,]$WTSUPP)
@@ -274,9 +275,66 @@ real file is: ./ipums/cps_00006.csv.gz
     s <- dset$YEAR == year & (!is.na(dset$HFLAG)) & dset$HFLAG==1
     docums(s)
   }
-
-
 #+END_SRC
 
-#+RESULTS:
+what we want to do is create a file which is a "binned" version of the
+full-detail file.  this includes "rolling up" the [H]WTSUPP columns by
+year, dropping the SERIAL, CPSID, PERNUM, CPSIDP columns in the
+process.  the HHINCOME is replaced by a (computed) HHINCOME1999: the
+reported HHINCOME in 1999 dollars.  this is so bins are comparable
+between years.  (additionally, the MONTH column may be NA'd, if there
+is more than one month in a bin -- unlikely, given that the releases
+seem to be in March of every year.)
 
+real file is: ./ipums/cps_00006.csv.gz
+#+name: binthem
+#+BEGIN_SRC R :session ss :var fname="./ipums/19712014.csv.gz" :var maxk=500
+  require(ggplot2)
+  x <- gzfile(fname, open="r")
+  dset <- read.csv(x, header=TRUE)
+
+  # first, describe the negative incomes
+  report <- rbind("<0"=summary(dset[dset$HHINCOME<0,]$HHINCOME))
+  # now, kill them
+  dset <- dset[dset$HHINCOME >= 0,]
+
+  # now, convert all income to 1999 dollars
+  dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
+
+  # now, get all the bins...
+  dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999, seq(from=0, to=maxk, by=1), right=FALSE));
+
+  # HHINCOME1999 greater than, or equal to, MAXK is labeled NA.
+  dset[is.na(dset$BIN)] <- max(dset$BIN, na.rm=TRUE)+1
+
+  # and, describe these
+  report <- rbind(report, sprintf("\">%sk", maxk)=summary(dset[dset$BIN == maxk+1,]))
+
+  # (we don't describe *other* bins since they are of limited range; the
+  # negative and greater than max bins are not of a priori known limit.)
+
+  bset <- NULL
+  rnames <- NULL
+  for (year in unique(dset$YEAR)) {
+    s <- dset$YEAR == year
+    for (bin in unique(dset[s,]$BIN)) {
+      s <- s & dset$BIN == bin
+      for (asecflag in unique(dset[s,]$ASECFLAG)) {
+        s <- s & dset$ASECFLAG == asecflag
+        for (hflag in unique(dset[s,]$HFLAG)) {
+          s <- s & dset$HFLAG == hflag
+                                          # *finally* -- do something!
+          month <- unique(dset[s,]$MONTH);
+          if (length(month) > 1) {
+            month <- NA
+          }
+          best <- rbind(bset, c(YEAR=year,
+                                HWTSUPP=sum(dset[s,]$HWTSUPP),
+                                ASECFLAG=asecflag,
+                                HFLAG=hflag,
+                                UPTOHHINCOME=bin*1000,
+                                MONTH=month,
+                                WTSUPP=sum(dset[s,]$WTSUPP)));
+          rnames <- c(rnames, sprintf("%d", i));
+                      
+#+END_SRC
