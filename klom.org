@@ -231,10 +231,14 @@ IPUMS-CPS, University of Minnesota, www.ipums.org
 
 real file is: ./ipums/cps_00006.csv.gz
 #+BEGIN_SRC R :session ss :var fname="./ipums/19712014.csv.gz"
+  require(ggplot2)
+
   TOOHIGH = 10000000
 
   x <- gzfile(fname, open="r")
   dset <- read.csv(x, header=TRUE)
+  # years are factors in our usage
+  dset$YEAR <- as.factor(dset$YEAR)
   dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
   # sort
   dset <- dset[order(dset$YEAR, dset$HHINCOME1999),]
@@ -244,13 +248,26 @@ real file is: ./ipums/cps_00006.csv.gz
   # now, get rid of negative incomes
   dset <- dset[dset$HHINCOME1999 >= 0,]
   # unrealistically (?) high incomes?  describe
-  nrow(dset[dset$HHINCOME1999>TOOHIGH],])
+  nrow(dset[dset$HHINCOME1999>TOOHIGH,])
   # (use HHINCOME, since we'd like to understand *reported* [recorded?]
   # value)
   summary(dset[dset$HHINCOME1999>TOOHIGH,c("YEAR","HHINCOME")])
-                                          # now, get rid of all of those
+  # now, get rid of all of those
   dset <- dset[dset$HHINCOME1999 <= TOOHIGH,]
-  # bin
+  # cumulative sums of [H]WTSUPP (relies on being ordered)
+  dset <- cbind(dset, CUMWTSUPP=0, CUMPCTWTSUPP=0, CUMHWTSUPP=0, CUMPCTHWTSUPP=0)
+  # https://stackoverflow.com/a/32487458 on computing cumpct
+  for (year in unique(dset$YEAR)) {
+    s <- dset$YEAR == year
+    cumwtsupp = sum(dset[s,]$WTSUPP)
+    dset[s,]$CUMWTSUPP <- cumsum(dset[s,]$WTSUPP)
+    dset[s,]$CUMPCTWTSUPP <- dset[s,]$CUMWTSUPP/cumwtsupp
+    cumhwtsupp = sum(dset[s,]$HWTSUPP)
+    dset[s,]$CUMHWTSUPP <- cumsum(dset[s,]$HWTSUPP)
+    dset[s,]$CUMPCTHWTSUPP <- dset[s,]$CUMHWTSUPP/cumhwtsupp
+  }
+
+
 #+END_SRC
 
 #+RESULTS:
