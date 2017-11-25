@@ -287,6 +287,7 @@ is more than one month in a bin -- unlikely, given that the releases
 seem to be in March of every year.)
 
 real file is: ./ipums/cps_00006.csv.gz
+test file is: ./ipums/19712014.csv.gz
 #+name: bincps
 #+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var maxk=500 :var ofile="" :var ofsep="-"
   bincps <- function(ifile, maxk=500, ofile="", ofsep="-") {
@@ -298,7 +299,10 @@ real file is: ./ipums/cps_00006.csv.gz
     if (ofile == "") {
                                           # compute filename
       x <- strsplit(ifile, ".", fixed=TRUE)[[1]]
-      x[length(x)-1] <- sprintf("binned%s%dK.%s", ofsep, maxk, x[length(x)-1]);
+      if (x[length(x)] == "gz") {
+        length(x) = length(x)-1           # get rid of .gz (we don't compress)
+      }
+      x[length(x)] <- sprintf("binned%s%dK.%s", ofsep, maxk, x[length(x)]);
       ofile <- paste(x, collapse=".")
     }
 
@@ -396,8 +400,6 @@ real file is: ./ipums/cps_00006.csv.gz
 #+END_SRC
 
 #+RESULTS: bincps
-
-#+RESULTS: binthem
 
 ** most occurring incomes
 
