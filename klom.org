@@ -322,37 +322,42 @@ real file is: ./ipums/cps_00006.csv.gz
   # limit.)
 
   bset <- NULL
-  rnames <- NULL
+  brnames <- NULL
   for (year in unique(dset$YEAR)) {
     s <- dset$YEAR == year
     for (bin in unique(dset[s,]$BIN)) {
       if (!is.na(bin)) {
         s <- s & dset$BIN == bin
-        for (asecflag in unique(dset[s,]$ASECFLAG)) {
-          s <- s & dset$ASECFLAG == asecflag
-          for (hflag in unique(dset[s,]$HFLAG)) {
-            s <- s & dset$HFLAG == hflag
+        brnames <- c(brnames, sprintf("%d", i));
+      } else {
+        x <- s & is.na(dset$BIN)
+        brnames <- c(brnames, sprintf(">%d", maxk));
+        bin <- max(dset$BIN, na.rm=TRUE)+1
+      }
+      for (asecflag in unique(dset[s,]$ASECFLAG)) {
+        s <- s & dset$ASECFLAG == asecflag
+        for (hflag in unique(dset[s,]$HFLAG)) {
+          s <- s & dset$HFLAG == hflag
                                           # *finally* -- do something!
-            month <- unique(dset[s,]$MONTH);
-            if (length(month) > 1) {
-              month <- NA
-            }
-            best <- rbind(bset, c(YEAR=year,
-                                  HWTSUPP=sum(dset[s,]$HWTSUPP),
-                                  ASECFLAG=asecflag,
-                                  HFLAG=hflag,
-                                  UPTOHHINCOME1999=bin*1000,
-                                  MONTH=month,
-                                  WTSUPP=sum(dset[s,]$WTSUPP)));
-            rnames <- c(rnames, sprintf("%d", i));
+          month <- unique(dset[s,]$MONTH);
+          if (length(month) > 1) {
+            month <- NA
           }
+          best <- rbind(bset, c(YEAR=year,
+                                HWTSUPP=sum(dset[s,]$HWTSUPP),
+                                ASECFLAG=asecflag,
+                                HFLAG=hflag,
+                                UPTOHHINCOME1999=bin*1000,
+                                MONTH=month,
+                                WTSUPP=sum(dset[s,]$WTSUPP)));
         }
       }
     }
-    # now, deal with NA, i.e., HHINCOMES too large
   }
 
 #+END_SRC
+
+** most occurring incomes
 
 question:
 #+BEGIN_EXAMPLE
