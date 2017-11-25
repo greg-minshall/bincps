@@ -343,7 +343,6 @@ real file is: ./ipums/cps_00006.csv.gz
                                           # priori known limit.)
 
     bset <- data.frame()
-    brnames <- NULL
     for (year in sort(unique(dset$YEAR))) {
       if (year < 1968) {
                                           # there appears to be no
@@ -355,10 +354,8 @@ real file is: ./ipums/cps_00006.csv.gz
       for (bin in sort(unique(dset[sy,]$BIN))) {
         sb <- sy & dset$BIN == bin
         if (bin != maxkbin) {
-          brname <- sprintf("%d", bin)
           upto <- bin*1000;
         } else {
-          brname <- sprintf(">%d", maxk)
           upto <- max(dset[sb,]$HHINCOME1999)
         }
         for (asecflag in unique(dset[sb,]$ASECFLAG)) {
@@ -386,14 +383,12 @@ real file is: ./ipums/cps_00006.csv.gz
                                     UPTOHHINCOME1999=upto,
                                     MONTH=month,
                                     WTSUPP=sum(dset[sh,]$WTSUPP)));
-              brnames <- c(brnames, brname);
             }
           }
         }
       }
     }
     # output this
-    rownames(bset) <- brnames
     write.csv(bset, ofile);
   }
 
