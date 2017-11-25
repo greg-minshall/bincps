@@ -287,79 +287,120 @@ is more than one month in a bin -- unlikely, given that the releases
 seem to be in March of every year.)
 
 real file is: ./ipums/cps_00006.csv.gz
-#+name: binthem
-#+BEGIN_SRC R :session ss :var fname="./ipums/19712014.csv.gz" :var maxk=500
-  require(ggplot2)
-  x <- gzfile(fname, open="r")
-  dset <- read.csv(x, header=TRUE)
-  close(x)
+#+name: bincps
+#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var maxk=500 :var ofile="" :var ofsep="-"
+  bincps <- function(ifile, maxk=500, ofile="", ofsep="-") {
+    require(ggplot2)
+    x <- gzfile(ifile, open="r")
+    dset <- read.csv(x, header=TRUE)
+    close(x)
 
-  # now, convert all income to 1999 dollars
-  dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
+    if (ofile == "") {
+                                          # compute filename
+      x <- strsplit(ifile, ".", fixed=TRUE)[[1]]
+      x[length(x)-1] <- sprintf("binned%s%dK.%s", ofsep, maxk, x[length(x)-1]);
+      ofile <- paste(x, collapse=".")
+    }
 
-  # describe the negative incomes
-  report <- rbind(summary(dset[dset$HHINCOME<0,]$HHINCOME))
-  rrnames <- c("<0");
-  # now, kill them
-  dset <- dset[dset$HHINCOME >= 0,]
+    if (file.exists(ofile)) {
+      stop(sprintf("output file \"%s\" exists, won't remove", ofile))
+    }
 
-  # now, get all the bins...
-  dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999/1000,
-                        seq(from=0, to=maxk, by=1),
-                        right=FALSE));
+                                          # now, convert all income to 1999 dollars
+    dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
 
-  # HHINCOME1999 greater than, or equal to, MAXK is labeled NA by
-  # .bincode
-  maxkbin <- max(dset$BIN, na.rm=TRUE)+1
-  dset[is.na(dset$BIN),]$BIN <- maxkbin
+                                          # describe the negative incomes
+    s <- dset$HHINCOME < 0
+    report <- rbind(c(NROW=nrow(dset[s,]), summary(dset[s,]$HHINCOME)))
+    rrnames <- c("<0")
+                                          # now, kill them
+    dset <- dset[dset$HHINCOME >= 0,]
 
-  # and, describe these
-  report <- rbind(report, summary(dset[dset$BIN == maxk+1,]$HHINCOME1999))
-  rrnames <- c(rrnames, sprintf(">%d", maxk))
+                                          # now, get all the bins...
+    dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999/1000,
+                          seq(from=0, to=maxk, by=1),
+                          right=FALSE));
 
-  rownames(report) <- rrnames
+                                          # HHINCOME1999 greater than,
+                                          # or equal to, MAXK is labeled
+                                          # NA by .bincode
+    maxkbin <- max(dset$BIN, na.rm=TRUE)+1
+    dset[is.na(dset$BIN),]$BIN <- maxkbin
 
-  # (we don't describe *other* bins since they are of limited range; the
-  # "negative" and "greater than max" bins are not of an a priori known
-  # limit.)
+                                          # and, describe these
+    s <- dset$BIN == maxk+1
+    report <- rbind(report, c(NROW=nrow(dset[s,]),
+                              summary(dset[dset$BIN == maxk+1,]$HHINCOME1999)))
+    rrnames <- c(rrnames, sprintf(">%d", maxk))
 
-  bset <- NULL
-  brnames <- NULL
-  for (year in sort(unique(dset$YEAR))) {
-    sy <- dset$YEAR == year
-    for (bin in sort(unique(dset[sy,]$BIN))) {
-      sb <- sy & dset$BIN == bin
-      if (bin != maxkbin) {
-        brname <- sprintf("%d", bin)
-      } else {
-        brname <- sprintf(">%d", maxk)
+    rownames(report) <- rrnames
+
+                                          # (we don't describe *other*
+                                          # bins since they are of
+                                          # limited range; the
+                                          # "negative" and "greater than
+                                          # max" bins are not of an a
+                                          # priori known limit.)
+
+    bset <- data.frame()
+    brnames <- NULL
+    for (year in sort(unique(dset$YEAR))) {
+      if (year < 1968) {
+                                          # there appears to be no
+                                          # HHINCOME for years before
+                                          # 1968
+        next
       }
-      for (asecflag in unique(dset[sb,]$ASECFLAG)) {
-        sa <- sb & dset$ASECFLAG == asecflag
-        for (hflag in unique(dset[sa,]$HFLAG)) {
-          sh <- sa & dset$HFLAG == hflag
-          if (nrow(dset[sh,]) != 0) {
-            # *finally* -- do something!
-            month <- unique(dset[sh,]$MONTH);
-            if (length(month) > 1) {
-              month <- NA
+      sy <- dset$YEAR == year
+      for (bin in sort(unique(dset[sy,]$BIN))) {
+        sb <- sy & dset$BIN == bin
+        if (bin != maxkbin) {
+          brname <- sprintf("%d", bin)
+          upto <- bin*1000;
+        } else {
+          brname <- sprintf(">%d", maxk)
+          upto <- max(dset[sb,]$HHINCOME1999)
+        }
+        for (asecflag in unique(dset[sb,]$ASECFLAG)) {
+          if (!is.na(asecflag)) {
+            sa <- sb & dset$ASECFLAG == asecflag
+          } else {
+            sa <- sb & is.na(dset$ASECFLAG)
+          }
+          for (hflag in unique(dset[sa,]$HFLAG)) {
+            if (!is.na(hflag)) {
+              sh <- sa & dset$HFLAG == hflag
+            } else {
+              sh <- sa & is.na(dset$ASECFLAG)
             }
-            bset <- rbind(bset, c(YEAR=year,
-                                  HWTSUPP=sum(dset[sh,]$HWTSUPP),
-                                  ASECFLAG=asecflag,
-                                  HFLAG=hflag,
-                                  UPTOHHINCOME1999=bin*1000,
-                                  MONTH=month,
-                                  WTSUPP=sum(dset[sh,]$WTSUPP)));
-            brnames <- c(brnames, brname);
+            if (nrow(dset[sh,]) != 0) {
+                                          # *finally* -- do something!
+              month <- unique(dset[sh,]$MONTH);
+              if (length(month) > 1) {
+                month <- NA
+              }
+              bset <- rbind(bset, c(YEAR=year,
+                                    HWTSUPP=sum(dset[sh,]$HWTSUPP),
+                                    ASECFLAG=asecflag,
+                                    HFLAG=hflag,
+                                    UPTOHHINCOME1999=upto,
+                                    MONTH=month,
+                                    WTSUPP=sum(dset[sh,]$WTSUPP)));
+              brnames <- c(brnames, brname);
+            }
           }
         }
       }
     }
+    # output this
+    rownames(bset) <- brnames
+    write.csv(bset, ofile);
   }
-  # output this
-  rownames(bset) <- brnames
+
+  bincps(ifile, maxk, ofile, ofsep);
 #+END_SRC
+
+#+RESULTS: bincps
 
 #+RESULTS: binthem
 
