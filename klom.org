@@ -294,7 +294,8 @@ real file is: ./ipums/cps_00006.csv.gz
   dset <- read.csv(x, header=TRUE)
 
   # first, describe the negative incomes
-  report <- rbind("<0"=summary(dset[dset$HHINCOME<0,]$HHINCOME))
+  report <- rbind(summary(dset[dset$HHINCOME<0,]$HHINCOME))
+  rrnames <- c("<0");
   # now, kill them
   dset <- dset[dset$HHINCOME >= 0,]
 
@@ -302,39 +303,106 @@ real file is: ./ipums/cps_00006.csv.gz
   dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
 
   # now, get all the bins...
-  dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999, seq(from=0, to=maxk, by=1), right=FALSE));
+  dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999,
+                        seq(from=0, to=maxk, by=1),
+                        right=FALSE));
 
-  # HHINCOME1999 greater than, or equal to, MAXK is labeled NA.
+  # HHINCOME1999 greater than, or equal to, MAXK is labeled NA by
+  # .bincode
   dset[is.na(dset$BIN)] <- max(dset$BIN, na.rm=TRUE)+1
 
   # and, describe these
-  report <- rbind(report, sprintf("\">%sk", maxk)=summary(dset[dset$BIN == maxk+1,]))
+  report <- rbind(report, summary(dset[dset$BIN == maxk+1,]))
+  rrnames <- c(rrnames, sprintf(">%d", maxk))
+
+  rownames(report) <- rrnames
 
   # (we don't describe *other* bins since they are of limited range; the
-  # negative and greater than max bins are not of a priori known limit.)
+  # "negative" and "greater than max" bins are not of an a priori known
+  # limit.)
 
   bset <- NULL
   rnames <- NULL
   for (year in unique(dset$YEAR)) {
     s <- dset$YEAR == year
     for (bin in unique(dset[s,]$BIN)) {
-      s <- s & dset$BIN == bin
-      for (asecflag in unique(dset[s,]$ASECFLAG)) {
-        s <- s & dset$ASECFLAG == asecflag
-        for (hflag in unique(dset[s,]$HFLAG)) {
-          s <- s & dset$HFLAG == hflag
+      if (!is.na(bin)) {
+        s <- s & dset$BIN == bin
+        for (asecflag in unique(dset[s,]$ASECFLAG)) {
+          s <- s & dset$ASECFLAG == asecflag
+          for (hflag in unique(dset[s,]$HFLAG)) {
+            s <- s & dset$HFLAG == hflag
                                           # *finally* -- do something!
-          month <- unique(dset[s,]$MONTH);
-          if (length(month) > 1) {
-            month <- NA
+            month <- unique(dset[s,]$MONTH);
+            if (length(month) > 1) {
+              month <- NA
+            }
+            best <- rbind(bset, c(YEAR=year,
+                                  HWTSUPP=sum(dset[s,]$HWTSUPP),
+                                  ASECFLAG=asecflag,
+                                  HFLAG=hflag,
+                                  UPTOHHINCOME1999=bin*1000,
+                                  MONTH=month,
+                                  WTSUPP=sum(dset[s,]$WTSUPP)));
+            rnames <- c(rnames, sprintf("%d", i));
           }
-          best <- rbind(bset, c(YEAR=year,
-                                HWTSUPP=sum(dset[s,]$HWTSUPP),
-                                ASECFLAG=asecflag,
-                                HFLAG=hflag,
-                                UPTOHHINCOME=bin*1000,
-                                MONTH=month,
-                                WTSUPP=sum(dset[s,]$WTSUPP)));
-          rnames <- c(rnames, sprintf("%d", i));
-                      
+        }
+      }
+    }
+    # now, deal with NA, i.e., HHINCOMES too large
+  }
+
 #+END_SRC
+
+question:
+#+BEGIN_EXAMPLE
+length(unique(dset$HHINCOME1999))
+[1] 55297
+> length(dset$HHINCOME1999)
+[1] 345582
+#+END_EXAMPLE
+so, what are the most occurring incomes?
+
+#+BEGIN_EXAMPLE
+> x <- dset$HHINCOME
+> z <- tabulate(x)
+> zz <- sort.int(z, index.return=TRUE, decreasing=TRUE)
+> zz$ix[1:30]
+ [1]  50000  10000  12000  30000  15000  40000  20000  25000  60000  11000
+[11]   9000   8000  35000   6000  45000  13000  18000   7000  14000   5000
+[21]  24000  70000  55000  75000  17000  80000  36000  16000 100000  32000
+> zz$ix[1:300]
+  [1]  50000  10000  12000  30000  15000  40000  20000  25000  60000  11000
+ [11]   9000   8000  35000   6000  45000  13000  18000   7000  14000   5000
+ [21]  24000  70000  55000  75000  17000  80000  36000  16000 100000  32000
+ [31]   7500  28000  65000  22000  19000  42000  23000  90000  38000  48000
+ [41]  10500  27000   6500  12500  34000  21000   4000  62000  85000   3000
+ [51]  26000  52000  58000   9500   8500  33000   7800  47000  37000   8400
+ [61]   4800  31000 120000 110000   9600  10200  10400  11500  14500  29000
+ [71]   7200  49000  10100  44000  39000  72000   5500  46000  95000  43000
+ [81]  54000  57000  10800  15600  78000  13200  11200  41000  56000  63000
+ [91]  53000 150000   3600   2000  51000   5200   9200 130000  10700   4500
+[101]  73000  66000   9100  68000  59000   9800  88000  76000  77000 105000
+[111]  11300  61000   6600   8200  64000  98000  10300  13500   6200  12300
+[121]  14400  12200  69000  97000   2400  12100  74000   1500  11700  84000
+[131]   9300  17500  81000  16500  94000   9700  92000  11800  71000  83000
+[141] 115000  15500  67000  82000  11100  18200  86000   8700 140000  15400
+[151]  12600  14700   6800  14200   8300   8800  12400   8100   1200  12700
+[161]   7400  79000  96000   8600  15200   8900 125000  10600  11600  12800
+[171]   1800   3500   6400   7900   8520  18500  14300  20800  89000   5600
+[181] 160000  11400  91000  19200  10900   4200  17100  87000 102000  14100
+[191]  99000   9400  14800  15100  13300   7600   7100  13259  13800 103000
+[201] 108000   6900  15300  16100  93000 113000   5700   6300  16300   5800
+[211]   6700   7700 106000   2600   5100   9659   3900   7300  17200   2500
+[221]  13100  16400  19500 135000   4900  16800   1000  13900   8652  25200
+[231] 112000  17400  17600 118000  13400  26500   3200  13700  14600  16600
+[241]  31200  20400 128000   2700  20500      1  15659   4680   9900  33600
+[251] 104000  18100  13600 107000  14900  15800  11900 109000 145000   6100
+[261]  15900  21600  26800 114000   5400  12900  21400   3300   4300  22800
+[271] 117000 155000   5900  18900  20600  22200 170000  18600  22500   4700
+[281]  21200 101000  19400  16700   3400  18800  20100  20200   4600  14459
+[291] 116000 165000   8640  16200  25500  30200  31500  34500 111000    600
+> zz$x[1:30]
+ [1] 1821 1553 1270 1193 1176 1163 1070 1026  913  854  827  826  825  767  761
+[16]  758  746  745  717  694  668  598  595  593  576  555  540  538  523  508
+#+END_EXAMPLE
