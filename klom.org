@@ -310,7 +310,8 @@ real file is: ./ipums/cps_00006.csv.gz
 
   # HHINCOME1999 greater than, or equal to, MAXK is labeled NA by
   # .bincode
-  dset[is.na(dset$BIN),]$BIN <- max(dset$BIN, na.rm=TRUE)+1
+  maxkbin <- max(dset$BIN, na.rm=TRUE)+1
+  dset[is.na(dset$BIN),]$BIN <- maxkbin
 
   # and, describe these
   report <- rbind(report, summary(dset[dset$BIN == maxk+1,]$HHINCOME1999))
@@ -322,18 +323,16 @@ real file is: ./ipums/cps_00006.csv.gz
   # "negative" and "greater than max" bins are not of an a priori known
   # limit.)
 
+  bset <- NULL
+  brnames <- NULL
   for (year in sort(unique(dset$YEAR))) {
     sy <- dset$YEAR == year
-    bset <- NULL
-    brnames <- NULL
     for (bin in sort(unique(dset[sy,]$BIN))) {
-      if (!is.na(bin)) {
-        sb <- sy & dset$BIN == bin
+      sb <- sy & dset$BIN == bin
+      if (bin != maxkbin) {
         brname <- sprintf("%d", bin)
       } else {
-        sb <- sy & is.na(dset$BIN)
         brname <- sprintf(">%d", maxk)
-        bin <- max(dset$BIN, na.rm=TRUE)+1
       }
       for (asecflag in unique(dset[sb,]$ASECFLAG)) {
         sa <- sb & dset$ASECFLAG == asecflag
@@ -357,10 +356,9 @@ real file is: ./ipums/cps_00006.csv.gz
         }
       }
     }
-    # output this
-    rownames(bset) <- brnames
   }
-
+  # output this
+  rownames(bset) <- brnames
 #+END_SRC
 
 #+RESULTS: binthem
