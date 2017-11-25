@@ -292,27 +292,28 @@ real file is: ./ipums/cps_00006.csv.gz
   require(ggplot2)
   x <- gzfile(fname, open="r")
   dset <- read.csv(x, header=TRUE)
+  close(x)
 
-  # first, describe the negative incomes
+  # now, convert all income to 1999 dollars
+  dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
+
+  # describe the negative incomes
   report <- rbind(summary(dset[dset$HHINCOME<0,]$HHINCOME))
   rrnames <- c("<0");
   # now, kill them
   dset <- dset[dset$HHINCOME >= 0,]
 
-  # now, convert all income to 1999 dollars
-  dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
-
   # now, get all the bins...
-  dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999,
+  dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999/1000,
                         seq(from=0, to=maxk, by=1),
                         right=FALSE));
 
   # HHINCOME1999 greater than, or equal to, MAXK is labeled NA by
   # .bincode
-  dset[is.na(dset$BIN)] <- max(dset$BIN, na.rm=TRUE)+1
+  dset[is.na(dset$BIN),]$BIN <- max(dset$BIN, na.rm=TRUE)+1
 
   # and, describe these
-  report <- rbind(report, summary(dset[dset$BIN == maxk+1,]))
+  report <- rbind(report, summary(dset[dset$BIN == maxk+1,]$HHINCOME1999))
   rrnames <- c(rrnames, sprintf(">%d", maxk))
 
   rownames(report) <- rrnames
@@ -321,41 +322,48 @@ real file is: ./ipums/cps_00006.csv.gz
   # "negative" and "greater than max" bins are not of an a priori known
   # limit.)
 
-  bset <- NULL
-  brnames <- NULL
-  for (year in unique(dset$YEAR)) {
-    s <- dset$YEAR == year
-    for (bin in unique(dset[s,]$BIN)) {
+  for (year in sort(unique(dset$YEAR))) {
+    sy <- dset$YEAR == year
+    bset <- NULL
+    brnames <- NULL
+    for (bin in sort(unique(dset[sy,]$BIN))) {
       if (!is.na(bin)) {
-        s <- s & dset$BIN == bin
-        brnames <- c(brnames, sprintf("%d", i));
+        sb <- sy & dset$BIN == bin
+        brname <- sprintf("%d", bin)
       } else {
-        x <- s & is.na(dset$BIN)
-        brnames <- c(brnames, sprintf(">%d", maxk));
+        sb <- sy & is.na(dset$BIN)
+        brname <- sprintf(">%d", maxk)
         bin <- max(dset$BIN, na.rm=TRUE)+1
       }
-      for (asecflag in unique(dset[s,]$ASECFLAG)) {
-        s <- s & dset$ASECFLAG == asecflag
-        for (hflag in unique(dset[s,]$HFLAG)) {
-          s <- s & dset$HFLAG == hflag
-                                          # *finally* -- do something!
-          month <- unique(dset[s,]$MONTH);
-          if (length(month) > 1) {
-            month <- NA
+      for (asecflag in unique(dset[sb,]$ASECFLAG)) {
+        sa <- sb & dset$ASECFLAG == asecflag
+        for (hflag in unique(dset[sa,]$HFLAG)) {
+          sh <- sa & dset$HFLAG == hflag
+          if (nrow(dset[sh,]) != 0) {
+            # *finally* -- do something!
+            month <- unique(dset[sh,]$MONTH);
+            if (length(month) > 1) {
+              month <- NA
+            }
+            bset <- rbind(bset, c(YEAR=year,
+                                  HWTSUPP=sum(dset[sh,]$HWTSUPP),
+                                  ASECFLAG=asecflag,
+                                  HFLAG=hflag,
+                                  UPTOHHINCOME1999=bin*1000,
+                                  MONTH=month,
+                                  WTSUPP=sum(dset[sh,]$WTSUPP)));
+            brnames <- c(brnames, brname);
           }
-          best <- rbind(bset, c(YEAR=year,
-                                HWTSUPP=sum(dset[s,]$HWTSUPP),
-                                ASECFLAG=asecflag,
-                                HFLAG=hflag,
-                                UPTOHHINCOME1999=bin*1000,
-                                MONTH=month,
-                                WTSUPP=sum(dset[s,]$WTSUPP)));
         }
       }
     }
+    # output this
+    rownames(bset) <- brnames
   }
 
 #+END_SRC
+
+#+RESULTS: binthem
 
 ** most occurring incomes
 
