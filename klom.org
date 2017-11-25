@@ -289,9 +289,8 @@ seem to be in March of every year.)
 real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
 #+name: bincps
-#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var maxk=500 :var ofile="" :var ofsep="-"
+#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var maxk=500 :var ofile="" :var ofsep="-" :var rfile="" :var fyear=-Inf :var lyear=+Inf
   bincps <- function(ifile, maxk=500, ofile="", ofsep="-") {
-    require(ggplot2)
     x <- gzfile(ifile, open="r")
     dset <- read.csv(x, header=TRUE)
     close(x)
@@ -307,54 +306,65 @@ test file is: ./ipums/19712014.csv.gz
     }
 
     if (file.exists(ofile)) {
-      stop(sprintf("output file \"%s\" exists, won't remove", ofile))
+      stop(sprintf("output file \"%s\" exists, won't overwrite", ofile))
     }
 
+    if (rfile == "") {
+                                          # compute filename
+      x <- strsplit(ifile, ".", fixed=TRUE)[[1]]
+      if (x[length(x)] == "gz") {
+        length(x) = length(x)-1           # again, get rid of .gz extension
+      }
+      x[length(x)] <- sprintf("binned%sreport.%s", ofsep, x[length(x)])
+      rfile <- paste(x, collapse=".")
+    }
+
+    if (file.exists(rfile)) {
+      stop(sprintf("report file \"%s\" exists, won't overwrite", rfile))
+    }
+    
                                           # now, convert all income to 1999 dollars
     dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
 
-                                          # describe the negative incomes
-    s <- dset$HHINCOME < 0
-    report <- rbind(c(NROW=nrow(dset[s,]), summary(dset[s,]$HHINCOME)))
-    rrnames <- c("<0")
-                                          # now, kill them
-    dset <- dset[dset$HHINCOME >= 0,]
+                                          # now, get *all* the bins...
+    dset <- cbind(dset[sy,], BIN=.bincode(dset$HHINCOME1999/1000,
+                               seq(from=min(dset$HHINCOME1999)/1000,
+                                   to=max(dset$HHINCOME1999)/1000, by=1),
+                               right=FALSE));
 
-                                          # now, get all the bins...
-    dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999/1000,
-                          seq(from=0, to=maxk, by=1),
-                          right=FALSE));
+    bset <- data.frame()
+    for (year in sort(unique(dset$YEAR))) {
+      if ((year < fyear) | (year > lyear)) {
+        next
+      }
+      sy <- dset$YEAR == year
+                                          # describe the negative incomes
+      sy1 <- sy & dset$HHINCOME1999 < 0
+      rset <- rbind(c(NROW=nrow(dset[sy1,]),
+                      summary(dset[sy1,]$HHINCOME1999)
+                      COMMENT="less than zero"))
+                                          # now, kill them
+      sy <- sy & dset$HHINCOME1999 >= 0
 
                                           # HHINCOME1999 greater than,
                                           # or equal to, MAXK is labeled
                                           # NA by .bincode
-    maxkbin <- max(dset$BIN, na.rm=TRUE)+1
-    dset[is.na(dset$BIN),]$BIN <- maxkbin
+      maxkbin <- max(dset[sy,]$BIN, na.rm=TRUE)+1
+      dset[is.na(dset$BIN),]$BIN <- maxkbin
 
                                           # and, describe these
-    s <- dset$BIN == maxk+1
-    report <- rbind(report, c(NROW=nrow(dset[s,]),
-                              summary(dset[dset$BIN == maxk+1,]$HHINCOME1999)))
-    rrnames <- c(rrnames, sprintf(">%d", maxk))
-
-    rownames(report) <- rrnames
-
+      s <- dset$HHINCOME1999 == maxk+1
+      rset <- rbind(rset, c(NROW=nrow(dset[s,]),
+                            summary(dset[dset$BIN == maxk+1,]$HHINCOME1999)
+                            COMMENT=sprintf("greater than %dK", maxk)))
+ 
                                           # (we don't describe *other*
                                           # bins since they are of
                                           # limited range; the
                                           # "negative" and "greater than
                                           # max" bins are not of an a
                                           # priori known limit.)
-
-    bset <- data.frame()
-    for (year in sort(unique(dset$YEAR))) {
-      if (year < 1968) {
-                                          # there appears to be no
-                                          # HHINCOME for years before
-                                          # 1968
-        next
-      }
-      sy <- dset$YEAR == year
+    
       for (bin in sort(unique(dset[sy,]$BIN))) {
         sb <- sy & dset$BIN == bin
         if (bin != maxkbin) {
@@ -376,6 +386,7 @@ test file is: ./ipums/19712014.csv.gz
             }
             if (nrow(dset[sh,]) != 0) {
                                           # *finally* -- do something!
+
               month <- unique(dset[sh,]$MONTH);
               if (length(month) > 1) {
                 month <- NA
@@ -392,7 +403,7 @@ test file is: ./ipums/19712014.csv.gz
         }
       }
     }
-    # output this
+    rownames(rset) <- rrnames
     write.csv(bset, ofile);
   }
 
