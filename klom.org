@@ -343,6 +343,9 @@ test file is: ./ipums/19712014.csv.gz
     dset <- read.csv(x, header=TRUE)
     close(x)
 
+    ## get rid of records outside our years of interest (fyear, lyear)
+    dset <- dset[dset$YEAR >= fyear & dset$YEAR <= lyear,]
+
     ofile <- dealwithoutputfilename(ifile, ofile, "output",
                                     sprintf("%sbinned", ofset));
 
@@ -352,17 +355,16 @@ test file is: ./ipums/19712014.csv.gz
                                           # now, convert all income to 1999 dollars
     dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
 
-                                          # now, get *all* the bins...
-    dset <- cbind(dset[sy,], BIN=.bincode(dset$HHINCOME1999/1000,
-                               seq(from=min(dset$HHINCOME1999)/1000,
-                                   to=max(dset$HHINCOME1999)/1000, by=1),
-                               right=FALSE));
+    ## now, get *all* the bins...
+    ## first, round off min, max
+    fromvalue <- floor(min(dset$HHINCOME1999)/binsize)
+    tovalue <- ceiling(max(dset$HHINCOME1999)/binsize)
+    dset <- cbind(dset[sy,], BIN=.bincode(dset$HHINCOME1999/binsize,
+                               seq(from=fromvalue, to=tovalue, by=1),
+                               right=right));
 
     bset <- data.frame()
     for (year in sort(unique(dset$YEAR))) {
-      if ((year < fyear) | (year > lyear)) {
-        next
-      }
       sy <- dset$YEAR == year
                                           # describe the negative incomes
       sy1 <- sy & dset$HHINCOME1999 < 0
@@ -394,7 +396,7 @@ test file is: ./ipums/19712014.csv.gz
       for (bin in sort(unique(dset[sy,]$BIN))) {
         sb <- sy & dset$BIN == bin
         if (bin != maxkbin) {
-          upto <- bin*1000;
+          upto <- bin*binsize;
         } else {
           upto <- max(dset[sb,]$HHINCOME1999)
         }
