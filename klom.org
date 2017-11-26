@@ -292,6 +292,9 @@ test file is: ./ipums/19712014.csv.gz
 #+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var maxk=500 :var ofile="" :var ofsep="-" :var rfile="" :var fyear=-Inf :var lyear=+Inf
   ## if necessary, cons up an appropriate FNAME.  then, checks that
   ## FNAME doesn't already exist and that it is (potentially) writeable.
+
+  ## NB: as a side effect of testing writeability, on a successful
+  ## return, FNAME *will* exist (but, be empty).
   dealwithoutputfilename <- function(ifile, fname, use, lastbits) {
     require(assertthat)
 
@@ -304,15 +307,23 @@ test file is: ./ipums/19712014.csv.gz
       fname <- paste(x, collapse=".")
     }
 
+    ## test if already exists (a no-no)
     if (file.exists(fname)) {
       stop(sprintf("%s file \"%s\" exists, won't overwrite", use, fname))
     }
-    if (!is.writeable(fname)) {
+
+    ## test if writeable (better be!)
+    failed <- FALSE;
+    x <- tryCatch(file(fname, "w"), 
+                  error=function(e) failed <<- TRUE);
+    if (failed) {
       stop(sprintf("%s file \"%s\" is not writeable", use, fname))
     }
+    close(x)
+
     return(fname)
   }
-  
+
 
   bincps <- function(ifile,               # input file
                      min1999=0,           # minimum HHINCOME1999 (in USD)
@@ -327,14 +338,14 @@ test file is: ./ipums/19712014.csv.gz
                      fyear=-Inf,          # first year to include
                      lyear=Inf            # last year to include
                      ) {
-  
+
     x <- gzfile(ifile, open="r")
     dset <- read.csv(x, header=TRUE)
     close(x)
 
     ofile <- dealwithoutputfilename(ifile, ofile, "output",
                                     sprintf("%sbinned", ofset));
-  
+
     rfile <- dealwithoutputfilename(ifile, rfile, "report",
                                     sprintf("%sbinned%sreport", ofset, ofset))
 
