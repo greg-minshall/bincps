@@ -1,8 +1,8 @@
 * [[https://twitter.com/kltblom][Kristian Blom]]: does recent (20 years?) change in US income distribution matter?
 
-he [[https://twitter.com/kltblom/status/932394678241988609][showed a PDF]] (1971-2015), from Financial Times (based on data from
-Pew Trust).  i don't see where to get that data.  but, [[https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls][Census Bureau]]
-has something that breaks down by each fifth and top 5%.
+Kristian Blom [[https://twitter.com/kltblom/status/932394678241988609][showed a PDF]] (1971-2015), from Financial Times (based on
+data from Pew Trust).  i don't see where to get that data.  but,
+[[https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls][Census Bureau]] has something that breaks down by each fifth and top 5%.
 
 #+BEGIN_SRC R :session ss :var tseries=tseries
 colnames(tseries) <- c("year", "number", "lowest", "second", "third", "fourth", "llimittop5")
@@ -94,6 +94,8 @@ hinc-06.xls: 2017 2016 2015 2014 2013
 hinc-06_000.xls: 2012
 new06_000.txt: 2003
 
+([[https://www.census.gov/popclock/][US, world population clock]])
+
 [[https://usa.ipums.org/usa/][ipums.org]] is some sort of data service.  (it uses [[http://www.nber.org/data/current-population-survey-data.html][NBER data]].)  the
 ipums data is unaggregated.  about 2MB for a file (1995).  and, of
 course, many variables i don't understand.  plus, in nominal dollars.
@@ -108,7 +110,7 @@ affecting things.)
 
 [[https://www.r-bloggers.com/how-to-make-maps-with-census-data-in-r/][how-to-make-maps-with-census-data-in-r]] is newer.
 
-[[http://users.stat.umn.edu/~almquist/software.html][Zach Almquist]] has 10-year census data.
+[[http://users.stat.umn.edu/~almquist/software.html][Zach Almquist]] has 10-year census data;  [[https://www.jstatsoft.org/article/view/v037i06][paper]].
 
 [[https://www.bls.gov/cps/][BLS]] CPS page.  however, "All self-employed persons are excluded,
 regardless of whether their businesses are incorporated."
@@ -364,6 +366,42 @@ test file is: ./ipums/19712014.csv.gz
     bset <- data.frame()
     for (year in sort(unique(dset$YEAR))) {
       sy <- dset$YEAR == year
+
+      ## this is in lieu of a macro facility in R (or in lieu of
+      ## <<noweb>> working in org-mode when running code via C-c C-c).
+      ## this routine is called to enter rows into the output table.
+      ahroutine <- function(upto) {
+        for (asecflag in unique(dset[sb,]$ASECFLAG)) {
+          if (!is.na(asecflag)) {
+            sa <- sb & dset$ASECFLAG == asecflag
+          } else {
+            sa <- sb & is.na(dset$ASECFLAG)
+          }
+          for (hflag in unique(dset[sa,]$HFLAG)) {
+            if (!is.na(hflag)) {
+              sh <- sa & dset$HFLAG == hflag
+            } else {
+              sh <- sa & is.na(dset$ASECFLAG)
+            }
+            if (nrow(dset[sh,]) != 0) {
+                                          # *finally* -- do something!
+
+              month <- unique(dset[sh,]$MONTH);
+              if (length(month) > 1) {
+                month <- NA
+              }
+              bset <<- rbind(bset,
+                             c(YEAR=year,
+                               HWTSUPP=sum(dset[sh,]$HWTSUPP),
+                               ASECFLAG=asecflag,
+                               HFLAG=hflag,
+                               UPTOHHINCOME1999=upto,
+                               MONTH=month,
+                               WTSUPP=sum(dset[sh,]$WTSUPP)));
+            }
+          }
+        }
+      }
                                           # describe the negative incomes
       sy1 <- sy & dset$HHINCOME1999 < 0
       rset <- rbind(c(NROW=nrow(dset[sy1,]),
@@ -398,35 +436,7 @@ test file is: ./ipums/19712014.csv.gz
         } else {
           upto <- max(dset[sb,]$HHINCOME1999)
         }
-        for (asecflag in unique(dset[sb,]$ASECFLAG)) {
-          if (!is.na(asecflag)) {
-            sa <- sb & dset$ASECFLAG == asecflag
-          } else {
-            sa <- sb & is.na(dset$ASECFLAG)
-          }
-          for (hflag in unique(dset[sa,]$HFLAG)) {
-            if (!is.na(hflag)) {
-              sh <- sa & dset$HFLAG == hflag
-            } else {
-              sh <- sa & is.na(dset$ASECFLAG)
-            }
-            if (nrow(dset[sh,]) != 0) {
-                                          # *finally* -- do something!
-
-              month <- unique(dset[sh,]$MONTH);
-              if (length(month) > 1) {
-                month <- NA
-              }
-              bset <- rbind(bset, c(YEAR=year,
-                                    HWTSUPP=sum(dset[sh,]$HWTSUPP),
-                                    ASECFLAG=asecflag,
-                                    HFLAG=hflag,
-                                    UPTOHHINCOME1999=upto,
-                                    MONTH=month,
-                                    WTSUPP=sum(dset[sh,]$WTSUPP)));
-            }
-          }
-        }
+        ahroutine(upto)
       }
     }
     rownames(rset) <- rrnames
