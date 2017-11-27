@@ -370,12 +370,12 @@ test file is: ./ipums/19712014.csv.gz
       ## this is in lieu of a macro facility in R (or in lieu of
       ## <<noweb>> working in org-mode when running code via C-c C-c).
       ## this routine is called to enter rows into the output table.
-      ahroutine <- function(upto) {
-        for (asecflag in unique(dset[sb,]$ASECFLAG)) {
+      ahroutine <- function(filter, upto) {
+        for (asecflag in unique(dset[filter,]$ASECFLAG)) {
           if (!is.na(asecflag)) {
-            sa <- sb & dset$ASECFLAG == asecflag
+            sa <- filter & dset$ASECFLAG == asecflag
           } else {
-            sa <- sb & is.na(dset$ASECFLAG)
+            sa <- filter & is.na(dset$ASECFLAG)
           }
           for (hflag in unique(dset[sa,]$HFLAG)) {
             if (!is.na(hflag)) {
@@ -402,7 +402,8 @@ test file is: ./ipums/19712014.csv.gz
           }
         }
       }
-                                          # describe the negative incomes
+
+      ## describe and enter the negative incomes
       if (right) {
         slowbit <- dset$HHINCOME1999 < min1999
         comment <- sprintf("less than %02f", min1999);
@@ -411,6 +412,7 @@ test file is: ./ipums/19712014.csv.gz
         comment <- sprintf("less than, or equal to, %02f", min1999);
       }
       slow <- sy & slowbit
+      ahroutine(slow, -Inf)               # enter (these) row(s)
       if (nrow(dset[slow,]) != 0) {
         rset <- rbind(c(NROW=nrow(dset[slow,]),
                         summary(dset[slow,]$HHINCOME1999),
@@ -436,26 +438,11 @@ test file is: ./ipums/19712014.csv.gz
         sy <- sy & !shighbit
       }
 
-                                          # HHINCOME1999 greater than,
-                                          # or equal to, MAXK is labeled
-                                          # NA by .bincode
-      
-      maxkbin <- max(dset[sy,]$BIN, na.rm=TRUE)+1
-      dset[is.na(dset$BIN),]$BIN <- maxkbin
+      ## we don't describe *other* bins since they are of limited range;
+      ## the "negative" and "greater than max" bins are not of an a
+      ## priori known limit.
 
-                                          # and, describe these
-      s <- dset$HHINCOME1999 == maxk+1
-      rset <- rbind(rset, c(NROW=nrow(dset[s,]),
-                            summary(dset[dset$BIN == maxk+1,]$HHINCOME1999),
-                            COMMENT=sprintf("greater than %dK", maxk)))
-
-                                          # (we don't describe *other*
-                                          # bins since they are of
-                                          # limited range; the
-                                          # "negative" and "greater than
-                                          # max" bins are not of an a
-                                          # priori known limit.)
-
+      ## now, add all the bins
       for (bin in sort(unique(dset[sy,]$BIN))) {
         sb <- sy & dset$BIN == bin
         if (bin != maxkbin) {
@@ -463,8 +450,11 @@ test file is: ./ipums/19712014.csv.gz
         } else {
           upto <- max(dset[sb,]$HHINCOME1999)
         }
-        ahroutine(upto)
+        ahroutine(sb, upto)
       }
+
+      ## now, add too high
+      ahroutine(shigh, +Inf)
     }
     rownames(rset) <- rrnames
     write.csv(bset, ofile);
