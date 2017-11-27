@@ -335,13 +335,12 @@ test file is: ./ipums/19712014.csv.gz
     dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
 
     ## now, get *all* the bins...
-    ## first, round off min, max
-    fromvalue <- floor(min(dset$HHINCOME1999)/binsize)
-    tovalue <- ceiling(max(dset$HHINCOME1999)/binsize)
-    gset <<- dset
-    dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999/binsize,
-                               seq(from=fromvalue, to=tovalue, by=1),
-                               right=right));
+    ## first, make min, max multiples of binsize
+    fromvalue <- floor(min(dset$HHINCOME1999)/binsize)*binsize
+    tovalue <- ceiling(max(dset$HHINCOME1999)/binsize)*binsize
+    dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999,
+                          seq(from=fromvalue, to=tovalue, by=binsize),
+                          right=right));
 
     ## this is in lieu of a macro facility in R (or in lieu of <<noweb>>
     ## working in org-mode when running code via C-c C-c).  this routine
