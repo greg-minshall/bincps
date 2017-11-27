@@ -291,7 +291,7 @@ seem to be in March of every year.)
 real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
 #+name: bincps
-#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+"
+#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="2014" :var lyear="+" :var min1999="0" :var max1999="500000"
   ## if necessary, cons up an appropriate FNAME.  then, checks that
   ## FNAME doesn't already exist and that it is (potentially) writeable.
 
@@ -312,22 +312,24 @@ test file is: ./ipums/19712014.csv.gz
                      ) {
     ## first, check if output files are okay
     ofile <- dealwithoutputfilename(ifile, ofile, "output",
-                                    sprintf("%sbinned", ofset));
+                                    sprintf("%sbinned", ofsep));
     rfile <- dealwithoutputfilename(ifile, rfile, "report",
-                                    sprintf("%sbinned%sreport", ofset, ofset))
+                                    sprintf("%sbinned%sreport", ofsep, ofsep))
 
     x <- gzfile(ifile, open="r")
     dset <- read.csv(x, header=TRUE)
     close(x)
 
-    if (fyear == "-") {
-      fyear <- -Inf
-    }
-    if (lyear == "+") {
-      lyear <- Inf
+    if (nrow(dset) == 0) {
+      stop(sprintf("no data in dataset \"%s\"", ifile))
     }
     ## get rid of records outside our years of interest (fyear, lyear)
     dset <- dset[dset$YEAR >= fyear & dset$YEAR <= lyear,]
+
+    if (nrow(dset) == 0) {
+      stop(sprintf("no data in dataset \"%s\" for years between %g and %g",
+                   ifile, fyear, lyear))
+    }
 
                                           # now, convert all income to 1999 dollars
     dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
@@ -336,7 +338,8 @@ test file is: ./ipums/19712014.csv.gz
     ## first, round off min, max
     fromvalue <- floor(min(dset$HHINCOME1999)/binsize)
     tovalue <- ceiling(max(dset$HHINCOME1999)/binsize)
-    dset <- cbind(dset[sy,], BIN=.bincode(dset$HHINCOME1999/binsize,
+    gset <<- dset
+    dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999/binsize,
                                seq(from=fromvalue, to=tovalue, by=1),
                                right=right));
 
@@ -363,14 +366,25 @@ test file is: ./ipums/19712014.csv.gz
             if (length(month) > 1) {
               month <- NA
             }
-            bset <<- rbind(bset,
-                           c(YEAR=year,
-                             HWTSUPP=sum(dset[sh,]$HWTSUPP),
-                             ASECFLAG=asecflag,
-                             HFLAG=hflag,
-                             UPTOHHINCOME1999=upto,
-                             MONTH=month,
-                             WTSUPP=sum(dset[sh,]$WTSUPP)));
+            if (nrow(bset) == 0) {
+              bset <<- rbind(      # https://stackoverflow.com/a/5231670
+                             c(YEAR=year,
+                               HWTSUPP=sum(dset[sh,]$HWTSUPP),
+                               ASECFLAG=asecflag,
+                               HFLAG=hflag,
+                               UPTOHHINCOME1999=upto,
+                               MONTH=month,
+                               WTSUPP=sum(dset[sh,]$WTSUPP)))
+            } else {
+              bset <<- rbind(bset,
+                             c(YEAR=year,
+                               HWTSUPP=sum(dset[sh,]$HWTSUPP),
+                               ASECFLAG=asecflag,
+                               HFLAG=hflag,
+                               UPTOHHINCOME1999=upto,
+                               MONTH=month,
+                               WTSUPP=sum(dset[sh,]$WTSUPP)))
+            }
           }
         }
       }
@@ -401,10 +415,10 @@ test file is: ./ipums/19712014.csv.gz
       ## now, describe too high incomes (and then enter them below)
       if (right) {
         shighbit <- dset$HHINCOME1999 >= max1999
-        comment <- sprintf("greater than, or equal to, %02f", min1999);
+        comment <- sprintf("greater than, or equal to, %02f", max1999);
       } else {
         shighbit <- dset$HHINCOME1999 > max1999
-        comment <- sprintf("greater than %02f", min1999);
+        comment <- sprintf("greater than %02f", max1999);
       }
       shigh <- sy & shighbit
       if (nrow(dset[shigh,]) != 0) {
@@ -429,17 +443,11 @@ test file is: ./ipums/19712014.csv.gz
       ## now, add too high
       ahroutine(shigh, +Inf)
     }
-    rownames(rset) <- rrnames
     write.csv(bset, ofile);
+    if (nrow(rset) != 0) {
+      write(rset, rfile)
+    }
   }
-
-  if (fyear == "-") {
-    fyear=-Inf
-  }
-  if (lyear == "+") {
-    lyear=+Inf
-  }
-
 
   dealwithoutputfilename <- function(ifile, fname, use, lastbits) {
     require(assertthat)
@@ -471,12 +479,34 @@ test file is: ./ipums/19712014.csv.gz
   }
 
 
-  bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear);
+
+  if (fyear == "-") {
+    fyear <- -Inf
+  } else {
+    fyear <- as.integer(fyear)
+  }
+  if (lyear == "+") {
+    lyear <- Inf
+  } else {
+    lyear <- as.integer(lyear)
+  }
+
+  if (min1999 == "-") {
+    min1999 <- -Inf
+  } else {
+    min1999 <- as.numeric(min1999)
+  }
+  if (max1999 == "+") {
+    max1999 <- Inf
+  } else {
+    max1999 <- as.numeric(max1999)
+  }
+
+  bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999);
 #+END_SRC
 #+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+"
 
 #+RESULTS: bincps
-: Inf
 
 ** most occurring incomes
 
