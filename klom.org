@@ -297,35 +297,6 @@ test file is: ./ipums/19712014.csv.gz
 
   ## NB: as a side effect of testing writeability, on a successful
   ## return, FNAME *will* exist (but, be empty).
-  dealwithoutputfilename <- function(ifile, fname, use, lastbits) {
-    require(assertthat)
-
-    if (fname == "") {                    # compute filename
-      x <- strsplit(ifile, ".", fixed=TRUE)[[1]]
-      if (x[length(x)] == "gz") {
-        length(x) = length(x)-1           # get rid of .gz (we don't compress)
-      }
-      x[length(x)] <- sprintf("%s.%s", lastbits, x[length(x)]);
-      fname <- paste(x, collapse=".")
-    }
-
-    ## test if already exists (a no-no)
-    if (file.exists(fname)) {
-      stop(sprintf("%s file \"%s\" exists, won't overwrite", use, fname))
-    }
-
-    ## test if writeable (better be!)
-    failed <- FALSE;
-    x <- tryCatch(file(fname, "w"), 
-                  error=function(e) failed <<- TRUE);
-    if (failed) {
-      stop(sprintf("%s file \"%s\" is not writeable", use, fname))
-    }
-    close(x)
-
-    return(fname)
-  }
-
   bincps <- function(ifile,               # input file
                      min1999=0,           # minimum HHINCOME1999 (in USD)
                      max1999=500000,      # maximum HHINCOME1999 (in USD)
@@ -468,6 +439,38 @@ test file is: ./ipums/19712014.csv.gz
   if (lyear == "+") {
     lyear=+Inf
   }
+
+
+  dealwithoutputfilename <- function(ifile, fname, use, lastbits) {
+    require(assertthat)
+
+    if (fname == "") {                    # compute filename
+      x <- strsplit(ifile, ".", fixed=TRUE)[[1]]
+      if (x[length(x)] == "gz") {
+        length(x) = length(x)-1           # get rid of .gz (we don't compress)
+      }
+      x[length(x)] <- sprintf("%s.%s", lastbits, x[length(x)]);
+      fname <- paste(x, collapse=".")
+    }
+
+    ## test if already exists (a no-no)
+    if (file.exists(fname)) {
+      stop(sprintf("%s file \"%s\" exists, won't overwrite", use, fname))
+    }
+
+    ## test if writeable (better be!)
+    failed <- FALSE;
+    x <- tryCatch(file(fname, "w"), 
+                  error=function(e) failed <<- TRUE);
+    if (failed) {
+      stop(sprintf("%s file \"%s\" is not writeable", use, fname))
+    }
+    close(x)
+
+    return(fname)
+  }
+
+
   bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear);
 #+END_SRC
 #+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+"
