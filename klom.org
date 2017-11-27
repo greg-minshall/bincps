@@ -295,7 +295,7 @@ seem to be in March of every year.)
 real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
 #+name: bincps
-#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+" :var min1999="0" :var max1999="500000"
+#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+" :var min1999="-" :var max1999="+"
   ## if necessary, cons up an appropriate FNAME.  then, checks that
   ## FNAME doesn't already exist and that it is (potentially) writeable.
 
@@ -306,7 +306,6 @@ test file is: ./ipums/19712014.csv.gz
                      max1999=Inf,        # maximum HHINCOME1999 (in USD)
                      ## things < min1999, > max1999 are included in separate bins
                      binsize=1000,        # size of bins
-                     right=FALSE,         # .bincode "right=" parameter
                      ofile="",            # output csv file ("" ==>
                                           # compute from ifile)
                      ofsep="-",           # separator (when ofile or rfile blank)
@@ -339,12 +338,7 @@ test file is: ./ipums/19712014.csv.gz
     dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
 
     ## now, get *all* the bins...
-    ## first, make min, max multiples of binsize
-    fromvalue <- floor(min(dset$HHINCOME1999)/binsize)*binsize
-    tovalue <- ceiling(max(dset$HHINCOME1999)/binsize)*binsize
-    dset <- cbind(dset, BIN=.bincode(dset$HHINCOME1999,
-                          seq(from=fromvalue, to=tovalue, by=binsize),
-                          right=right));
+    dset <- cbind(dset, RANGE=(floor(dset$HHINCOME1999/binsize)*binsize)+binsize)
 
     ## this is in lieu of a macro facility in R (or in lieu of <<noweb>>
     ## working in org-mode when running code via C-c C-c).  this routine
@@ -388,13 +382,8 @@ test file is: ./ipums/19712014.csv.gz
       sy <- dset$YEAR == year
 
       ## describe and enter the negative incomes
-      if (right) {
-        slowbit <- dset$HHINCOME1999 < min1999
-        comment <- sprintf("less than %02f", min1999);
-      } else {
-        slowbit <- dset$HHINCOME1999 <= min1999
-        comment <- sprintf("less than or equal to %02f", min1999);
-      }
+      slowbit <- dset$HHINCOME1999 < min1999
+      comment <- sprintf("less than %02f", min1999);
       slow <- sy & slowbit
       if (nrow(dset[slow,]) != 0) {
         ahroutine(slow, -Inf)             # enter (these) row(s)
@@ -406,13 +395,8 @@ test file is: ./ipums/19712014.csv.gz
       }
 
       ## now, describe too high incomes (and then enter them below)
-      if (right) {
-        shighbit <- dset$HHINCOME1999 >= max1999
-        comment <- sprintf("greater than or equal to %02f", max1999);
-      } else {
-        shighbit <- dset$HHINCOME1999 > max1999
-        comment <- sprintf("greater than %02f", max1999);
-      }
+      shighbit <- dset$HHINCOME1999 >= max1999
+      comment <- sprintf("greater than or equal to %02f", max1999);
       shigh <- sy & shighbit
       if (nrow(dset[shigh,]) != 0) {
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
@@ -427,10 +411,9 @@ test file is: ./ipums/19712014.csv.gz
       ## priori known limit.
 
       ## now, add all the bins
-      for (bin in sort(unique(dset[sy,]$BIN))) {
-        sb <- sy & dset$BIN == bin
-        upto <- fromvalue+(bin*binsize);
-        ahroutine(sb, upto)
+      for (bin in sort(unique(dset[sy,]$RANGE))) {
+        sb <- sy & dset$RANGE == bin
+        ahroutine(sb, bin)
       }
 
       ## now, add too high
