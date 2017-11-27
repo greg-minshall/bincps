@@ -1,4 +1,5 @@
 * [[https://twitter.com/kltblom][Kristian Blom]]: does recent (20 years?) change in US income distribution matter?
+** investigating
 
 Kristian Blom [[https://twitter.com/kltblom/status/932394678241988609][showed a PDF]] (1971-2015), from Financial Times (based on
 data from Pew Trust).  i don't see where to get that data.  but,
@@ -21,7 +22,7 @@ he has about 50 buckets.  i have 6.  sigh.
 
 #+name: tseries
 #+BEGIN_SRC sh
-  xls2csv h01ar.xls |
+  xls2csv census/h01ar.xls |
       awk '/2016 Dollars/ { ok = 1; next} \
           /^"[12]/ {
                    if (ok) { 
@@ -212,7 +213,6 @@ explanation.
 [[https://cps.ipums.org/cps/cpi99.shtml][IPUMS]] has a variable, [[https://cps.ipums.org/cps-action/variables/CPI99][CPI99]], that can be used to convert everything
 to/from 1999 dollars.
 
-
 ** citing IPUMS
 
 #+BEGIN_QUOTE
@@ -230,6 +230,8 @@ data as follows:
 
 IPUMS-CPS, University of Minnesota, www.ipums.org
 #+END_QUOTE
+
+** everylittlebit
 
 real file is: ./ipums/cps_00006.csv.gz
 #+name: everylittlebit
@@ -278,6 +280,8 @@ real file is: ./ipums/cps_00006.csv.gz
     docums(s)
   }
 #+END_SRC
+
+** bincps
 
 what we want to do is create a file which is a "binned" version of the
 full-detail file.  this includes "rolling up" the [H]WTSUPP columns by
