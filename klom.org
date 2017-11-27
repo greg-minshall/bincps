@@ -297,9 +297,9 @@ test file is: ./ipums/19712014.csv.gz
 
   ## NB: as a side effect of testing writeability, on a successful
   ## return, FNAME *will* exist (but, be empty).
-  bincps <- function(ifile,               # input file
-                     min1999=0,           # minimum HHINCOME1999 (in USD)
-                     max1999=500000,      # maximum HHINCOME1999 (in USD)
+  bincps <- function(ifile,              # input file
+                     min1999=-Inf,       # minimum HHINCOME1999 (in USD)
+                     max1999=Inf,        # maximum HHINCOME1999 (in USD)
                      ## things < min1999, > max1999 are included in separate bins
                      binsize=1000,        # size of bins
                      right=FALSE,         # .bincode "right=" parameter
@@ -366,25 +366,14 @@ test file is: ./ipums/19712014.csv.gz
             if (length(month) > 1) {
               month <- NA
             }
-            if (nrow(bset) == 0) {
-              bset <<- rbind(      # https://stackoverflow.com/a/5231670
-                             c(YEAR=year,
-                               HWTSUPP=sum(dset[sh,]$HWTSUPP),
-                               ASECFLAG=asecflag,
-                               HFLAG=hflag,
-                               UPTOHHINCOME1999=upto,
-                               MONTH=month,
-                               WTSUPP=sum(dset[sh,]$WTSUPP)))
-            } else {
-              bset <<- rbind(bset,
-                             c(YEAR=year,
-                               HWTSUPP=sum(dset[sh,]$HWTSUPP),
-                               ASECFLAG=asecflag,
-                               HFLAG=hflag,
-                               UPTOHHINCOME1999=upto,
-                               MONTH=month,
-                               WTSUPP=sum(dset[sh,]$WTSUPP)))
-            }
+            bset <<- rbind(bset,
+                           data.frame(YEAR=year,
+                                      HWTSUPP=sum(dset[sh,]$HWTSUPP),
+                                      ASECFLAG=asecflag,
+                                      HFLAG=hflag,
+                                      UPTOHHINCOME1999=upto,
+                                      MONTH=month,
+                                      WTSUPP=sum(dset[sh,]$WTSUPP)))
           }
         }
       }
@@ -394,8 +383,10 @@ test file is: ./ipums/19712014.csv.gz
     for (year in sort(unique(dset$YEAR))) {
       sy <- dset$YEAR == year
 
+      rset <- data.frame()
       ## describe and enter the negative incomes
       if (right) {
+        print(min1999)
         slowbit <- dset$HHINCOME1999 < min1999
         comment <- sprintf("less than %02f", min1999);
       } else {
@@ -405,9 +396,9 @@ test file is: ./ipums/19712014.csv.gz
       slow <- sy & slowbit
       ahroutine(slow, -Inf)               # enter (these) row(s)
       if (nrow(dset[slow,]) != 0) {
-        rset <- rbind(c(NROW=nrow(dset[slow,]),
+        rset <- rbind(rset, data.frame(t(c(NROW=nrow(dset[slow,]),
                         summary(dset[slow,]$HHINCOME1999),
-                        COMMENT=comment))
+                        COMMENT=comment))))
                                           # now, kill them
         sy <- sy & !slowbit
       }
@@ -422,9 +413,9 @@ test file is: ./ipums/19712014.csv.gz
       }
       shigh <- sy & shighbit
       if (nrow(dset[shigh,]) != 0) {
-        rset <- rbind(c(NROW=nrow(dset[shigh,]),
-                        summary(dset[shigh,]$HHINCOME1999),
-                        COMMENT=comment))
+        rset <- rbind(rset, data.frame(t(c(NROW=nrow(dset[shigh,]),
+                                       summary(dset[shigh,]$HHINCOME1999),
+                                       COMMENT=comment))))
                                           # now, kill them
         sy <- sy & !shighbit
       }
@@ -445,7 +436,7 @@ test file is: ./ipums/19712014.csv.gz
     }
     write.csv(bset, ofile);
     if (nrow(rset) != 0) {
-      write(rset, rfile)
+      write.csv(rset, rfile)
     }
   }
 
