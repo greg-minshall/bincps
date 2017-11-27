@@ -403,16 +403,43 @@ test file is: ./ipums/19712014.csv.gz
         }
       }
                                           # describe the negative incomes
-      sy1 <- sy & dset$HHINCOME1999 < 0
-      rset <- rbind(c(NROW=nrow(dset[sy1,]),
-                      summary(dset[sy1,]$HHINCOME1999),
-                      COMMENT="less than zero"))
+      if (right) {
+        slowbit <- dset$HHINCOME1999 < min1999
+        comment <- sprintf("less than %02f", min1999);
+      } else {
+        slowbit <- dset$HHINCOME1999 <= min1999
+        comment <- sprintf("less than, or equal to, %02f", min1999);
+      }
+      slow <- sy & slowbit
+      if (nrow(dset[slow,]) != 0) {
+        rset <- rbind(c(NROW=nrow(dset[slow,]),
+                        summary(dset[slow,]$HHINCOME1999),
+                        COMMENT=comment))
                                           # now, kill them
-      sy <- sy & dset$HHINCOME1999 >= 0
+        sy <- sy & !slowbit
+      }
+
+      /* now, deal with too high data
+      if (right) {
+        shighbit <- dset$HHINCOME1999 >= max1999
+        comment <- sprintf("greater than, or equal to, %02f", min1999);
+      } else {
+        shighbit <- dset$HHINCOME1999 > max1999
+        comment <- sprintf("greater than %02f", min1999);
+      }
+      shigh <- sy & shighbit
+      if (nrow(dset[shigh,]) != 0) {
+        rset <- rbind(c(NROW=nrow(dset[shigh,]),
+                        summary(dset[shigh,]$HHINCOME1999),
+                        COMMENT=comment))
+                                          # now, kill them
+        sy <- sy & !shighbit
+      }
 
                                           # HHINCOME1999 greater than,
                                           # or equal to, MAXK is labeled
                                           # NA by .bincode
+      
       maxkbin <- max(dset[sy,]$BIN, na.rm=TRUE)+1
       dset[is.na(dset$BIN),]$BIN <- maxkbin
 
