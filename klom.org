@@ -349,6 +349,12 @@ test file is: ./ipums/19712014.csv.gz
     dset <- read.csv(x, header=TRUE)
     close(x)
 
+    if (fyear == "-") {
+      fyear <- -Inf
+    }
+    if (lyear == "+") {
+      lyear <- Inf
+    }
     ## get rid of records outside our years of interest (fyear, lyear)
     dset <- dset[dset$YEAR >= fyear & dset$YEAR <= lyear,]
 
@@ -363,45 +369,45 @@ test file is: ./ipums/19712014.csv.gz
                                seq(from=fromvalue, to=tovalue, by=1),
                                right=right));
 
-    bset <- data.frame()
-    for (year in sort(unique(dset$YEAR))) {
-      sy <- dset$YEAR == year
-
-      ## this is in lieu of a macro facility in R (or in lieu of
-      ## <<noweb>> working in org-mode when running code via C-c C-c).
-      ## this routine is called to enter rows into the output table.
-      ahroutine <- function(filter, upto) {
-        for (asecflag in unique(dset[filter,]$ASECFLAG)) {
-          if (!is.na(asecflag)) {
-            sa <- filter & dset$ASECFLAG == asecflag
+    ## this is in lieu of a macro facility in R (or in lieu of <<noweb>>
+    ## working in org-mode when running code via C-c C-c).  this routine
+    ## is called to enter rows into the output table (and, can access --
+    ## read and write -- our variables from the calling routine)
+    ahroutine <- function(filter, upto) {
+      for (asecflag in unique(dset[filter,]$ASECFLAG)) {
+        if (!is.na(asecflag)) {
+          sa <- filter & dset$ASECFLAG == asecflag
+        } else {
+          sa <- filter & is.na(dset$ASECFLAG)
+        }
+        for (hflag in unique(dset[sa,]$HFLAG)) {
+          if (!is.na(hflag)) {
+            sh <- sa & dset$HFLAG == hflag
           } else {
-            sa <- filter & is.na(dset$ASECFLAG)
+            sh <- sa & is.na(dset$ASECFLAG)
           }
-          for (hflag in unique(dset[sa,]$HFLAG)) {
-            if (!is.na(hflag)) {
-              sh <- sa & dset$HFLAG == hflag
-            } else {
-              sh <- sa & is.na(dset$ASECFLAG)
+          if (nrow(dset[sh,]) != 0) {
+            ## *finally* -- do something!
+            month <- unique(dset[sh,]$MONTH);
+            if (length(month) > 1) {
+              month <- NA
             }
-            if (nrow(dset[sh,]) != 0) {
-                                          # *finally* -- do something!
-
-              month <- unique(dset[sh,]$MONTH);
-              if (length(month) > 1) {
-                month <- NA
-              }
-              bset <<- rbind(bset,
-                             c(YEAR=year,
-                               HWTSUPP=sum(dset[sh,]$HWTSUPP),
-                               ASECFLAG=asecflag,
-                               HFLAG=hflag,
-                               UPTOHHINCOME1999=upto,
-                               MONTH=month,
-                               WTSUPP=sum(dset[sh,]$WTSUPP)));
-            }
+            bset <<- rbind(bset,
+                           c(YEAR=year,
+                             HWTSUPP=sum(dset[sh,]$HWTSUPP),
+                             ASECFLAG=asecflag,
+                             HFLAG=hflag,
+                             UPTOHHINCOME1999=upto,
+                             MONTH=month,
+                             WTSUPP=sum(dset[sh,]$WTSUPP)));
           }
         }
       }
+    }
+
+    bset <- data.frame()
+    for (year in sort(unique(dset$YEAR))) {
+      sy <- dset$YEAR == year
 
       ## describe and enter the negative incomes
       if (right) {
@@ -421,7 +427,7 @@ test file is: ./ipums/19712014.csv.gz
         sy <- sy & !slowbit
       }
 
-      /* now, deal with too high data
+      ## now, describe too high incomes (and then enter them below)
       if (right) {
         shighbit <- dset$HHINCOME1999 >= max1999
         comment <- sprintf("greater than, or equal to, %02f", min1999);
@@ -445,11 +451,7 @@ test file is: ./ipums/19712014.csv.gz
       ## now, add all the bins
       for (bin in sort(unique(dset[sy,]$BIN))) {
         sb <- sy & dset$BIN == bin
-        if (bin != maxkbin) {
-          upto <- bin*binsize;
-        } else {
-          upto <- max(dset[sb,]$HHINCOME1999)
-        }
+        upto <- bin*binsize;
         ahroutine(sb, upto)
       }
 
@@ -468,6 +470,7 @@ test file is: ./ipums/19712014.csv.gz
   }
   bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear);
 #+END_SRC
+#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+"
 
 #+RESULTS: bincps
 : Inf
