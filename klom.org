@@ -291,7 +291,7 @@ seem to be in March of every year.)
 real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
 #+name: bincps
-#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="2014" :var lyear="+" :var min1999="0" :var max1999="500000"
+#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+" :var min1999="0" :var max1999="500000"
   ## if necessary, cons up an appropriate FNAME.  then, checks that
   ## FNAME doesn't already exist and that it is (potentially) writeable.
 
@@ -380,44 +380,43 @@ test file is: ./ipums/19712014.csv.gz
     }
 
     bset <- data.frame()
+    rset <- data.frame()
     for (year in sort(unique(dset$YEAR))) {
       sy <- dset$YEAR == year
 
-      rset <- data.frame()
       ## describe and enter the negative incomes
       if (right) {
-        print(min1999)
         slowbit <- dset$HHINCOME1999 < min1999
         comment <- sprintf("less than %02f", min1999);
       } else {
         slowbit <- dset$HHINCOME1999 <= min1999
-        comment <- sprintf("less than, or equal to, %02f", min1999);
+        comment <- sprintf("less than or equal to %02f", min1999);
       }
       slow <- sy & slowbit
-      ahroutine(slow, -Inf)               # enter (these) row(s)
       if (nrow(dset[slow,]) != 0) {
-        rset <- rbind(rset, data.frame(t(c(NROW=nrow(dset[slow,]),
-                        summary(dset[slow,]$HHINCOME1999),
-                        COMMENT=comment))))
-                                          # now, kill them
-        sy <- sy & !slowbit
+        ahroutine(slow, -Inf)             # enter (these) row(s)
+        rset <- rbind(rset, data.frame(t(c(YEAR=year,
+                                           NROW=nrow(dset[slow,]),
+                                           summary(dset[slow,]$HHINCOME1999),
+                                           COMMENT=comment))))
+        sy <- sy & !slowbit               # now, kill them
       }
 
       ## now, describe too high incomes (and then enter them below)
       if (right) {
         shighbit <- dset$HHINCOME1999 >= max1999
-        comment <- sprintf("greater than, or equal to, %02f", max1999);
+        comment <- sprintf("greater than or equal to %02f", max1999);
       } else {
         shighbit <- dset$HHINCOME1999 > max1999
         comment <- sprintf("greater than %02f", max1999);
       }
       shigh <- sy & shighbit
       if (nrow(dset[shigh,]) != 0) {
-        rset <- rbind(rset, data.frame(t(c(NROW=nrow(dset[shigh,]),
-                                       summary(dset[shigh,]$HHINCOME1999),
-                                       COMMENT=comment))))
-                                          # now, kill them
-        sy <- sy & !shighbit
+        rset <- rbind(rset, data.frame(t(c(YEAR=year,
+                                           NROW=nrow(dset[shigh,]),
+                                           summary(dset[shigh,]$HHINCOME1999),
+                                           COMMENT=comment))))
+        sy <- sy & !shighbit              # now, kill them
       }
 
       ## we don't describe *other* bins since they are of limited range;
@@ -427,12 +426,14 @@ test file is: ./ipums/19712014.csv.gz
       ## now, add all the bins
       for (bin in sort(unique(dset[sy,]$BIN))) {
         sb <- sy & dset$BIN == bin
-        upto <- bin*binsize;
+        upto <- fromvalue+(bin*binsize);
         ahroutine(sb, upto)
       }
 
       ## now, add too high
-      ahroutine(shigh, +Inf)
+      if (nrow(dset[shigh,]) != 0) {
+        ahroutine(shigh, +Inf)
+      }
     }
     write.csv(bset, ofile);
     if (nrow(rset) != 0) {
