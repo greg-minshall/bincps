@@ -289,7 +289,7 @@ seem to be in March of every year.)
 real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
 #+name: bincps
-#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var maxk=500 :var ofile="" :var ofsep="-" :var rfile="" :var fyear=-Inf :var lyear=+Inf
+#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+"
   ## if necessary, cons up an appropriate FNAME.  then, checks that
   ## FNAME doesn't already exist and that it is (potentially) writeable.
 
@@ -324,7 +324,6 @@ test file is: ./ipums/19712014.csv.gz
     return(fname)
   }
 
-
   bincps <- function(ifile,               # input file
                      min1999=0,           # minimum HHINCOME1999 (in USD)
                      max1999=500000,      # maximum HHINCOME1999 (in USD)
@@ -338,6 +337,11 @@ test file is: ./ipums/19712014.csv.gz
                      fyear=-Inf,          # first year to include
                      lyear=Inf            # last year to include
                      ) {
+    ## first, check if output files are okay
+    ofile <- dealwithoutputfilename(ifile, ofile, "output",
+                                    sprintf("%sbinned", ofset));
+    rfile <- dealwithoutputfilename(ifile, rfile, "report",
+                                    sprintf("%sbinned%sreport", ofset, ofset))
 
     x <- gzfile(ifile, open="r")
     dset <- read.csv(x, header=TRUE)
@@ -345,12 +349,6 @@ test file is: ./ipums/19712014.csv.gz
 
     ## get rid of records outside our years of interest (fyear, lyear)
     dset <- dset[dset$YEAR >= fyear & dset$YEAR <= lyear,]
-
-    ofile <- dealwithoutputfilename(ifile, ofile, "output",
-                                    sprintf("%sbinned", ofset));
-
-    rfile <- dealwithoutputfilename(ifile, rfile, "report",
-                                    sprintf("%sbinned%sreport", ofset, ofset))
 
                                           # now, convert all income to 1999 dollars
     dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
@@ -369,7 +367,7 @@ test file is: ./ipums/19712014.csv.gz
                                           # describe the negative incomes
       sy1 <- sy & dset$HHINCOME1999 < 0
       rset <- rbind(c(NROW=nrow(dset[sy1,]),
-                      summary(dset[sy1,]$HHINCOME1999)
+                      summary(dset[sy1,]$HHINCOME1999),
                       COMMENT="less than zero"))
                                           # now, kill them
       sy <- sy & dset$HHINCOME1999 >= 0
@@ -383,7 +381,7 @@ test file is: ./ipums/19712014.csv.gz
                                           # and, describe these
       s <- dset$HHINCOME1999 == maxk+1
       rset <- rbind(rset, c(NROW=nrow(dset[s,]),
-                            summary(dset[dset$BIN == maxk+1,]$HHINCOME1999)
+                            summary(dset[dset$BIN == maxk+1,]$HHINCOME1999),
                             COMMENT=sprintf("greater than %dK", maxk)))
 
                                           # (we don't describe *other*
@@ -435,10 +433,17 @@ test file is: ./ipums/19712014.csv.gz
     write.csv(bset, ofile);
   }
 
-  bincps(ifile, maxk, ofile, ofsep);
+  if (fyear == "-") {
+    fyear=-Inf
+  }
+  if (lyear == "+") {
+    lyear=+Inf
+  }
+  bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear);
 #+END_SRC
 
 #+RESULTS: bincps
+: Inf
 
 ** most occurring incomes
 
