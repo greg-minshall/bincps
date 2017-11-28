@@ -314,14 +314,18 @@ test file is: ./ipums/19712014.csv.gz
                      lyear=Inf            # last year to include
                      ) {
     x <- gzfile(ifile, open="r")
+    print(c("about to read.csv", date()))
     dset <- read.csv(x, header=TRUE)
+    print(c("done with read.csv", date()))
     close(x)
 
     if (nrow(dset) == 0) {
       stop(sprintf("no data in dataset \"%s\"", ifile))
     }
     ## get rid of records outside our years of interest (fyear, lyear)
-    dset <- dset[dset$YEAR >= fyear & dset$YEAR <= lyear,]
+    if ((fyear != -Inf) || (lyear != Inf)) {
+      dset <- dset[dset$YEAR >= fyear & dset$YEAR <= lyear,]
+    }
 
     if (nrow(dset) == 0) {
       stop(sprintf("no data in dataset \"%s\" for years between %g and %g",
@@ -347,32 +351,33 @@ test file is: ./ipums/19712014.csv.gz
     ## is called to enter rows into the output table (and, can access --
     ## read and write -- our variables from the calling routine)
     ahroutine <- function(filter, upto) {
-      for (asecflag in unique(dset[filter,]$ASECFLAG)) {
+      for (asecflag in unique(yset[filter,]$ASECFLAG)) {
+        print(c(year, length(filter), length(yset[filter,]$ASECFLAG)))
         if (!is.na(asecflag)) {
-          sa <- filter & dset$ASECFLAG == asecflag
+          sa <- filter & yset[filter,]$ASECFLAG == asecflag
         } else {
-          sa <- filter & is.na(dset$ASECFLAG)
+              sa <- filter & is.na(yset[filter,]$ASECFLAG)
         }
-        for (hflag in unique(dset[sa,]$HFLAG)) {
+        for (hflag in unique(yset[sa,]$HFLAG)) {
           if (!is.na(hflag)) {
-            sh <- sa & dset$HFLAG == hflag
+            sh <- sa & yset[sa,]$HFLAG == hflag
           } else {
-            sh <- sa & is.na(dset$ASECFLAG)
+            sh <- sa & is.na(yset[sa,]$ASECFLAG)
           }
-          if (nrow(dset[sh,]) != 0) {
+          if (nrow(yset[sh,]) != 0) {
             ## *finally* -- do something!
-            month <- unique(dset[sh,]$MONTH);
+            month <- unique(yset[sh,]$MONTH);
             if (length(month) > 1) {
               month <- NA
             }
             bset <<- rbind(bset,
                            data.frame(YEAR=year,
-                                      HWTSUPP=sum(dset[sh,]$HWTSUPP),
+                                      HWTSUPP=sum(yset[sh,]$HWTSUPP),
                                       ASECFLAG=asecflag,
                                       HFLAG=hflag,
                                       UPTOHHINCOME1999=upto,
                                       MONTH=month,
-                                      WTSUPP=sum(dset[sh,]$WTSUPP)))
+                                      WTSUPP=sum(yset[sh,]$WTSUPP)))
           }
         }
       }
@@ -381,30 +386,31 @@ test file is: ./ipums/19712014.csv.gz
     bset <- data.frame()
     rset <- data.frame()
     for (year in sort(unique(dset$YEAR))) {
-      sy <- dset$YEAR == year
-      print(c(year, date()))
+      yset <- dset[dset$YEAR == year,]
+      sy <- yset$YEAR == year
+      print(c(year, date(), nrow(yset), length(sy)))
 
       ## describe and enter the negative incomes
-      slowbit <- dset[sy,]$HHINCOME1999 < min1999
+      slowbit <- yset[sy,]$HHINCOME1999 < min1999
       comment <- sprintf("less than %02f", min1999);
       slow <- sy & slowbit
-      if (nrow(dset[slow,]) != 0) {
+      if (nrow(yset[slow,]) != 0) {
         ahroutine(slow, -Inf)             # enter (these) row(s)
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
-                                           NROW=nrow(dset[slow,]),
-                                           summary(dset[slow,]$HHINCOME1999),
+                                           NROW=nrow(yset[slow,]),
+                                           summary(yset[slow,]$HHINCOME1999),
                                            COMMENT=comment))))
         sy <- sy & !slowbit               # now, kill them
       }
 
       ## now, describe too high incomes (and then enter them below)
-      shighbit <- dset[sy,]$HHINCOME1999 >= max1999
+      shighbit <- yset[sy,]$HHINCOME1999 >= max1999
       comment <- sprintf("greater than or equal to %02f", max1999);
       shigh <- sy & shighbit
-      if (nrow(dset[shigh,]) != 0) {
+      if (nrow(yset[shigh,]) != 0) {
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
-                                           NROW=nrow(dset[shigh,]),
-                                           summary(dset[shigh,]$HHINCOME1999),
+                                           NROW=nrow(yset[shigh,]),
+                                           summary(yset[shigh,]$HHINCOME1999),
                                            COMMENT=comment))))
         sy <- sy & !shighbit              # now, kill them
       }
@@ -414,13 +420,13 @@ test file is: ./ipums/19712014.csv.gz
       ## priori known limit.
 
       ## now, add all the bins
-      for (bin in sort(unique(dset[sy,]$RANGE))) {
-        sb <- sy & dset[sy,]$RANGE == bin
+      for (bin in sort(unique(yset[sy,]$RANGE))) {
+        sb <- sy & yset[sy,]$RANGE == bin
         ahroutine(sb, bin)
       }
 
       ## now, add too high
-      if (nrow(dset[shigh,]) != 0) {
+      if (nrow(yset[shigh,]) != 0) {
         ahroutine(shigh, +Inf)
       }
     }
@@ -483,12 +489,12 @@ test file is: ./ipums/19712014.csv.gz
     max1999 <- as.numeric(max1999)
   }
 
+  print("")
   bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999);
 #+END_SRC
 #+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+"
 
 #+RESULTS: bincps
-: Inf
 
 ** most occurring incomes
 
