@@ -385,7 +385,7 @@ test file is: ./ipums/19712014.csv.gz
       print(c(year, date()))
 
       ## describe and enter the negative incomes
-      slowbit <- dset$HHINCOME1999 < min1999
+      slowbit <- dset[sy,]$HHINCOME1999 < min1999
       comment <- sprintf("less than %02f", min1999);
       slow <- sy & slowbit
       if (nrow(dset[slow,]) != 0) {
@@ -398,7 +398,7 @@ test file is: ./ipums/19712014.csv.gz
       }
 
       ## now, describe too high incomes (and then enter them below)
-      shighbit <- dset$HHINCOME1999 >= max1999
+      shighbit <- dset[sy,]$HHINCOME1999 >= max1999
       comment <- sprintf("greater than or equal to %02f", max1999);
       shigh <- sy & shighbit
       if (nrow(dset[shigh,]) != 0) {
@@ -415,7 +415,7 @@ test file is: ./ipums/19712014.csv.gz
 
       ## now, add all the bins
       for (bin in sort(unique(dset[sy,]$RANGE))) {
-        sb <- sy & dset$RANGE == bin
+        sb <- sy & dset[sy,]$RANGE == bin
         ahroutine(sb, bin)
       }
 
