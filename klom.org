@@ -350,7 +350,7 @@ test file is: ./ipums/19712014.csv.gz
     ## working in org-mode when running code via C-c C-c).  this routine
     ## is called to enter rows into the output table (and, can access --
     ## read and write -- our variables from the calling routine)
-    ahroutine <- function(filter, upto) {
+    ahroutine <- function(filter, upto, cpi99) {
       for (asecflag in unique(yset[filter,]$ASECFLAG)) {
         if (!is.na(asecflag)) {
           sa <- filter & yset$ASECFLAG == asecflag
@@ -365,16 +365,21 @@ test file is: ./ipums/19712014.csv.gz
           }
           if (nrow(yset[sh,]) != 0) {
             ## *finally* -- do something!
-            month <- unique(yset[sh,]$MONTH);
+            month <- unique(yset[sh,]$MONTH)
             if (length(month) > 1) {
               month <- NA
+            }
+            cpi99 <- unique(yset[sh,]$CPI99)
+            if (length(cpi99) > 1) {
+              cpi99 <- NA
             }
             bset <<- rbind(bset,
                            data.frame(YEAR=year,
                                       HWTSUPP=sum(yset[sh,]$HWTSUPP),
                                       ASECFLAG=asecflag,
                                       HFLAG=hflag,
-                                      UPTOHHINCOME1999=upto,
+                                      UPTOHHINCOME99=upto,
+                                      CPI99=cpi99,
                                       MONTH=month,
                                       WTSUPP=sum(yset[sh,]$WTSUPP)))
           }
@@ -388,6 +393,19 @@ test file is: ./ipums/19712014.csv.gz
       yset <- dset[dset$YEAR == year,]
       sy <- yset$YEAR == year
       print(c(year, date()))
+
+      ## describe and enter NA incomes
+      snabit <- is.na(yset$HHINCOME1999)
+      comment <- "income not provided"
+      sna <- sy & snabit
+      if (nrow(yset[sna,]) != 0) {
+        ahroutine(sna, NA)                # enter (these) row(s)
+        rset <- rbind(rset, data.frame(t(c(YEAR=year,
+                                           NROW=nrow(yset[sna,]),
+                                           summary(yset[sna,]$HHINCOME1999),
+                                           COMMENT=comment))))
+        sy <- sy & !snabit                # now, kill them
+      }
 
       ## describe and enter the negative incomes
       slowbit <- yset[sy,]$HHINCOME1999 < min1999
@@ -430,6 +448,7 @@ test file is: ./ipums/19712014.csv.gz
       }
     }
     write.csv(bset, ofile);
+    gset <<- bset
     if (nrow(rset) != 0) {
       write.csv(rset, rfile)
     }
