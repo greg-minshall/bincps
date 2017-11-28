@@ -352,17 +352,16 @@ test file is: ./ipums/19712014.csv.gz
     ## read and write -- our variables from the calling routine)
     ahroutine <- function(filter, upto) {
       for (asecflag in unique(yset[filter,]$ASECFLAG)) {
-        print(c(year, length(filter), length(yset[filter,]$ASECFLAG)))
         if (!is.na(asecflag)) {
-          sa <- filter & yset[filter,]$ASECFLAG == asecflag
+          sa <- filter & yset$ASECFLAG == asecflag
         } else {
-              sa <- filter & is.na(yset[filter,]$ASECFLAG)
+              sa <- filter & is.na(yset$ASECFLAG)
         }
         for (hflag in unique(yset[sa,]$HFLAG)) {
           if (!is.na(hflag)) {
-            sh <- sa & yset[sa,]$HFLAG == hflag
+            sh <- sa & yset$HFLAG == hflag
           } else {
-            sh <- sa & is.na(yset[sa,]$ASECFLAG)
+            sh <- sa & is.na(yset$ASECFLAG)
           }
           if (nrow(yset[sh,]) != 0) {
             ## *finally* -- do something!
@@ -388,7 +387,7 @@ test file is: ./ipums/19712014.csv.gz
     for (year in sort(unique(dset$YEAR))) {
       yset <- dset[dset$YEAR == year,]
       sy <- yset$YEAR == year
-      print(c(year, date(), nrow(yset), length(sy)))
+      print(c(year, date()))
 
       ## describe and enter the negative incomes
       slowbit <- yset[sy,]$HHINCOME1999 < min1999
@@ -421,7 +420,7 @@ test file is: ./ipums/19712014.csv.gz
 
       ## now, add all the bins
       for (bin in sort(unique(yset[sy,]$RANGE))) {
-        sb <- sy & yset[sy,]$RANGE == bin
+        sb <- sy & yset$RANGE == bin
         ahroutine(sb, bin)
       }
 
