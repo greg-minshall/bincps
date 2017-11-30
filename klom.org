@@ -842,20 +842,38 @@ so, what are the most occurring incomes?
 
 ** display
 
+some cribbed from "everylittlebit" above.
+
 #+BEGIN_SRC R :session ss
   require(ggplot2)
+
+  docums <- function (s) {
+    cumwtsupp = sum(dset[s,]$WTSUPP)
+    dset[s,]$CUMWTSUPP <<- cumsum(dset[s,]$WTSUPP)
+    dset[s,]$CUMPCTWTSUPP <<- dset[s,]$CUMWTSUPP/cumwtsupp
+    cumhwtsupp = sum(dset[s,]$HWTSUPP)
+    dset[s,]$CUMHWTSUPP <<- cumsum(dset[s,]$HWTSUPP)
+    dset[s,]$CUMPCTHWTSUPP <<- dset[s,]$CUMHWTSUPP/cumhwtsupp
+  }  
 
   data <- read.csv("~/work/misc/econ/kblom/ipums/cps_00006.1962-2017-binned.csv")
 
   data$YEAR <- as.factor(data$YEAR)
 
+  ## binsize?  to figure this out, we look at the smallest difference
+  ## between successive UPTOHHINCOME99
+  x <- data$UPTOHHINCOME99
+  y <- unique(c(x[2,length(x)], NA) - x)
+  binsize <- min(y, na.rm=TRUE)
+
   MAX99 <- 500000
+  MIN99 <- 0
 
-  datalow <- data[data$UPTOHHINCOME99 < 0,]
+  datalow <- data[data$UPTOHHINCOME99 < MIN99,]
   datahigh <- data[data$UPTOHHINCOME99 > MAX99,]
-  data <- data[data$UPTOHHINCOME99 >= 0 & data$UPTOHHINCOME99 <= MAX99,]
+  data <- data[data$UPTOHHINCOME99 >= MIN99 & data$UPTOHHINCOME99 <= MAX99,]
 
-  ## XXX should make sure we are using 1000
+  ## XXX should make sure we are using MIN99+1000
   data[1,]$WTSUPP <- data[1,]$WTSUPP + sum(datalow$WTSUPP)
   data[1,]$HWTSUPP <- data[1,]$HWTSUPP + sum(datalow$HWTSUPP)
 
