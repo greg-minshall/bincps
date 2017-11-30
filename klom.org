@@ -205,6 +205,8 @@ Attach data from mother, father, spouse or household head as a new
 variable (for example, education of mother).  Describe your extract
 #+end_quote
 
+[[http://www.gapminder.org/data/][gapminder]] is another source of data in the world.
+
 ** deflating
 
 need to change from nominal to real dollars.  [[https://www.dallasfed.org/research/basics/nominal.cfm][Dallas Fed]] has some
@@ -783,7 +785,6 @@ so, the number of people processed per seconds
 | 2017 | 8450.63636363636 |
 
 
-
 ** most occurring incomes
 
 question:
@@ -838,3 +839,37 @@ so, what are the most occurring incomes?
  [1] 1821 1553 1270 1193 1176 1163 1070 1026  913  854  827  826  825  767  761
 [16]  758  746  745  717  694  668  598  595  593  576  555  540  538  523  508
 #+END_EXAMPLE
+
+** display
+
+#+BEGIN_SRC R :session ss
+  require(ggplot2)
+
+  data <- read.csv("~/work/misc/econ/kblom/ipums/cps_00006.1962-2017-binned.csv")
+
+  data$YEAR <- as.factor(data$YEAR)
+
+  MAX99 <- 500000
+
+  datalow <- data[data$UPTOHHINCOME99 < 0,]
+  datahigh <- data[data$UPTOHHINCOME99 > MAX99,]
+  data <- data[data$UPTOHHINCOME99 >= 0 & data$UPTOHHINCOME99 <= MAX99,]
+
+  ## XXX should make sure we are using 1000
+  data[1,]$WTSUPP <- data[1,]$WTSUPP + sum(datalow$WTSUPP)
+  data[1,]$HWTSUPP <- data[1,]$HWTSUPP + sum(datalow$HWTSUPP)
+
+  ## XXX should make sure we are using MAX99...
+  data[nrow(data),]$WTSUPP <- data[nrow(data),]$WTSUPP + sum(datahigh$WTSUPP)
+  data[nrow(data),]$HWTSUPP <- data[nrow(data),]$HWTSUPP + sum(datahigh$HWTSUPP)
+
+  data <- data[is.na(data$HFLAG) | data$HFLAG == 0,]
+
+  ## https://stackoverflow.com/a/12762919
+  ggplot(data, aes(UPTOHHINCOME99, colour = YEAR)) + stat_ecdf()
+
+
+#+END_SRC
+
+#+RESULTS:
+
