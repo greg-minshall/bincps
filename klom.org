@@ -302,23 +302,29 @@ test file is: ./ipums/19712014.csv.gz
   ## NB: as a side effect of testing writeability, on a successful
   ## return, FNAME *will* exist (but, be empty).
   bincps <- function(ifile,              # input file
-                     min1999=-Inf,       # minimum HHINCOME1999 (in USD)
-                     max1999=Inf,        # maximum HHINCOME1999 (in USD)
-                     ## things < min1999, > max1999 are included in separate bins
-                     binsize=1000,        # size of bins
-                     ofile="",            # output csv file ("" ==>
-                                          # compute from ifile)
-                     ofsep="-",           # separator (when ofile or rfile blank)
-                     rfile="",            # output report file (see ofile)
-                     fyear=-Inf,          # first year to include
-                     lyear=Inf            # last year to include
+                     ...
                      ) {
     x <- gzfile(ifile, open="r")
     print(c("about to read.csv", date()))
-    dset <- read.csv(x, header=TRUE)
+    dset <<- read.csv(x, header=TRUE)
     print(c("done with read.csv", date()))
     close(x)
+    bincps1(ifile, dset, ...)
+  }
 
+  bincps1 <- function(ifile,             # input file
+                      dset,              # data set
+                      min1999=-Inf,      # minimum HHINCOME1999 (in USD)
+                      max1999=Inf,       # maximum HHINCOME1999 (in USD)
+                      ## things < min1999, > max1999 are included in separate bins
+                      binsize=1000,       # size of bins
+                      ofile="",           # output csv file ("" ==>
+                                          # compute from ifile)
+                      ofsep="-", # separator (when ofile or rfile blank)
+                      rfile="",  # output report file (see ofile)
+                      fyear=-Inf,         # first year to include
+                      lyear=Inf           # last year to include
+                     ) {
     if (nrow(dset) == 0) {
       stop(sprintf("no data in dataset \"%s\"", ifile))
     }
@@ -350,7 +356,11 @@ test file is: ./ipums/19712014.csv.gz
     ## working in org-mode when running code via C-c C-c).  this routine
     ## is called to enter rows into the output table (and, can access --
     ## read and write -- our variables from the calling routine)
-    ahroutine <- function(filter, upto, cpi99) {
+    ahroutine <- function(filter, upto) {
+      if (FALSE) {
+        print(sprintf("ahroutine, year %d, nrow filter %d, upto %g, nrow bset %d",
+                      year, nrow(yset[filter,]), upto, nrow(bset)))
+      }
       for (asecflag in unique(yset[filter,]$ASECFLAG)) {
         if (!is.na(asecflag)) {
           sa <- filter & yset$ASECFLAG == asecflag
@@ -361,7 +371,7 @@ test file is: ./ipums/19712014.csv.gz
           if (!is.na(hflag)) {
             sh <- sa & yset$HFLAG == hflag
           } else {
-            sh <- sa & is.na(yset$ASECFLAG)
+            sh <- sa & is.na(yset$HFLAG)
           }
           if (nrow(yset[sh,]) != 0) {
             ## *finally* -- do something!
@@ -448,7 +458,6 @@ test file is: ./ipums/19712014.csv.gz
       }
     }
     write.csv(bset, ofile);
-    gset <<- bset
     if (nrow(rset) != 0) {
       write.csv(rset, rfile)
     }
@@ -508,7 +517,7 @@ test file is: ./ipums/19712014.csv.gz
   }
 
   print("")
-  bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999);
+  bincps1(ifile=ifile, dset, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999);
 #+END_SRC
 #+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+"
 
