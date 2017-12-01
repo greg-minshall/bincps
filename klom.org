@@ -786,7 +786,6 @@ so, the number of people processed per seconds
 | 2016 | 8431.22727272727 |
 | 2017 | 8450.63636363636 |
 
-
 ** most occurring incomes
 
 question:
@@ -895,7 +894,37 @@ second the number of elements.
 
 some cribbed from "everylittlebit" above.
 
-#+BEGIN_SRC R :session ss
+this process takes a binned file (e.g., as produced by bincps above),
+and produces yet another binned file, allowing one to clamp the
+maximum or minimum brackets.  portions of the population with incomes
+lower (resp. higher) than the brackets can be either discarded, or
+included in the first (resp. last) last bracket.
+
+one issue the light of which i haven't seen: should reports of less
+than MIN99, greater than or equal to MAX99, be inserted as comments in
+the output .csv file, or output to a separate file (rfile, in bincps),
+or printed on the console?
+
+the argument for including such reports in the .csv file is that, in
+this case, the .csv file becomes self-describing.  (there's a bit of
+self-description in the file name, and more could be put there, though
+after a while that becomes very awkward.)  self-describing data sets
+are a "GOOD THING".
+
+the argument against including such reports in the .csv file is that
+then a pure "read.csv(ifile)" won't work, as read.csv assumes one
+doesn't use comments in .csv files (defaults to comment.char="").
+while one can document (even in a comment in the .csv file itself!)
+that the .csv file contains comments and that in, e.g., R, one needs
+to call read.csv(..., comment.char="#"); however, a certain percentage
+of potential users will get lost before finding that message and will
+give up.  (presumably those same users -- plus, probably, a much
+broader class of users -- won't think of looking inside the .csv file,
+so won't see the comments describing the file, so won't be helped by
+those.
+
+#+name: bin2bin
+#+BEGIN_SRC R :session ss :var ifile="~/work/misc/econ/kblom/ipums/cps_00006.1962-2017-binned.csv" :var MAX99=500000 :var MIN99=0 :var include=1
   require(ggplot2)
 
   ## parameters
@@ -916,6 +945,8 @@ some cribbed from "everylittlebit" above.
 
   data$YEAR <- as.factor(data$YEAR)
 
+  data <- data[order(data$HHBRACKET99),]  # sort our input
+
   ## binsize?  to figure this out, we look at the smallest difference
   ## between successive HHBRACKET99's
   x <- data$HHBRACKET99                   # brackets
@@ -924,6 +955,11 @@ some cribbed from "everylittlebit" above.
   if (is.na(binsize)) {
     stop(sprintf("unable to compute binsize of input file \"%s\"", ifile))
   }
+
+  ## 2014 had a trial with HFLAG==1; both HFLAG==0 and HFLAG==1 were
+  ## scaled ([H]WTSUPP) such that either would represent the entire US
+  ## population.  we stick with the traditional.
+  data <- data[is.na(data$HFLAG) | data$HFLAG == 0,]
 
   datalow <- data[data$HHBRACKET99 < MIN99,]
   datahigh <- data[data$HHBRACKET99 > MAX99,]
@@ -937,13 +973,6 @@ some cribbed from "everylittlebit" above.
   data[nrow(data),]$WTSUPP <- data[nrow(data),]$WTSUPP + sum(datahigh$WTSUPP)
   data[nrow(data),]$HWTSUPP <- data[nrow(data),]$HWTSUPP + sum(datahigh$HWTSUPP)
 
-  ## 2014 had a trial with HFLAG==1; both HFLAG==0 and HFLAG==1 were
-  ## scaled ([H]WTSUPP) such that either would represent the entire US
-  ## population.  we stick with the traditional.
-  data <- data[is.na(data$HFLAG) | data$HFLAG == 0,]
-
-  # cumulative sums of [H]WTSUPP (relies on being ordered)
-  data <- cbind(data, CUMWTSUPP=0, CUMPCTWTSUPP=0, CUMHWTSUPP=0, CUMPCTHWTSUPP=0)
   # https://stackoverflow.com/a/32487458 on computing cumpct
   for (year in unique(data$YEAR)) {
     s <- data$YEAR == year & (is.na(data$HFLAG) | data$HFLAG==0)
