@@ -283,6 +283,8 @@ real file is: ./ipums/cps_00006.csv.gz
   }
 #+END_SRC
 
+#+RESULTS: everylittlebit
+
 ** bincps
 
 what we want to do is create a file which is a "binned" version of the
@@ -390,7 +392,7 @@ test file is: ./ipums/19712014.csv.gz
                                       HWTSUPP=sum(yset[sh,]$HWTSUPP),
                                       ASECFLAG=asecflag,
                                       HFLAG=hflag,
-                                      UPTOHHINCOME99=upto,
+                                      HHBRACKET99=upto,
                                       CPI99=cpi99,
                                       MONTH=month,
                                       WTSUPP=sum(yset[sh,]$WTSUPP)))
@@ -842,10 +844,59 @@ so, what are the most occurring incomes?
 
 ** display
 
+we need a summary routine for binned objects.  each bin has a "value"
+as well as a number of elements with that value.  we compute the same
+objects as summary(): Min, 1st Qu., Median, Mean, 3rd Qu., Max
+
+the input is a matrix with 2 columns, the first being the value, the
+second the number of elements.
+
+#+name: summary.binned
+#+BEGIN_SRC R
+  summary.binned <- function(m) {
+    print(m)
+    if (is.null(ncol(m))) {
+      stop("summary.binned: argument has no columns")
+    } else if (ncol(m) < 2) {
+      stop("summary.binned needs a dataframe or matrix with at least two columns")
+    } else if (is.null(nrow(m))) {
+      ## if something has columns, does it have rows?
+      stop("summary.binned: argument has no rows")
+    } else if (!is.numeric(m)) {
+      stop("summary.binned: columns of argument must be numeric")
+    }
+    result <- c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA)
+    colnames(m) <- c("value", "quantity")
+    m <- m[order(m["value"]),]                 # sort our input
+    result["Min"] <- m["value"][1]             # minimum value
+    result["Max"] <- m["value"][nrow(m)]       # maximum value
+    vsum <- sum(m["value"]*m["quantity"])         # sum of the lot
+    population <- sum(m["quantity"])           # number in population
+    result["Mean"] <- vsum/population       # average value
+    ## now the order statistics
+    m <- cbind(m, cumq=cumsum(m["quantity"])) # get cumulative sum
+    ## so we can use findInterval
+    i <- findInterval(c(population/4, population/2, 3*population/4), m["cumq"])
+    if ((i < 1) || (i > nrow(m))) {
+      stop("internval error")             # pun intended
+    }
+    result["1st Qu."] <- m["value"][i[1]]
+    result["Median"] <- m["value"][i[2]]
+    result["3rd Qu."] <- m["value"][i[3]]
+
+    return(result)
+  }
+#+END_SRC
+
 some cribbed from "everylittlebit" above.
 
 #+BEGIN_SRC R :session ss
   require(ggplot2)
+
+  ## parameters
+  MAX99 <- 500000
+  MIN99 <- 0
+  ifile <- "~/work/misc/econ/kblom/ipums/cps_00006.1962-2017-binned.csv"
 
   docums <- function (s) {
     cumwtsupp = sum(dset[s,]$WTSUPP)
@@ -856,24 +907,24 @@ some cribbed from "everylittlebit" above.
     dset[s,]$CUMPCTHWTSUPP <<- dset[s,]$CUMHWTSUPP/cumhwtsupp
   }  
 
-  data <- read.csv("~/work/misc/econ/kblom/ipums/cps_00006.1962-2017-binned.csv")
+  data <- read.csv(ifile)
 
   data$YEAR <- as.factor(data$YEAR)
 
   ## binsize?  to figure this out, we look at the smallest difference
-  ## between successive UPTOHHINCOME99
-  x <- data$UPTOHHINCOME99
-  y <- unique(c(x[2,length(x)], NA) - x)
-  binsize <- min(y, na.rm=TRUE)
+  ## between successive HHBRACKET99's
+  x <- data$HHBRACKET99                   # brackets
+  y <- unique(c(x[2,length(x)], NA) - x)  # list of unique deltas + NA
+  binsize <- min(y, na.rm=TRUE)           # take min, ignoring NA
+  if (is.na(binsize)) {
+    stop(sprintf("unable to compute binsize of input file \"%s\"", ifile))
+  }
 
-  MAX99 <- 500000
-  MIN99 <- 0
+  datalow <- data[data$HHBRACKET99 < MIN99,]
+  datahigh <- data[data$HHBRACKET99 > MAX99,]
+  data <- data[data$HHBRACKET99 >= MIN99 & data$HHBRACKET99 <= MAX99,]
 
-  datalow <- data[data$UPTOHHINCOME99 < MIN99,]
-  datahigh <- data[data$UPTOHHINCOME99 > MAX99,]
-  data <- data[data$UPTOHHINCOME99 >= MIN99 & data$UPTOHHINCOME99 <= MAX99,]
-
-  ## XXX should make sure we are using MIN99+1000
+  ## XXX should make sure we are using MIN99+binsize
   data[1,]$WTSUPP <- data[1,]$WTSUPP + sum(datalow$WTSUPP)
   data[1,]$HWTSUPP <- data[1,]$HWTSUPP + sum(datalow$HWTSUPP)
 
@@ -881,10 +932,24 @@ some cribbed from "everylittlebit" above.
   data[nrow(data),]$WTSUPP <- data[nrow(data),]$WTSUPP + sum(datahigh$WTSUPP)
   data[nrow(data),]$HWTSUPP <- data[nrow(data),]$HWTSUPP + sum(datahigh$HWTSUPP)
 
+  ## 2014 had a trial with HFLAG==1; both HFLAG==0 and HFLAG==1 were
+  ## scaled ([H]WTSUPP) such that either would represent the entire US
+  ## population.  we stick with the traditional.
   data <- data[is.na(data$HFLAG) | data$HFLAG == 0,]
 
+  # cumulative sums of [H]WTSUPP (relies on being ordered)
+  data <- cbind(data, CUMWTSUPP=0, CUMPCTWTSUPP=0, CUMHWTSUPP=0, CUMPCTHWTSUPP=0)
+  # https://stackoverflow.com/a/32487458 on computing cumpct
+  for (year in unique(data$YEAR)) {
+    s <- data$YEAR == year & (is.na(data$HFLAG) | data$HFLAG==0)
+    docums(s)
+    s <- data$YEAR == year & (!is.na(data$HFLAG)) & data$HFLAG==1
+    docums(s)
+  }
+
+
   ## https://stackoverflow.com/a/12762919
-  ggplot(data, aes(UPTOHHINCOME99, colour = YEAR)) + stat_ecdf()
+  ggplot(data, aes(HHBRACKET99, colour = YEAR)) + stat_ecdf()
 
 
 #+END_SRC
