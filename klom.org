@@ -864,25 +864,30 @@ second the number of elements.
       stop("summary.binned: argument has no rows")
     } else if (!is.numeric(m)) {
       stop("summary.binned: columns of argument must be numeric")
+    } else if (any(is.na(m))) {
+      stop("summary.binned: doesn't work with NA")
     }
     result <- c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA)
     colnames(m) <- c("value", "quantity")
-    m <- m[order(m["value"]),]                 # sort our input
-    result["Min"] <- m["value"][1]             # minimum value
-    result["Max"] <- m["value"][nrow(m)]       # maximum value
-    vsum <- sum(m["value"]*m["quantity"])         # sum of the lot
-    population <- sum(m["quantity"])           # number in population
-    result["Mean"] <- vsum/population       # average value
+    print(m)
+    m <- m[order(m[,"value"]),]            # sort our input
+    print(m)
+    result["Min"] <- m[1,"value"]         # minimum value
+    result["Max"] <- m[nrow(m), "value"]  # maximum value
+    vsum <- sum(m[,"value"]*m[,"quantity"]) # sum of the lot
+    population <- sum(m[,"quantity"])      # number in population
+    result["Mean"] <- vsum/population     # average value
     ## now the order statistics
-    m <- cbind(m, cumq=cumsum(m["quantity"])) # get cumulative sum
+    m <- cbind(m, cumq=cumsum(m[,"quantity"])) # get cumulative sum of population
+    print(m)
     ## so we can use findInterval
-    i <- findInterval(c(population/4, population/2, 3*population/4), m["cumq"])
+    i <- findInterval(c(population/4, population/2, 3*population/4), m[,"cumq"])
     if ((i < 1) || (i > nrow(m))) {
-      stop("internval error")             # pun intended
+      stop(sprintf("summary.binned internval error") # pun intended
     }
-    result["1st Qu."] <- m["value"][i[1]]
-    result["Median"] <- m["value"][i[2]]
-    result["3rd Qu."] <- m["value"][i[3]]
+    result["1st Qu."] <- m[i[1], "value"]
+    result["Median"] <- m[i[2], "value"]
+    result["3rd Qu."] <- m[i[3], "value"]
 
     return(result)
   }
