@@ -877,17 +877,17 @@ second the number of elements.
     vsum <- sum(m[,"value"]*m[,"quantity"]) # sum of the lot
     population <- sum(m[,"quantity"])      # number in population
     result["Mean"] <- vsum/population     # average value
-    ## now the order statistics
-    m <- cbind(m, cumq=cumsum(m[,"quantity"])) # get cumulative sum of population
-    print(m)
-    ## so we can use findInterval
-    i <- findInterval(c(population/4, population/2, 3*population/4), m[,"cumq"])
+    Fn <- ecdf(m[,"quantity"]);           # get ecdf
+    ## compute ecdf for order statistics
+    i <- c(q1=Fn(population/4), md=Fn(population/2), q3=Fn(3*population/4))
+    ## after above, 0 <= i < 1 (s/b!)
+    i <- (i*nrow(m))+1                    # so, now, 1 <= i <= nrow(m)
     if ((i < 1) || (i > nrow(m))) {
-      stop(sprintf("summary.binned internval error") # pun intended
+      stop(sprintf("summary.binned internval error")) # pun intended
     }
-    result["1st Qu."] <- m[i[1], "value"]
-    result["Median"] <- m[i[2], "value"]
-    result["3rd Qu."] <- m[i[3], "value"]
+    result["1st Qu."] <- m[Fn(population/4)*nrow(m), "value"]
+    result["Median"] <- m[Fn(population/2)*nrow(m), "value"]
+    result["3rd Qu."] <- m[Fn(3*population/4)*nrow(m), "value"]
 
     return(result)
   }
