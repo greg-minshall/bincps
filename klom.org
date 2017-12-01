@@ -286,6 +286,9 @@ real file is: ./ipums/cps_00006.csv.gz
 #+RESULTS: everylittlebit
 
 ** bincps
+   :PROPERTIES:
+   :ORDERED:  t
+   :END:
 
 what we want to do is create a file which is a "binned" version of the
 full-detail file.  this includes "rolling up" the [H]WTSUPP columns by
@@ -299,7 +302,7 @@ seem to be in March of every year.)
 real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
 #+name: bincps
-#+BEGIN_SRC R :session ss :var ifile="./ipums/cps_00006.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+" :var min1999="-" :var max1999="+"
+#+BEGIN_SRC R :session ss :var ifile="./ipums/cps_00006.1962-2017-binned.csv" :var ofile="foo.csv" :var ofsep="-" :var rfile="goo.csv" :var fyear="-" :var lyear="+" :var min1999="-" :var max1999="+"
   ## if necessary, cons up an appropriate FNAME.  then, checks that
   ## FNAME doesn't already exist and that it is (potentially) writeable.
 
@@ -308,18 +311,22 @@ test file is: ./ipums/19712014.csv.gz
   bincps <- function(ifile,              # input file
                      ...
                      ) {
-    x <- gzfile(ifile, open="r")
     print(c("about to read.csv", date()))
-    dset <<- read.csv(x, header=TRUE)
+    dset <<- read.csv(ifile, header=TRUE)
     print(c("done with read.csv", date()))
-    close(x)
-    bincps1(ifile, dset, ...)
+    rval <- bincps1(ifile, dset, ...)
+    bset <- rval[[1]]
+    rset <- rval[[2]]
+    write.csv(bset, ofile, row.names=F);
+    if (nrow(rset) != 0) {
+      write.csv(rset, rfile, row.names=F)
+    }
   }
 
-  bincps1 <- function(ifile,             # input file
-                      dset,              # data set
-                      min1999=-Inf,      # minimum HHINCOME1999 (in USD)
-                      max1999=Inf,       # maximum HHINCOME1999 (in USD)
+  bincps1 <- function(ifile,        # input file
+                      dset,         # data set
+                      min1999=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
+                      max1999=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
                       ## things < min1999, > max1999 are included in separate bins
                       binsize=1000,       # size of bins
                       ofile="",           # output csv file ("" ==>
@@ -350,20 +357,28 @@ test file is: ./ipums/19712014.csv.gz
     rfile <- dealwithoutputfilename(ifile, rfile, "report",
                                     sprintf("%s%sreport", orlabel, ofsep))
 
-                                          # now, convert all income to 1999 dollars
-    dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
+    ## we may be running on "raw" (via ipums) census data, or we may be
+    ## looking at output of a previous run (already binned).  which is it?
+    income99 <- "HHBRACKET99"
+    if (is.element("HHINCOME", colnames(dset))) {
+      income99 <- "HHINCOME99"
+      ## now, convert all income to 1999 dollars
+      dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
+    } else if (!is.element("HHBRACKET99", colnames(dset))) {
+      stop("bincps: input has neither HHINCOME (raw) or HHBRACKET99 (output of previous run")
+    }
 
     ## now, get *all* the bins...
-    dset <- cbind(dset, RANGE=(floor(dset$HHINCOME1999/binsize)*binsize)+binsize)
+    dset <- cbind(dset, RANGE=(floor(dset[,income99]/binsize)*binsize)+binsize)
 
     ## this is in lieu of a macro facility in R (or in lieu of <<noweb>>
     ## working in org-mode when running code via C-c C-c).  this routine
     ## is called to enter rows into the output table (and, can access --
     ## read and write -- our variables from the calling routine)
-    ahroutine <- function(filter, upto) {
+    ahroutine <- function(filter, bracket) {
       if (FALSE) {
-        print(sprintf("ahroutine, year %d, nrow filter %d, upto %g, nrow bset %d",
-                      year, nrow(yset[filter,]), upto, nrow(bset)))
+        print(sprintf("ahroutine, year %d, nrow filter %d, bracket %g, nrow bset %d",
+                      year, nrow(yset[filter,]), bracket, nrow(bset)))
       }
       for (asecflag in unique(yset[filter,]$ASECFLAG)) {
         if (!is.na(asecflag)) {
@@ -392,7 +407,7 @@ test file is: ./ipums/19712014.csv.gz
                                       HWTSUPP=sum(yset[sh,]$HWTSUPP),
                                       ASECFLAG=asecflag,
                                       HFLAG=hflag,
-                                      HHBRACKET99=upto,
+                                      HHBRACKET99=bracket,
                                       CPI99=cpi99,
                                       MONTH=month,
                                       WTSUPP=sum(yset[sh,]$WTSUPP)))
@@ -409,39 +424,39 @@ test file is: ./ipums/19712014.csv.gz
       print(c(year, date()))
 
       ## describe and enter NA incomes
-      snabit <- is.na(yset$HHINCOME1999)
+      snabit <- is.na(yset[,income99])
       comment <- "income not provided"
       sna <- sy & snabit
       if (nrow(yset[sna,]) != 0) {
         ahroutine(sna, NA)                # enter (these) row(s)
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
                                            NROW=nrow(yset[sna,]),
-                                           summary(yset[sna,]$HHINCOME1999),
+                                           summary(yset[sna,income99]),
                                            COMMENT=comment))))
         sy <- sy & !snabit                # now, kill them
       }
 
       ## describe and enter the negative incomes
-      slowbit <- yset[sy,]$HHINCOME1999 < min1999
+      slowbit <- yset[sy,income99] < min1999
       comment <- sprintf("less than %02f", min1999);
       slow <- sy & slowbit
       if (nrow(yset[slow,]) != 0) {
         ahroutine(slow, -Inf)             # enter (these) row(s)
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
                                            NROW=nrow(yset[slow,]),
-                                           summary(yset[slow,]$HHINCOME1999),
+                                           summary(yset[slow,income99]),
                                            COMMENT=comment))))
         sy <- sy & !slowbit               # now, kill them
       }
 
       ## now, describe too high incomes (and then enter them below)
-      shighbit <- yset[sy,]$HHINCOME1999 >= max1999
+      shighbit <- yset[sy,income99] >= max1999
       comment <- sprintf("greater than or equal to %02f", max1999);
       shigh <- sy & shighbit
       if (nrow(yset[shigh,]) != 0) {
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
                                            NROW=nrow(yset[shigh,]),
-                                           summary(yset[shigh,]$HHINCOME1999),
+                                           summary(yset[shigh,income99]),
                                            COMMENT=comment))))
         sy <- sy & !shighbit              # now, kill them
       }
@@ -461,10 +476,7 @@ test file is: ./ipums/19712014.csv.gz
         ahroutine(shigh, +Inf)
       }
     }
-    write.csv(bset, ofile);
-    if (nrow(rset) != 0) {
-      write.csv(rset, rfile)
-    }
+    return(list(bset, rset))
   }
 
   dealwithoutputfilename <- function(ifile, fname, use, lastbits) {
@@ -500,12 +512,12 @@ test file is: ./ipums/19712014.csv.gz
 
   if (fyear == "-") {
     fyear <- -Inf
-  } else {
+  } else if (!is.numeric(fyear)) {
     fyear <- as.integer(fyear)
   }
   if (lyear == "+") {
     lyear <- Inf
-  } else {
+  } else if (!is.numeric(lyear)) {
     lyear <- as.integer(lyear)
   }
 
@@ -521,8 +533,9 @@ test file is: ./ipums/19712014.csv.gz
   }
 
   print("")
-  bincps1(ifile=ifile, dset, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999);
+  bincps(ifile=ifile, dset, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999);
 #+END_SRC
+
 #+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+"
 
 #+RESULTS: bincps
@@ -987,6 +1000,8 @@ those.
 
 
 #+END_SRC
+
+#+RESULTS: bin2bin
 
 #+RESULTS:
 
