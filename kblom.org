@@ -471,7 +471,6 @@ test file is: ./ipums/19712014.csv.gz
 
       ## describe and enter NA incomes
       snabit <- is.na(yset[,income99])
-      commentna <- "income not provided"
       sna <- sy & snabit
       if (nrow(yset[sna,]) != 0) {
         ahroutine(sna, NA)                # enter (these) row(s)
@@ -479,13 +478,12 @@ test file is: ./ipums/19712014.csv.gz
                                            HWTSUPP=sum(yset[sna,]$HWTSUPP),
                                            WTSUPP=sum(yset[sna,]$WTSUPP),
                                            mysummary(yset[sna,income99]),
-                                           COMMENT=commentna))))
+                                           COMMENT="income not provided"))))
         sy <- sy & !snabit                # now, kill them
       }
 
       ## describe and enter the negative incomes
       slowbit <- yset[,income99] < min1999
-      commentlow <- sprintf("less than %d", min1999);
       slow <- sy & slowbit
       if (nrow(yset[slow,]) != 0) {
         ## enter (these) row(s)
@@ -498,20 +496,21 @@ test file is: ./ipums/19712014.csv.gz
                                            HWTSUPP=sum(yset[slow,]$HWTSUPP),
                                            WTSUPP=sum(yset[slow,]$WTSUPP),
                                            mysummary(yset[slow,income99]),
-                                           COMMENT=commentlow))))
+                                           COMMENT=sprintf("less than %d",
+                                             min1999)))))
         sy <- sy & !slowbit               # now, kill them
       }
 
       ## now, describe too high incomes (and then enter them below)
       shighbit <- yset[,income99] >= max1999
-      commenthigh <- sprintf("greater than or equal to %d", max1999);
       shigh <- sy & shighbit
       if (nrow(yset[shigh,]) != 0) {
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
                                            HWTSUPP=sum(yset[shigh,]$HWTSUPP),
                                            WTSUPP=sum(yset[shigh,]$WTSUPP),
                                            mysummary(yset[shigh,income99]),
-                                           COMMENT=commenthigh))))
+                                           COMMENT=sprintf("greater than or equal to %d",
+                                             max1999)))))
         sy <- sy & !shighbit              # now, kill them
       }
 
@@ -622,8 +621,6 @@ test file is: ./ipums/19712014.csv.gz
                       help="should bins for values below min1999 (resp. above max1999) appear as \"-Inf\" (resp. \"Inf\"); if not, they will be assigned bins just below min1999 (resp. just above max1999)")
 
     argv <- parse_args(p)
-
-    print(argv)
 
     bincps(ifile=argv$ifile,
            ofile=argv$ofile,
