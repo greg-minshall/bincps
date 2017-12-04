@@ -302,7 +302,7 @@ seem to be in March of every year.)
 real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
 #+name: bincps
-#+BEGIN_SRC R :session ss :var ifile="./ipums/save-cps_00006.1962-2017-binned.csv" :var ofile="foo.csv" :var ofsep="-" :var rfile="goo.csv" :var fyear="-" :var lyear="+" :var min1999=0 :var max1999=500000
+#+BEGIN_SRC R :session ss :var ifile="./ipums/save-cps_00006.1962-2017-binned.csv" :var ofile="foo.csv" :var ofsep="-" :var rfile="goo.csv" :var fyear="-" :var lyear="+" :var min1999=0 :var max1999=500000 :var binsize=10000
   bincps <- function(ifile,      # input file
                      ofile="",   # output csv file ("" ==>
                                           # compute from ifile)
@@ -367,9 +367,9 @@ test file is: ./ipums/19712014.csv.gz
 
     bset <- rval[[1]]
     rset <- rval[[2]]
-    write.csv(bset, ofile, row.names=F);
+    write.csv(bset, ofile, row.names=FALSE, quote=FALSE);
     if (nrow(rset) != 0) {
-      write.csv(rset, rfile, row.names=F)
+      write.csv(rset, rfile, row.names=FALSE, quote=FALSE)
     }
   }
 
@@ -440,11 +440,12 @@ test file is: ./ipums/19712014.csv.gz
       }
     }
 
+
     bset <- data.frame()
     rset <- data.frame()
     for (year in sort(unique(dset$YEAR))) {
       yset <- dset[dset$YEAR == year,]
-      sy <- yset$YEAR == year
+      sy <- TRUE                          # initially, take all in this year
       if (verbose > 0) {
         print(c(year, date()))
       }
@@ -460,39 +461,39 @@ test file is: ./ipums/19712014.csv.gz
 
       ## describe and enter NA incomes
       snabit <- is.na(yset[,income99])
-      comment <- "income not provided"
+      commentna <- "income not provided"
       sna <- sy & snabit
       if (nrow(yset[sna,]) != 0) {
         ahroutine(sna, NA)                # enter (these) row(s)
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
                                            NROW=nrow(yset[sna,]),
                                            mysummary(yset[sna,income99]),
-                                           COMMENT=comment))))
+                                           COMMENT=commentna))))
         sy <- sy & !snabit                # now, kill them
       }
 
       ## describe and enter the negative incomes
-      slowbit <- yset[sy,income99] < min1999
-      comment <- sprintf("less than %02f", min1999);
+      slowbit <- yset[,income99] < min1999
+      commentlow <- sprintf("less than %d", min1999);
       slow <- sy & slowbit
       if (nrow(yset[slow,]) != 0) {
         ahroutine(slow, -Inf)             # enter (these) row(s)
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
                                            NROW=nrow(yset[slow,]),
                                            mysummary(yset[slow,income99]),
-                                           COMMENT=comment))))
+                                           COMMENT=commentlow))))
         sy <- sy & !slowbit               # now, kill them
       }
 
       ## now, describe too high incomes (and then enter them below)
-      shighbit <- yset[sy,income99] >= max1999
-      comment <- sprintf("greater than or equal to %02f", max1999);
+      shighbit <- yset[,income99] >= max1999
+      commenthigh <- sprintf("greater than or equal to %d", max1999);
       shigh <- sy & shighbit
       if (nrow(yset[shigh,]) != 0) {
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
                                            NROW=nrow(yset[shigh,]),
                                            mysummary(yset[shigh,income99]),
-                                           COMMENT=comment))))
+                                           COMMENT=commenthigh))))
         sy <- sy & !shighbit              # now, kill them
       }
 
@@ -573,7 +574,7 @@ test file is: ./ipums/19712014.csv.gz
   }
 
   print("")
-  bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999);
+  bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999, binsize=binsize);
 #+END_SRC
 
 #+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+"
