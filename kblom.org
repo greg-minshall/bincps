@@ -1029,32 +1029,28 @@ second the number of elements with that value.
       stop("summary.binned: argument has no rows")
     }
     colnames(m) <- c("value", "quantity")
-    result <- c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA)
-    if (length(m[!is.na(m)]) == 0) {
-      return(result)                      # apparently, NA everywhere
+    if (length(m[!is.na(m)]) == 0) {      # apparently, NA everywhere
+      return(c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA))
     }
     if (!is.numeric(m[!is.na(m)])) {
       stop("summary.binned: columns of argument must be numeric")
     }
     m <- m[order(m[,"value"]),]            # sort our input
-    result["Min"] <- m[1,"value"]         # minimum value
-    result["Max"] <- m[nrow(m), "value"]  # maximum value
+    Fn <- ecdf(m[,"quantity"]);           # get ecdf
+    x <- summary(Fn)                      # get summary
+    ## so, what is happening here is that the order statistics are being
+    ## computed by ecdf.  ecdf returns where, in the **"quantity"**
+    ## column, the order lives.  then, we find the index of
+    ## (approximately) that value, and return the *value* at that index
+    result <- vapply(x,
+                     function (e) { m[m[,"quantity"] == floor(e)][1] },
+                     FUN.VALUE=1)
+    ## but, mean needs to be done differently (not an order statistic).
+    ## (max, min, are only "order statistics", as we sorted the matrix
+    ## above)
     vsum <- sum(m[,"value"]*m[,"quantity"]) # sum of the lot
     population <- sum(m[,"quantity"])      # number in population
     result["Mean"] <- vsum/population     # average value
-    Fn <- ecdf(m[,"quantity"]);           # get ecdf
-    ## compute ecdf for order statistics
-    i <- c(q1=Fn(population/4), md=Fn(population/2), q3=Fn(3*population/4))
-    ## after above, 0 <= i < 1 (s/b!)
-    i <- (i*nrow(m))+1                    # so, now, 1 <= i <= nrow(m)
-    if ((i < 1) || (i > nrow(m))) {
-      stop(sprintf("summary.binned internval error")) # pun intended
-    }
-    print(nrow(m))
-    print(Fn(population/4)*nrow(m))
-    result["1st Qu."] <- m[Fn(population/4)*nrow(m), "value"]
-    result["Median"] <- m[Fn(population/2)*nrow(m), "value"]
-    result["3rd Qu."] <- m[Fn(3*population/4)*nrow(m), "value"]
 
     return(result)
   }
