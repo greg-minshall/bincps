@@ -303,7 +303,7 @@ real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
 
 #+name: bincps
-#+BEGIN_SRC R :tangle bincps :session ss :var ifile="./ipums/save-cps_00006.1962-2017-binned.csv" :var ofile="foo.csv" :var ofsep="-" :var rfile="goo.csv" :var fyear="-" :var lyear="+" :var min1999=0 :var max1999=500000 :var binsize=1000
+#+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss :var ifile="./ipums/save-cps_00006.1962-2017-binned.csv" :var ofile="foo.csv" :var ofsep="-" :var rfile="goo.csv" :var fyear="-" :var lyear="+" :var min1999=0 :var max1999=500000 :var binsize=1000
   bincps <- function(ifile,      # input file
                      ofile="",   # output csv file ("" ==>
                                           # compute from ifile)
@@ -319,11 +319,11 @@ test file is: ./ipums/19712014.csv.gz
                      verbose=1
                      ) {
     if (verbose > 0) {
-      print(c("about to read.csv", date()))
+      cat(sprintf("about to read.csv %s\n", date()))
     }
     dset <<- read.csv(ifile, header=TRUE)
     if (verbose > 0) {
-      print(c("done with read.csv", date()))
+      cat(sprintf("done with read.csv %s\n", date()))
     }
     if (nrow(dset) == 0) {
       stop(sprintf("no data in dataset \"%s\"", ifile))
@@ -406,7 +406,7 @@ test file is: ./ipums/19712014.csv.gz
     ## read and write -- our variables from the calling routine)
     ahroutine <- function(filter, bracket) {
       if (verbose > 1) {
-        print(sprintf("ahroutine, year %d, nrow filter %d, bracket %g, nrow bset %d",
+        cat(sprintf("ahroutine, year %d, nrow filter %d, bracket %g, nrow bset %d\n",
                       year, nrow(yset[filter,]), bracket, nrow(bset)))
       }
       for (asecflag in unique(yset[filter,]$ASECFLAG)) {
@@ -452,7 +452,7 @@ test file is: ./ipums/19712014.csv.gz
       yset <- dset[dset$YEAR == year,]
       sy <- TRUE                          # initially, take all in this year
       if (verbose > 0) {
-        print(c(year, date()))
+        cat(sprintf("%s %s\n", year, date()))
       }
 
       mysummary <- function(data) {
@@ -591,7 +591,6 @@ test file is: ./ipums/19712014.csv.gz
     max1999 <- as.numeric(max1999)
   }
 
-  print("")
   bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999, binsize=binsize);
 #+END_SRC
 
