@@ -302,7 +302,7 @@ seem to be in March of every year.)
 real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
 #+name: bincps
-#+BEGIN_SRC R :session ss :var ifile="./ipums/save-cps_00006.1962-2017-binned.csv" :var ofile="foo.csv" :var ofsep="-" :var rfile="goo.csv" :var fyear="-" :var lyear="+" :var min1999=0 :var max1999=500000 :var binsize=10000
+#+BEGIN_SRC R :session ss :var ifile="./ipums/save-cps_00006.1962-2017-binned.csv" :var ofile="foo.csv" :var ofsep="-" :var rfile="goo.csv" :var fyear="-" :var lyear="+" :var min1999=0 :var max1999=500000 :var binsize=1000
   bincps <- function(ifile,      # input file
                      ofile="",   # output csv file ("" ==>
                                           # compute from ifile)
@@ -354,8 +354,6 @@ test file is: ./ipums/19712014.csv.gz
     }
     orlabel <- sprintf("%s%sbinned", orlabel, ofto)
     rrlabel <- sprintf("%s%sreport", orlabel, ofsep)
-    print(orlabel)
-    print(rrlabel)
     ofile <- dealwithoutputfilename(ifile, ofile, "output", orlabel)
     rfile <- dealwithoutputfilename(ifile, rfile, "report", rrlabel)
 
@@ -379,6 +377,12 @@ test file is: ./ipums/19712014.csv.gz
                       ## things < min1999, > max1999 are included in the
                       ## smallest and largest bins; NA are not included
                       binsize=1000,        # size of bins
+                      infminmax=FALSE,     # should min/max bins be
+                                           # labelled "[-]Inf"?  if this
+                                           # is FALSE, < min1999 will go
+                                           # just below the lowest bin,
+                                           # and >= max1999 will go just
+                                           # above the highest bin
                       verbose=1
                       ) {
     ## we may be running on "raw" (via ipums) census data, or we may be
@@ -453,8 +457,8 @@ test file is: ./ipums/19712014.csv.gz
       mysummary <- function(data) {
         "like summary, but try for a format consistent across numbers, NA, ..."
         summary <- summary(data);
-        if (!is.element("NA's", names(summary))) {
-          summary <- c(summary, "NA's"=0)
+        if("NA's" %in% names(summary)) {
+          summary <- summary[-which(names(summary) == "NA's")]
         }
         return(summary)
       }
@@ -466,7 +470,8 @@ test file is: ./ipums/19712014.csv.gz
       if (nrow(yset[sna,]) != 0) {
         ahroutine(sna, NA)                # enter (these) row(s)
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
-                                           NROW=nrow(yset[sna,]),
+                                           HWTSUPP=sum(yset[sna,]$HWTSUPP),
+                                           WTSUPP=sum(yset[sna,]$WTSUPP),
                                            mysummary(yset[sna,income99]),
                                            COMMENT=commentna))))
         sy <- sy & !snabit                # now, kill them
@@ -477,9 +482,15 @@ test file is: ./ipums/19712014.csv.gz
       commentlow <- sprintf("less than %d", min1999);
       slow <- sy & slowbit
       if (nrow(yset[slow,]) != 0) {
-        ahroutine(slow, -Inf)             # enter (these) row(s)
+        ## enter (these) row(s)
+        if (!infminmax) {
+          ahroutine(slow, min1999)
+        } else {
+          ahroutine(slow, -Inf)
+        }
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
-                                           NROW=nrow(yset[slow,]),
+                                           HWTSUPP=sum(yset[slow,]$HWTSUPP),
+                                           WTSUPP=sum(yset[slow,]$WTSUPP),
                                            mysummary(yset[slow,income99]),
                                            COMMENT=commentlow))))
         sy <- sy & !slowbit               # now, kill them
@@ -491,7 +502,8 @@ test file is: ./ipums/19712014.csv.gz
       shigh <- sy & shighbit
       if (nrow(yset[shigh,]) != 0) {
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
-                                           NROW=nrow(yset[shigh,]),
+                                           HWTSUPP=sum(yset[shigh,]$HWTSUPP),
+                                           WTSUPP=sum(yset[shigh,]$WTSUPP),
                                            mysummary(yset[shigh,income99]),
                                            COMMENT=commenthigh))))
         sy <- sy & !shighbit              # now, kill them
@@ -509,7 +521,12 @@ test file is: ./ipums/19712014.csv.gz
 
       ## now, add too high
       if (nrow(yset[shigh,]) != 0) {
-        ahroutine(shigh, +Inf)
+        ## enter (these) row(s)
+        if (!infminmax) {
+          ahroutine(shigh, max1999+binsize)
+        } else {
+          ahroutine(shigh, Inf)
+        }
       }
     }
     return(list(bset, rset))
