@@ -340,7 +340,7 @@ test file is: ./ipums/19712014.csv.gz
     ## now, make min1999, max1999 multiples of binsize
     min1999 <- (min1999%/%binsize)*binsize
     max1999 <- (((max1999-1)%/%binsize)*binsize)+binsize
-  
+
     ## now, check if output files are okay
     orlabel <- sprintf("%d%s%d", min(dset$YEAR), ofsep, max(dset$YEAR))
     ofto <- ofsep
@@ -449,6 +449,15 @@ test file is: ./ipums/19712014.csv.gz
         print(c(year, date()))
       }
 
+      mysummary <- function(data) {
+        "like summary, but try for a format consistent across numbers, NA, ..."
+        summary <- summary(data);
+        if (!is.element("NA's", names(summary))) {
+          summary <- c(summary, "NA's"=0)
+        }
+        return(summary)
+      }
+
       ## describe and enter NA incomes
       snabit <- is.na(yset[,income99])
       comment <- "income not provided"
@@ -457,7 +466,7 @@ test file is: ./ipums/19712014.csv.gz
         ahroutine(sna, NA)                # enter (these) row(s)
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
                                            NROW=nrow(yset[sna,]),
-                                           summary(yset[sna,income99]),
+                                           mysummary(yset[sna,income99]),
                                            COMMENT=comment))))
         sy <- sy & !snabit                # now, kill them
       }
@@ -470,7 +479,7 @@ test file is: ./ipums/19712014.csv.gz
         ahroutine(slow, -Inf)             # enter (these) row(s)
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
                                            NROW=nrow(yset[slow,]),
-                                           summary(yset[slow,income99]),
+                                           mysummary(yset[slow,income99]),
                                            COMMENT=comment))))
         sy <- sy & !slowbit               # now, kill them
       }
@@ -482,7 +491,7 @@ test file is: ./ipums/19712014.csv.gz
       if (nrow(yset[shigh,]) != 0) {
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
                                            NROW=nrow(yset[shigh,]),
-                                           summary(yset[shigh,income99]),
+                                           mysummary(yset[shigh,income99]),
                                            COMMENT=comment))))
         sy <- sy & !shighbit              # now, kill them
       }
