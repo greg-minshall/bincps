@@ -316,7 +316,8 @@ test file is: ./ipums/19712014.csv.gz
                      ## things < min1999, > max1999 are included in the
                      ## smallest and largest bins; NA are not included
                      binsize=1000,        # size of bins
-                     verbose=1
+                     infminmax=FALSE,     # label too small -Inf, too large Inf?
+                     verbose=1            # how verbose to be
                      ) {
     if (verbose > 0) {
       cat(sprintf("about to read.csv %s\n", date()))
@@ -339,8 +340,12 @@ test file is: ./ipums/19712014.csv.gz
     }
 
     ## now, make min1999, max1999 multiples of binsize
-    min1999 <- (min1999%/%binsize)*binsize
-    max1999 <- (((max1999-1)%/%binsize)*binsize)+binsize
+    if (min1999 != -Inf) {
+      min1999 <- (min1999%/%binsize)*binsize
+    }
+    if (max1999 != Inf) {
+      max1999 <- (((max1999-1)%/%binsize)*binsize)+binsize
+    }
 
     ## now, check if output files are okay
     orlabel <- sprintf("%d%s%d", min(dset$YEAR), ofsep, max(dset$YEAR))
@@ -539,9 +544,9 @@ test file is: ./ipums/19712014.csv.gz
   ## NB: as a side effect of testing writeability, on a successful
   ## return, FNAME *will* exist (but, be empty).
   dealwithoutputfilename <- function(ifile, fname, use, lastbits) {
-    require(assertthat)
+    require(assertthat, quietly=TRUE)
 
-    if (fname == "") {                    # compute filename
+    if (is.na(fname)) {                    # compute filename
       x <- strsplit(ifile, ".", fixed=TRUE)[[1]]
       if (x[length(x)] == "gz") {
         length(x) = length(x)-1           # get rid of .gz (we don't compress)
@@ -567,31 +572,73 @@ test file is: ./ipums/19712014.csv.gz
     return(fname)
   }
 
+  main <- function() {
+    require(argparser, quietly=TRUE)
+    if (fyear == "-") {
+      fyear <- -Inf
+    } else if (!is.numeric(fyear)) {
+      fyear <- as.integer(fyear)
+    }
+    if (lyear == "+") {
+      lyear <- Inf
+    } else if (!is.numeric(lyear)) {
+      lyear <- as.integer(lyear)
+    }
 
+    if (min1999 == "-") {
+      min1999 <- -Inf
+    } else {
+      min1999 <- as.numeric(min1999)
+    }
+    if (max1999 == "+") {
+      max1999 <- Inf
+    } else {
+      max1999 <- as.numeric(max1999)
+    }
 
-  if (fyear == "-") {
-    fyear <- -Inf
-  } else if (!is.numeric(fyear)) {
-    fyear <- as.integer(fyear)
-  }
-  if (lyear == "+") {
-    lyear <- Inf
-  } else if (!is.numeric(lyear)) {
-    lyear <- as.integer(lyear)
+    p <- arg_parser("bincps")
+    p <- add_argument(p, "--ifile", type="character", default=NA,
+                      help="input data (.csv or .csv.gz) file")
+    p <- add_argument(p, "--ofile", type="character", default=NA,
+
+                      help="output data file; if not specified, an automatically generated name will be used")
+    p <- add_argument(p, "--rfile", type="character", default=NA,
+                      help="output exception report file; if not specified, an automatically generated name will be used")
+    p <- add_argument(p, "--ofsep", type="character", default="-",
+                      help="separator used when automatically generating ofile, rfile names")
+    p <- add_argument(p, "--fyear", type="integer", default=-Inf,
+                      help="first year to process; if not specified, the first year in the input file will be used")
+    p <- add_argument(p, "--lyear", type="integer", default=Inf,
+                      help="last year to process; if not specified, the last year in the input file will be used")
+    p <- add_argument(p, "--binsize", type="integer", default=1000,
+                      help="output bin size")
+    p <- add_argument(p, "--min1999", type="integer", default=-Inf,
+                      help="don't bin dollar amounts below this value")
+    p <- add_argument(p, "--max1999", type="integer", default=Inf,
+                      help="don't bin dollar amounts above this value")
+    p <- add_argument(p, "--verbose", type="integer", default=0,
+                      help="how much informational/debugging output should be produced")
+    p <- add_argument(p, "--infminmax", flag=TRUE, default=FALSE,
+                      help="should bins for values below min1999 (resp. above max1999) appear as \"-Inf\" (resp. \"Inf\"); if not, they will be assigned bins just below min1999 (resp. just above max1999)")
+
+    argv <- parse_args(p)
+
+    print(argv)
+
+    bincps(ifile=argv$ifile,
+           ofile=argv$ofile,
+           rfile=argv$rfile,
+           ofsep=argv$ofsep,
+           fyear=argv$fyear,
+           lyear=argv$lyear,
+           binsize=argv$binsize,
+           min1999=argv$min1999,
+           max1999=argv$max1999,
+           verbose=argv$verbose,
+           infminmax=argv$infminmax);
   }
 
-  if (min1999 == "-") {
-    min1999 <- -Inf
-  } else {
-    min1999 <- as.numeric(min1999)
-  }
-  if (max1999 == "+") {
-    max1999 <- Inf
-  } else {
-    max1999 <- as.numeric(max1999)
-  }
-
-  bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999, binsize=binsize);
+  main()
 #+END_SRC
 
 #+RESULTS: bincps
