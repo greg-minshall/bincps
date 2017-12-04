@@ -405,6 +405,7 @@ test file is: ./ipums/19712014.csv.gz
                     binsize=binsize,
                     infminmax=infminmax,
                     verbose=verbose,
+                    income99=income99,
                     sumfunction=sumfunction)
 
     bset <- rval[[1]]
@@ -432,7 +433,7 @@ test file is: ./ipums/19712014.csv.gz
                       sumfunction=summary # summary or summary.binned
                       ) {
     ## get *all* the bins...
-    dset <- cbind(dset, RANGE=(floor(dset[,income99]/binsize)*binsize)+binsize)
+    dset <- cbind(dset, BRACKET=(floor(dset[,income99]/binsize)*binsize)+binsize)
 
     ## this is in lieu of a macro facility in R (or in lieu of <<noweb>>
     ## working in org-mode when running code via C-c C-c).  this routine
@@ -498,7 +499,6 @@ test file is: ./ipums/19712014.csv.gz
         return(summary)
       }
 
-      ## describe and enter NA incomes
       snabit <- is.na(yset[,income99])
       sna <- sy & snabit
       if (nrow(yset[sna,]) != 0) {
@@ -543,14 +543,17 @@ test file is: ./ipums/19712014.csv.gz
         sy <- sy & !shighbit              # now, kill them
       }
 
-      ## we don't describe *other* bins since they are of limited range;
+      ## we don't describe *other* bins since they are of limited bracket;
       ## the "negative" and "greater than max" bins are not of an a
       ## priori known limit.
 
-      ## now, add all the bins
-      for (bin in sort(unique(yset[sy,]$RANGE))) {
-        sb <- sy & yset$RANGE == bin
-        ahroutine(sb, bin)
+      ## now, add all the bins (if there are any!)
+      uy <- unique(yset[sy,]$BRACKET)
+      if (!is.null(uy)) {
+        for (bin in sort(uy)) {
+          sb <- sy & yset$BRACKET == bin
+          ahroutine(sb, bin)
+        }
       }
 
       ## now, add too high
@@ -602,7 +605,7 @@ test file is: ./ipums/19712014.csv.gz
     return(fname)
   }
 
-  main <- function() {
+  main <- function(args=NULL) {
     require(argparser, quietly=TRUE)
 
     p <- arg_parser("bincps")
@@ -630,7 +633,11 @@ test file is: ./ipums/19712014.csv.gz
     p <- add_argument(p, "--infminmax", flag=TRUE, default=FALSE,
                       help="should bins for values below min1999 (resp. above max1999) appear as \"-Inf\" (resp. \"Inf\"); if not, they will be assigned bins just below min1999 (resp. just above max1999)")
 
-    argv <- parse_args(p)
+    if (is.null(args)) {
+      argv <- parse_args(p)
+    } else {
+      argv <- parse_args(p, args)
+    }
 
     bincps(ifile=argv$ifile,
            ofile=argv$ofile,
@@ -660,35 +667,28 @@ test file is: ./ipums/19712014.csv.gz
                       infminmax=FALSE,     # label too small -Inf, too large Inf?
                       verbose=1            # how verbose to be
                       ) {
-    cmdline <- c("bincps",
-                 "--ifile", ifile,
-                 "--ofile", ofile,
-                 "--ofset", ofsep,
-                 "--rfile", rfile,
-                 "--fyear", fyear,
+    cmdline <- c("--ifile", ifile,
+                 "--ofile", "foo.csv",
+                 "--rfile", "goo.csv",
                  "--lyear", lyear,
-                 "--min1999", min1999,
                  "--max1999", max1999,
                  "--binsize", binsize,
-                 "--infminmax", infminmax,
                  "--verbose", verbose)
-    commandArgs <- function() {
-      print(cmdline)
-      return(cmdline)
-    }
 
-    main()
+    main(cmdline)
   }
 
 
 
   options(error=recover)
-  debug(bincps)
+  options(warn=2)
+  # debug(bincps1)
 
 
 
   if (!interactive()) {
     main()
+    print(warnings())
   }
 #+END_SRC
 
