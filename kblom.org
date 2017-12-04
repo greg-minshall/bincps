@@ -302,20 +302,19 @@ seem to be in March of every year.)
 real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
 #+name: bincps
-#+BEGIN_SRC R :session ss :var ifile="./ipums/cps_00006.1962-2017-binned.csv" :var ofile="foo.csv" :var ofsep="-" :var rfile="goo.csv" :var fyear="-" :var lyear="+" :var min1999="-" :var max1999="+"
-  bincps <- function(ifile,               # input file
-                     verbose=1,
-                     ofile="",           # output csv file ("" ==>
+#+BEGIN_SRC R :session ss :var ifile="./ipums/save-cps_00006.1962-2017-binned.csv" :var ofile="foo.csv" :var ofsep="-" :var rfile="goo.csv" :var fyear="-" :var lyear="+" :var min1999=0 :var max1999=500000
+  bincps <- function(ifile,      # input file
+                     ofile="",   # output csv file ("" ==>
                                           # compute from ifile)
-                     ofsep="-", # separator (when ofile or rfile blank)
-                     rfile="",  # output report file (see ofile)
-                     fyear=-Inf,         # first year to include
-                     lyear=Inf,;         # last year to include
+                     ofsep="-",  # separator (when ofile or rfile blank)
+                     rfile="",   # output report file (see ofile)
+                     fyear=-Inf, # first year to include
+                     lyear=Inf,  # last year to include
                      min1999=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
                      max1999=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
                      ## things < min1999, > max1999 are included in the
                      ## smallest and largest bins; NA are not included
-                     binsize=1000,       # size of bins
+                     binsize=1000,        # size of bins
                      verbose=1
                      ) {
     if (verbose > 0) {
@@ -338,23 +337,34 @@ test file is: ./ipums/19712014.csv.gz
                    ifile, fyear, lyear))
     }
 
+    ## now, make min1999, max1999 multiples of binsize
+    min1999 <- (min1999%/%binsize)*binsize
+    max1999 <- (((max1999-1)%/%binsize)*binsize)+binsize
+  
     ## now, check if output files are okay
     orlabel <- sprintf("%d%s%d", min(dset$YEAR), ofsep, max(dset$YEAR))
     ofto <- ofsep
     if (min1999 != -Inf) {
-      orlabel <- sprintf("%s%s%s", orlabel, ofsep, min1999);
+      orlabel <- sprintf("%s%s%d", orlabel, ofsep, min1999);
       ofto <- sprintf("%sto%s", ofsep, ofsep)
     }
     if (max1999 != Inf) {
-      orlabel <- sprintf("%sto%s%s%s", orlabel, ofsep, max1999);
+      orlabel <- sprintf("%s%sto%s%d", orlabel, ofsep, ofsep, max1999);
       ofto <- ofsep
     }
     orlabel <- sprintf("%s%sbinned", orlabel, ofto)
     rrlabel <- sprintf("%s%sreport", orlabel, ofsep)
+    print(orlabel)
+    print(rrlabel)
     ofile <- dealwithoutputfilename(ifile, ofile, "output", orlabel)
     rfile <- dealwithoutputfilename(ifile, rfile, "report", rrlabel)
 
-    rval <- bincps1(ifile=ifile, dset=dset, ...)
+    rval <- bincps1(dset=dset,
+                    min1999=min1999,
+                    max1999=max1999,
+                    binsize=binsize,
+                    verbose=verbose)
+
     bset <- rval[[1]]
     rset <- rval[[2]]
     write.csv(bset, ofile, row.names=F);
@@ -363,7 +373,13 @@ test file is: ./ipums/19712014.csv.gz
     }
   }
 
-  bincps1 <- function(                    # inherits locals from caller
+  bincps1 <- function(dset,                # inherits other locals from
+                      min1999=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
+                      max1999=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
+                      ## things < min1999, > max1999 are included in the
+                      ## smallest and largest bins; NA are not included
+                      binsize=1000,        # size of bins
+                      verbose=1
                       ) {
     ## we may be running on "raw" (via ipums) census data, or we may be
     ## looking at output of a previous run (already binned).  which is it?
