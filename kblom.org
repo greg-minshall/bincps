@@ -301,8 +301,9 @@ seem to be in March of every year.)
 
 real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
+
 #+name: bincps
-#+BEGIN_SRC R :session ss :var ifile="./ipums/save-cps_00006.1962-2017-binned.csv" :var ofile="foo.csv" :var ofsep="-" :var rfile="goo.csv" :var fyear="-" :var lyear="+" :var min1999=0 :var max1999=500000 :var binsize=1000
+#+BEGIN_SRC R :tangle bincps :session ss :var ifile="./ipums/save-cps_00006.1962-2017-binned.csv" :var ofile="foo.csv" :var ofsep="-" :var rfile="goo.csv" :var fyear="-" :var lyear="+" :var min1999=0 :var max1999=500000 :var binsize=1000
   bincps <- function(ifile,      # input file
                      ofile="",   # output csv file ("" ==>
                                           # compute from ifile)
@@ -593,8 +594,6 @@ test file is: ./ipums/19712014.csv.gz
   print("")
   bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999, binsize=binsize);
 #+END_SRC
-
-#+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+"
 
 #+RESULTS: bincps
 
@@ -919,7 +918,7 @@ as well as a number of elements with that value.  we compute the same
 objects as summary(): Min, 1st Qu., Median, Mean, 3rd Qu., Max
 
 the input is a matrix with 2 columns, the first being the value, the
-second the number of elements.
+second the number of elements with that value.
 
 #+name: summary.binned
 #+BEGIN_SRC R
