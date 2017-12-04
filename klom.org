@@ -308,15 +308,21 @@ test file is: ./ipums/19712014.csv.gz
 
   ## NB: as a side effect of testing writeability, on a successful
   ## return, FNAME *will* exist (but, be empty).
-  bincps <- function(ifile,              # input file
+  bincps <- function(ifile, verbose=1,             # input file
                      ...
                      ) {
-    print(c("about to read.csv", date()))
+    if (verbose > 0) {
+      print(c("about to read.csv", date()))
+    }
     dset <<- read.csv(ifile, header=TRUE)
-    print(c("done with read.csv", date()))
-    rval <- bincps1(ifile, dset, ...)
-    bset <- rval[[1]]
-    rset <- rval[[2]]
+    if (verbose > 0) {
+      print(c("done with read.csv", date()))
+    }
+    rval <- bincps1(ifile=ifile, dset=dset, ...)
+    ofile <- rval[[1]]
+    bset <- rval[[2]]
+    rfile <- rval[[3]]
+    rset <- rval[[4]]
     write.csv(bset, ofile, row.names=F);
     if (nrow(rset) != 0) {
       write.csv(rset, rfile, row.names=F)
@@ -334,7 +340,8 @@ test file is: ./ipums/19712014.csv.gz
                       ofsep="-", # separator (when ofile or rfile blank)
                       rfile="",  # output report file (see ofile)
                       fyear=-Inf,         # first year to include
-                      lyear=Inf           # last year to include
+                      lyear=Inf,;         # last year to include
+                      verbose=0           # how verbose to be
                      ) {
     if (nrow(dset) == 0) {
       stop(sprintf("no data in dataset \"%s\"", ifile))
@@ -376,7 +383,7 @@ test file is: ./ipums/19712014.csv.gz
     ## is called to enter rows into the output table (and, can access --
     ## read and write -- our variables from the calling routine)
     ahroutine <- function(filter, bracket) {
-      if (FALSE) {
+      if (verbose > 1) {
         print(sprintf("ahroutine, year %d, nrow filter %d, bracket %g, nrow bset %d",
                       year, nrow(yset[filter,]), bracket, nrow(bset)))
       }
@@ -421,7 +428,9 @@ test file is: ./ipums/19712014.csv.gz
     for (year in sort(unique(dset$YEAR))) {
       yset <- dset[dset$YEAR == year,]
       sy <- yset$YEAR == year
-      print(c(year, date()))
+      if (verbose > 0) {
+        print(c(year, date()))
+      }
 
       ## describe and enter NA incomes
       snabit <- is.na(yset[,income99])
@@ -476,7 +485,7 @@ test file is: ./ipums/19712014.csv.gz
         ahroutine(shigh, +Inf)
       }
     }
-    return(list(bset, rset))
+    return(list(ofile, bset, rfile, rset))
   }
 
   dealwithoutputfilename <- function(ifile, fname, use, lastbits) {
@@ -533,7 +542,7 @@ test file is: ./ipums/19712014.csv.gz
   }
 
   print("")
-  bincps(ifile=ifile, dset, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999);
+  bincps(ifile=ifile, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999);
 #+END_SRC
 
 #+BEGIN_SRC R :session ss :var ifile="./ipums/19712014.csv.gz" :var ofile="" :var ofsep="-" :var rfile="" :var fyear="-" :var lyear="+"
@@ -1004,4 +1013,10 @@ those.
 #+RESULTS: bin2bin
 
 #+RESULTS:
+
+** executable R scripts
+
+executable R scripts can be made with either Rscript or [[https://github.com/eddelbuettel/littler][littler]].
+
+
 
