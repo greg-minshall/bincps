@@ -1020,7 +1020,6 @@ second the number of elements with that value.
 #+name: summary.binned
 #+BEGIN_SRC R
   summary.binned <- function(m) {
-    print(m)
     if (is.null(ncol(m))) {
       stop("summary.binned: argument has no columns")
     } else if (ncol(m) < 2) {
@@ -1028,16 +1027,16 @@ second the number of elements with that value.
     } else if (is.null(nrow(m))) {
       ## if something has columns, does it have rows?
       stop("summary.binned: argument has no rows")
-    } else if (!is.numeric(m)) {
-      stop("summary.binned: columns of argument must be numeric")
-    } else if (any(is.na(m))) {
-      stop("summary.binned: doesn't work with NA")
     }
-    result <- c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA)
     colnames(m) <- c("value", "quantity")
-    print(m)
+    result <- c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA)
+    if (length(m[!is.na(m)]) == 0) {
+      return(result)                      # apparently, NA everywhere
+    }
+    if (!is.numeric(m[!is.na(m)])) {
+      stop("summary.binned: columns of argument must be numeric")
+    }
     m <- m[order(m[,"value"]),]            # sort our input
-    print(m)
     result["Min"] <- m[1,"value"]         # minimum value
     result["Max"] <- m[nrow(m), "value"]  # maximum value
     vsum <- sum(m[,"value"]*m[,"quantity"]) # sum of the lot
@@ -1051,6 +1050,8 @@ second the number of elements with that value.
     if ((i < 1) || (i > nrow(m))) {
       stop(sprintf("summary.binned internval error")) # pun intended
     }
+    print(nrow(m))
+    print(Fn(population/4)*nrow(m))
     result["1st Qu."] <- m[Fn(population/4)*nrow(m), "value"]
     result["Median"] <- m[Fn(population/2)*nrow(m), "value"]
     result["3rd Qu."] <- m[Fn(3*population/4)*nrow(m), "value"]
@@ -1058,6 +1059,8 @@ second the number of elements with that value.
     return(result)
   }
 #+END_SRC
+
+#+RESULTS: summary.binned
 
 some cribbed from "everylittlebit" above.
 
