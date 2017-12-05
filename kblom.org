@@ -315,9 +315,9 @@ test file is: ./ipums/19712014.csv.gz
                      rfile="",   # output report file (see ofile)
                      fyear=-Inf, # first year to include
                      lyear=Inf,  # last year to include
-                     min1999=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
-                     max1999=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
-                     ## things < min1999, > max1999 are included in the
+                     min99=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
+                     max99=Inf,  # maximum HH{INCOME,BRACKET}99 (in USD)
+                     ## things < min99, > max99 are included in the
                      ## smallest and largest bins; NA are not included
                      binsize=1000,        # size of bins
                      infminmax=FALSE,     # label too small -Inf, too large Inf?
@@ -345,23 +345,23 @@ test file is: ./ipums/19712014.csv.gz
       quit(save="no", status=1)
     }
 
-    ## now, make min1999, max1999 multiples of binsize
-    if (!is.infinite(min1999)) {
-      min1999 <- (min1999%/%binsize)*binsize
+    ## now, make min99, max99 multiples of binsize
+    if (!is.infinite(min99)) {
+      min99 <- (min99%/%binsize)*binsize
     }
-    if (!is.infinite(max1999)) {
-      max1999 <- (((max1999-1)%/%binsize)*binsize)+binsize
+    if (!is.infinite(max99)) {
+      max99 <- (((max99-1)%/%binsize)*binsize)+binsize
     }
 
     ## now, check if output files are okay
     orlabel <- sprintf("%d%s%d", min(dset$YEAR), ofsep, max(dset$YEAR))
     ofto <- ofsep
-    if (min1999 != -Inf) {
-      orlabel <- sprintf("%s%s%d", orlabel, ofsep, min1999);
+    if (min99 != -Inf) {
+      orlabel <- sprintf("%s%s%d", orlabel, ofsep, min99);
       ofto <- sprintf("%sto%s", ofsep, ofsep)
     }
-    if (max1999 != Inf) {
-      orlabel <- sprintf("%s%sto%s%d", orlabel, ofsep, ofsep, max1999);
+    if (max99 != Inf) {
+      orlabel <- sprintf("%s%sto%s%d", orlabel, ofsep, ofsep, max99);
       ofto <- ofsep
     }
     orlabel <- sprintf("%s%sbinned", orlabel, ofto)
@@ -400,8 +400,8 @@ test file is: ./ipums/19712014.csv.gz
     }
 
     rval <- bincps1(dset=dset,
-                    min1999=min1999,
-                    max1999=max1999,
+                    min99=min99,
+                    max99=max99,
                     binsize=binsize,
                     infminmax=infminmax,
                     verbose=verbose,
@@ -417,16 +417,16 @@ test file is: ./ipums/19712014.csv.gz
   }
 
   bincps1 <- function(dset,                # inherits other locals from
-                      min1999=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
-                      max1999=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
-                      ## things < min1999, > max1999 are included in the
+                      min99=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
+                      max99=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
+                      ## things < min99, > max99 are included in the
                       ## smallest and largest bins; NA are not included
                       binsize=1000,        # size of bins
                       infminmax=FALSE,     # should min/max bins be
                                            # labelled "[-]Inf"?  if this
-                                           # is FALSE, < min1999 will go
+                                           # is FALSE, < min99 will go
                                            # just below the lowest bin,
-                                           # and >= max1999 will go just
+                                           # and >= max99 will go just
                                            # above the highest bin
                       verbose=1,
                       income99,
@@ -480,9 +480,25 @@ test file is: ./ipums/19712014.csv.gz
       }
     }
 
+    ## deal with execptional data, i.e., data that is either
+    ## NA-contaminated, or data that is outside the min99/max99 bounds
+    rsetting <- function(filter, comment) {
+      rsetun <- rbind(rsetun, data.frame(t(c(YEAR=year,
+                                             HWTSUPP=sum(yset[filter,]$HWTSUPP),
+                                             WTSUPP=sum(yset[filter,]$WTSUPP),
+                                             mysummary(yset[filter,income99]),
+                                             COMMENT=sprintf("(unweighted) %s", comment)))))
+      return(rsetun)
+    }
 
+    ## the binned data goes here
     bset <- data.frame()
-    rset <- data.frame()
+    ## three data frames for exception reporting.  the first is
+    ## unweighted "income99" (HHINCOME99 or HHBRACKET99, as the case may
+    ## be); the second weighted by HWTSUPP; and the third by WTSUPP.
+    rsetun <- data.frame()
+    rsethwt <- data.frame()
+    rsetwt <- data.frame()
     for (year in sort(unique(dset$YEAR))) {
       yset <- dset[dset$YEAR == year,]
       sy <- TRUE                          # initially, take all in this year
@@ -512,12 +528,12 @@ test file is: ./ipums/19712014.csv.gz
       }
 
       ## describe and enter the negative incomes
-      slowbit <- yset[,income99] < min1999
+      slowbit <- yset[,income99] < min99
       slow <- sy & slowbit
       if (nrow(yset[slow,]) != 0) {
         ## enter (these) row(s)
         if (!infminmax) {
-          ahroutine(slow, min1999)
+          ahroutine(slow, min99)
         } else {
           ahroutine(slow, -Inf)
         }
@@ -526,12 +542,12 @@ test file is: ./ipums/19712014.csv.gz
                                            WTSUPP=sum(yset[slow,]$WTSUPP),
                                            mysummary(yset[slow,income99]),
                                            COMMENT=sprintf("less than %d",
-                                             min1999)))))
+                                             min99)))))
         sy <- sy & !slowbit               # now, kill them
       }
 
       ## now, describe too high incomes (and then enter them below)
-      shighbit <- yset[,income99] >= max1999
+      shighbit <- yset[,income99] >= max99
       shigh <- sy & shighbit
       if (nrow(yset[shigh,]) != 0) {
         rset <- rbind(rset, data.frame(t(c(YEAR=year,
@@ -539,7 +555,7 @@ test file is: ./ipums/19712014.csv.gz
                                            WTSUPP=sum(yset[shigh,]$WTSUPP),
                                            mysummary(yset[shigh,income99]),
                                            COMMENT=sprintf("greater than or equal to %d",
-                                             max1999)))))
+                                             max99)))))
         sy <- sy & !shighbit              # now, kill them
       }
 
@@ -560,7 +576,7 @@ test file is: ./ipums/19712014.csv.gz
       if (nrow(yset[shigh,]) != 0) {
         ## enter (these) row(s)
         if (!infminmax) {
-          ahroutine(shigh, max1999+binsize)
+          ahroutine(shigh, max99+binsize)
         } else {
           ahroutine(shigh, Inf)
         }
@@ -624,14 +640,14 @@ test file is: ./ipums/19712014.csv.gz
                       help="last year to process; if not specified, the last year in the input file will be used")
     p <- add_argument(p, "--binsize", type="integer", default=1000,
                       help="output bin size")
-    p <- add_argument(p, "--min1999", type="integer", default=-Inf,
+    p <- add_argument(p, "--min99", type="integer", default=-Inf,
                       help="don't bin dollar amounts below this value")
-    p <- add_argument(p, "--max1999", type="integer", default=Inf,
+    p <- add_argument(p, "--max99", type="integer", default=Inf,
                       help="don't bin dollar amounts above this value")
     p <- add_argument(p, "--verbose", type="integer", default=0,
                       help="how much informational/debugging output should be produced")
     p <- add_argument(p, "--infminmax", flag=TRUE, default=FALSE,
-                      help="should bins for values below min1999 (resp. above max1999) appear as \"-Inf\" (resp. \"Inf\"); if not, they will be assigned bins just below min1999 (resp. just above max1999)")
+                      help="should bins for values below min99 (resp. above max99) appear as \"-Inf\" (resp. \"Inf\"); if not, they will be assigned bins just below min99 (resp. just above max99)")
 
     if (is.null(args)) {
       argv <- parse_args(p)
@@ -646,8 +662,8 @@ test file is: ./ipums/19712014.csv.gz
            fyear=argv$fyear,
            lyear=argv$lyear,
            binsize=argv$binsize,
-           min1999=argv$min1999,
-           max1999=argv$max1999,
+           min99=argv$min99,
+           max99=argv$max99,
            verbose=argv$verbose,
            infminmax=argv$infminmax);
   }
@@ -659,9 +675,9 @@ test file is: ./ipums/19712014.csv.gz
                       rfile=NA,   # output report file (see ofile)
                       fyear=-Inf, # first year to include
                       lyear=Inf,  # last year to include
-                      min1999=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
-                      max1999=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
-                      ## things < min1999, > max1999 are included in the
+                      min99=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
+                      max99=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
+                      ## things < min99, > max99 are included in the
                       ## smallest and largest bins; NA are not included
                       binsize=1000,        # size of bins
                       infminmax=FALSE,     # label too small -Inf, too large Inf?
@@ -671,7 +687,7 @@ test file is: ./ipums/19712014.csv.gz
                  "--ofile", "foo.csv",
                  "--rfile", "goo.csv",
                  "--lyear", lyear,
-                 "--max1999", max1999,
+                 "--max99", max99,
                  "--binsize", binsize,
                  "--verbose", verbose)
 
@@ -1019,37 +1035,41 @@ second the number of elements with that value.
 
 #+name: summary.binned
 #+BEGIN_SRC R
-  summary.binned <- function(m) {
-    if (is.null(ncol(m))) {
-      stop("summary.binned: argument has no columns")
-    } else if (ncol(m) < 2) {
-      stop("summary.binned needs a dataframe or matrix with at least two columns")
-    } else if (is.null(nrow(m))) {
-      ## if something has columns, does it have rows?
-      stop("summary.binned: argument has no rows")
-    }
-    colnames(m) <- c("value", "quantity")
-    if (length(m[!is.na(m)]) == 0) {      # apparently, NA everywhere
+  summary.binned <- function(vals, nobs) {
+    if (length(vals) == 0) {
+      stop("summary.binned: no values")
+    } else if (length(nobs) == 0) {
+      stop("summary.binned: no observations")
+    } else if (length(vals) != length(nobs)) {
+      stop("summary.binned: length(values) != length(number of observations)")
+    } else if ((length(vals[!is.na(vals)]) == 0) &&
+               (length(nobs[!is.na(nobs)]) == 0)) {
       return(c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA))
+    } else if (!is.numeric(vals[!is.na(vals)])) {
+      stop("summary.binned: values must be numeric")
+    } else if (!is.numeric(nobs[!is.na(nobs)])) {
+      stop("summary.binned: number of observations must be numeric")
     }
-    if (!is.numeric(m[!is.na(m)])) {
-      stop("summary.binned: columns of argument must be numeric")
-    }
-    m <- m[order(m[,"value"]),]            # sort our input
-    Fn <- ecdf(m[,"quantity"]);           # get ecdf
+    xxx  colnames(m) <- c("value", "quantity")
+    ## sort our input
+    order <- order(vals)
+    vals <- vals[order]
+    nobs <- nobs[order]
+    ## get ecdf
+    Fn <- ecdf(nobs)
     x <- summary(Fn)                      # get summary
     ## so, what is happening here is that the order statistics are being
-    ## computed by ecdf.  ecdf returns where, in the **"quantity"**
-    ## column, the order lives.  then, we find the index of
-    ## (approximately) that value, and return the *value* at that index
+    ## computed by ecdf.  ecdf returns where, in **nobs**, the order
+    ## lives.  then, we find the index of (approximately) that value,
+    ## and return the *value* at that index
     result <- vapply(x,
-                     function (e) { m[m[,"quantity"] == floor(e)][1] },
+                     function (e) { vals[nobs == floor(e)] },
                      FUN.VALUE=1)
     ## but, mean needs to be done differently (not an order statistic).
     ## (max, min, are only "order statistics", as we sorted the matrix
     ## above)
-    vsum <- sum(m[,"value"]*m[,"quantity"]) # sum of the lot
-    population <- sum(m[,"quantity"])      # number in population
+    vsum <- sum(vals*nobs)                # sum of the lot
+    population <- sum(nobs)               # number in population
     result["Mean"] <- vsum/population     # average value
 
     return(result)
