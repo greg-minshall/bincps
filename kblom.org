@@ -308,6 +308,17 @@ test file is: ./ipums/19712014.csv.gz
 #+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss
   <<summary.binned>>
 
+
+  getout <- function(message, code) {
+    if (interactive()) {
+      stop(message)
+    } else {
+      cat(message)
+      quit(save="no", status=code)
+    }
+  }
+
+
   bincps <- function(ifile,      # input file
                      ofile="",   # output csv file ("" ==>
                                           # compute from ifile)
@@ -331,18 +342,17 @@ test file is: ./ipums/19712014.csv.gz
       cat(sprintf("done with read.csv %s\n", date()))
     }
     if (nrow(dset) == 0) {
-      cat(sprintf("no data in dataset \"%s\"\n", ifile))
-      quit(save="no", status=1)
+      getout(sprintf("no data in dataset \"%s\"\n", ifile), 1)
     }
+
     ## get rid of records outside our years of interest (fyear, lyear)
     if ((fyear != -Inf) || (lyear != Inf)) {
       dset <- dset[dset$YEAR >= fyear & dset$YEAR <= lyear,]
     }
 
     if (nrow(dset) == 0) {
-      cat(sprintf("no data in dataset \"%s\" for years between %g and %g\n",
-                  ifile, fyear, lyear))
-      quit(save="no", status=1)
+      getout(sprintf("no data in dataset \"%s\" for years between %g and %g\n",
+                     ifile, fyear, lyear), 1)
     }
 
     ## now, make min99, max99 multiples of binsize
@@ -373,12 +383,10 @@ test file is: ./ipums/19712014.csv.gz
     ## looking at output of a previous run (already binned).  which is it?
     if (is.element("HHINCOME", colnames(dset))) {
       income99 <- "HHINCOME99"
-      sumfunction <- summary
       ## now, convert all income to 1999 dollars
       dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
     } else if (is.element("HHBRACKET99", colnames(dset))) {
       income99 <- "HHBRACKET99"
-      sumfunction <- summary.binned
       ## what is input binsize?  to figure this out, we look at the
       ## smallest difference between successive HHBRACKET99's
       x <- dset$HHBRACKET99                   # brackets
@@ -386,17 +394,16 @@ test file is: ./ipums/19712014.csv.gz
       ibsize <- min(abs(y), na.rm=TRUE)   # take min, ignoring NA
       print(ibsize)
       if (is.na(ibsize)) {
-        cat(sprintf("unable to compute input binsize of input file \"%s\"\n", ifile))
-        quit(save="no", status=1)
+        getout(sprintf("unable to compute input binsize of input file \"%s\"\n",
+                       ifile), 1)
       }
       ## now, is the input binsize a divisor of the desired output binsize?
       if ((ibsize%%binsize) != 0) {
-        cat(sprintf("the input file appears to have a binsize of %d, but the desired binsize %d is not a multiple of this\n", ibsize, binsize))
-        quit(save="no", status=1)
+        getout(sprintf("the input file appears to have a binsize of %d, but the desired binsize %d is not a multiple of this\n",
+                       ibsize, binsize), 1)
       }
     } else {
-      cat("bincps: input has neither HHINCOME (raw) or HHBRACKET99 (output of previous run\n")
-      quit(save="no", status=1)
+      getout("bincps: input has neither HHINCOME (raw) or HHBRACKET99 (output of previous run\n", 1)
     }
 
     rval <- bincps1(dset=dset,
@@ -405,13 +412,14 @@ test file is: ./ipums/19712014.csv.gz
                     binsize=binsize,
                     infminmax=infminmax,
                     verbose=verbose,
-                    income99=income99,
-                    sumfunction=sumfunction)
+                    income99=income99)
 
-    bset <- rval[[1]]
-    rset <- rval[[2]]
-    write.csv(bset, ofile, row.names=FALSE, quote=FALSE);
-    if (nrow(rset) != 0) {
+    bset <- rval$bset
+    rset <- rbind(rval$rsetun, rval$rsethwt, rval$rsetwt)
+    write.csv(rval$bset, ofile, row.names=FALSE, quote=FALSE);
+    if (nrow(rset) != 0) {                # anything to report?
+      ## if so, first sort it, then write it out
+      rset <- rset[order(rset$YEAR, rset[, "income99"]),]
       write.csv(rset, rfile, row.names=FALSE, quote=FALSE)
     }
   }
@@ -429,8 +437,7 @@ test file is: ./ipums/19712014.csv.gz
                                            # and >= max99 will go just
                                            # above the highest bin
                       verbose=1,
-                      income99,
-                      sumfunction=summary # summary or summary.binned
+                      income99
                       ) {
     ## get *all* the bins...
     dset <- cbind(dset, BRACKET=(floor(dset[,income99]/binsize)*binsize)+binsize)
@@ -480,15 +487,43 @@ test file is: ./ipums/19712014.csv.gz
       }
     }
 
+    mysummary <- function(vals, nobs) {
+      "like summary, but try for a format consistent across numbers, NA, ..."
+      summary <- summary.binned(vals, nobs);
+      if("NA's" %in% names(summary)) {
+        summary <- summary[-which(names(summary) == "NA's")]
+      }
+      return(summary)
+    }
+
     ## deal with execptional data, i.e., data that is either
     ## NA-contaminated, or data that is outside the min99/max99 bounds
     rsetting <- function(filter, comment) {
-      rsetun <- rbind(rsetun, data.frame(t(c(YEAR=year,
-                                             HWTSUPP=sum(yset[filter,]$HWTSUPP),
-                                             WTSUPP=sum(yset[filter,]$WTSUPP),
-                                             mysummary(yset[filter,income99]),
-                                             COMMENT=sprintf("(unweighted) %s", comment)))))
-      return(rsetun)
+      commentun <- sprintf("(unweighted) %s", comment)
+      commenthwt <- sprintf("(hwtsupp-weighted) %s", comment)
+      commentwt <- sprintf("(wtsupp-weighted) %s", comment)
+      rsetun <<- rbind(rsetun,
+                       data.frame(t(c(YEAR=year,
+                                      HWTSUPP=sum(yset[filter,]$HWTSUPP),
+                                      WTSUPP=sum(yset[filter,]$WTSUPP),
+                                      mysummary(yset[filter,income99],
+                                                rep(1,length(yset[filter,
+                                                                  income99]))),
+                                      COMMENT=commentun))))
+      rsethwt <<- rbind(rsethwt,
+                       data.frame(t(c(YEAR=year,
+                                      HWTSUPP=sum(yset[filter,]$HWTSUPP),
+                                      WTSUPP=sum(yset[filter,]$WTSUPP),
+                                      mysummary(yset[filter,income99],
+                                                yset[filter,]$HWTSUPP),
+                                      COMMENT=commenthwt))))
+      rsetwt <<- rbind(rsetwt,
+                       data.frame(t(c(YEAR=year,
+                                      HWTSUPP=sum(yset[filter,]$HWTSUPP),
+                                      WTSUPP=sum(yset[filter,]$WTSUPP),
+                                      mysummary(yset[filter,income99],
+                                                yset[filter,]$WTSUPP),
+                                      COMMENT=commentwt))))
     }
 
     ## the binned data goes here
@@ -506,24 +541,11 @@ test file is: ./ipums/19712014.csv.gz
         cat(sprintf("%s %s\n", year, date()))
       }
 
-      mysummary <- function(data) {
-        "like summary, but try for a format consistent across numbers, NA, ..."
-        summary <- sumfunction(data);
-        if("NA's" %in% names(summary)) {
-          summary <- summary[-which(names(summary) == "NA's")]
-        }
-        return(summary)
-      }
-
       snabit <- is.na(yset[,income99])
       sna <- sy & snabit
       if (nrow(yset[sna,]) != 0) {
         ahroutine(sna, NA)                # enter (these) row(s)
-        rset <- rbind(rset, data.frame(t(c(YEAR=year,
-                                           HWTSUPP=sum(yset[sna,]$HWTSUPP),
-                                           WTSUPP=sum(yset[sna,]$WTSUPP),
-                                           mysummary(yset[sna,income99]),
-                                           COMMENT="income not provided"))))
+        rsetting(sna, "income not provided")
         sy <- sy & !snabit                # now, kill them
       }
 
@@ -537,12 +559,7 @@ test file is: ./ipums/19712014.csv.gz
         } else {
           ahroutine(slow, -Inf)
         }
-        rset <- rbind(rset, data.frame(t(c(YEAR=year,
-                                           HWTSUPP=sum(yset[slow,]$HWTSUPP),
-                                           WTSUPP=sum(yset[slow,]$WTSUPP),
-                                           mysummary(yset[slow,income99]),
-                                           COMMENT=sprintf("less than %d",
-                                             min99)))))
+        rsetting(slow, sprintf("less than %d", min99))
         sy <- sy & !slowbit               # now, kill them
       }
 
@@ -550,12 +567,7 @@ test file is: ./ipums/19712014.csv.gz
       shighbit <- yset[,income99] >= max99
       shigh <- sy & shighbit
       if (nrow(yset[shigh,]) != 0) {
-        rset <- rbind(rset, data.frame(t(c(YEAR=year,
-                                           HWTSUPP=sum(yset[shigh,]$HWTSUPP),
-                                           WTSUPP=sum(yset[shigh,]$WTSUPP),
-                                           mysummary(yset[shigh,income99]),
-                                           COMMENT=sprintf("greater than or equal to %d",
-                                             max99)))))
+        rsetting(shigh, sprintf("greater than or equal to %d", max99))
         sy <- sy & !shighbit              # now, kill them
       }
 
@@ -582,7 +594,7 @@ test file is: ./ipums/19712014.csv.gz
         }
       }
     }
-    return(list(bset, rset))
+    return(list(bset=bset, rsetun=rsetun, rsethwt=rsethwt, rsetwt=rsetwt))
   }
 
   ## if necessary, cons up an appropriate FNAME.  then, checks that
@@ -604,8 +616,7 @@ test file is: ./ipums/19712014.csv.gz
 
     ## test if already exists (a no-no)
     if (file.exists(fname)) {
-      cat(sprintf("%s file \"%s\" exists, won't overwrite\n", use, fname))
-      quit(save="no", status=2)
+      getout(sprintf("%s file \"%s\" exists, won't overwrite\n", use, fname), 2)
     }
 
     ## test if writeable (better be!)
@@ -613,8 +624,7 @@ test file is: ./ipums/19712014.csv.gz
     x <- tryCatch(file(fname, "w"), 
                   error=function(e) failed <<- TRUE);
     if (failed) {
-      cat(sprintf("%s file \"%s\" is not writeable\n", use, fname))
-      quit(save="no", status=2)
+      getout(sprintf("%s file \"%s\" is not writeable\n", use, fname), 2)
     }
     close(x)
 
@@ -1042,7 +1052,7 @@ second the number of elements with that value.
       stop("summary.binned: no observations")
     } else if (length(vals) != length(nobs)) {
       stop("summary.binned: length(values) != length(number of observations)")
-    } else if ((length(vals[!is.na(vals)]) == 0) &&
+    } else if ((length(vals[!is.na(vals)]) == 0) ||
                (length(nobs[!is.na(nobs)]) == 0)) {
       return(c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA))
     } else if (!is.numeric(vals[!is.na(vals)])) {
@@ -1050,7 +1060,6 @@ second the number of elements with that value.
     } else if (!is.numeric(nobs[!is.na(nobs)])) {
       stop("summary.binned: number of observations must be numeric")
     }
-    xxx  colnames(m) <- c("value", "quantity")
     ## sort our input
     order <- order(vals)
     vals <- vals[order]
