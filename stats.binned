@@ -1,0 +1,143 @@
+check.binned <- function(fname, vals, nobs) {
+  if (length(vals) == 0) {
+    stop(sprintf("%s: no values", fname))
+  } else if (length(nobs) == 0) {
+    stop(sprintf("%s: no observations", fname))
+  } else if (length(vals) != length(nobs)) {
+    stop(sprintf("%s: length(values) [%d] != length(number of observations) [%d]",
+                 fname, length(vals), length(nobs)))
+  } else if (!is.numeric(vals[!is.na(vals)])) {
+    stop(sprintf("%s: values must be numeric", fname))
+  } else if (!is.numeric(nobs[!is.na(nobs)])) {
+    stop(sprintf("%s: number of observations must be numeric", fname))
+  }
+}
+
+tabulate.binned <- function(bin, counts, nbins = max(1L, bin, na.rm = TRUE)) {
+  "tabulate binned integers: 'bin' is observation; 'counts' are counts of corresponding observation; much cribbed from tabulate()"
+  if ((!is.numeric(bin)) && !is.factor(bin)) {
+    stop("'bin' must be numeric or a factor")
+  }
+  if (!is.numeric(counts)) {
+    stop("'nobs' must be numeric")
+  }
+  if (typeof(bin) != "integer") {
+    bin <- as.integer(bin)
+  }
+  if (nbins > .Machine$integer.max) {
+    stop(sprintf("attempt to make a table with >= %d elements",
+                 .Machine$integer.max))
+  }
+  nbins <- as.integer(nbins)
+  if (is.na(nbins)) {
+    stop(gettextf("invalid value of %s", "'nbins'"), domain = NA)
+  }
+  if (length(bin) != length(counts)) {
+    stop(sprintf("length 'bin' %d not same as length 'counts' %d",
+                 length(bin), length(counts)))
+  }
+  ## tabulate here calls .Internal(tabulate(bin, nbins)).  we, not
+  ## having recourse to this...
+  rval <- rep(0, max(bin))              # this is the result
+  vals <- unique(bin)
+  for (val in vals) {
+    rval[val] <- sum(counts[bin==val])  # if counts == 1, same as tabulate()
+  }
+  rval
+}
+
+## so, in ecdf():
+
+## - vals are the unique values of x
+
+## - match(x, vals) are, for each value of x, the index of that value
+##   of x in vals.  length(match(x, vals)) == length(x).
+
+## - tabulate(match(x, vals)) returns, for each *index* in vals (i.e.,
+##   in 1:length(vals)), the number of *times* that index appears in
+##   match(x, vals), i.e., how often each value in x appears in x.
+##   sort of a pdf of x.  length(tabulate(match(x, vals))) ==
+##   max(match(x, vals)) == [because of sorting, indexing] length(vals)
+
+##   (note that all these are ordered by index in vals, which, because
+##   of sort, are ordered by value of x)
+
+## - cumsum(tabulate(match(x, vals)) produces a CDF, from 1:n of, for
+##   each unique value in x, how often that value occurs in x.
+
+## - so, finally, cumsum(tabulate(match(x, vals)))/n produces a CDF
+##   with the standard values, i.e., in [0,1).
+
+## - then approxfun(vals, cumsum(tabulate(match(x, vals)))/n, ...)
+##   produces a function that, when called for a given value in vals
+##   (the unique values in x), returns the corresponding value of the
+##   CDF in [0,1).
+
+ecdf.binned.common <- function(x, nobs, inverse) {
+  "like ecdf, but for binned values; cribbed from ecdf.  this works for forward function (ecdf.binned) and for inverse function (iecdf.binned)"
+  check.binned("summary.ecdf", x, nobs)
+  order <- order(x)
+  x <- x[order]
+  nobs <- nobs[order]
+  n <- sum(nobs)                        # w/b length(n) if nobs==1
+  if (n < 1) {
+    stop("'x' must have 1 or more non-missing values")
+  }
+  vals <- unique(x)
+  X <- vals
+  yleft <- 0
+  yright <- 1
+  Y <- cumsum(tabulate.binned(match(x, vals), counts=nobs))/n
+  if (inverse) {
+    tmp <- X
+    X <- Y
+    Y <- tmp
+    yleft <- x[1]
+    yright <- x[length(x)]
+  }
+  rval <- approxfun(X, Y,
+                    method="constant",
+                    yleft = yleft, yright = yright,
+                    f = 0,              # XXX is this the right f for inverse?
+                    ties = "ordered")
+  # class(rval) <- c("ecdf", "stepfun", class(rval))
+  assign("nobs", n, envir = environment(rval))
+  attr(rval, "call") <- sys.call()
+  rval
+}
+
+ecdf.binned <- function(x, nobs) {
+  "like ecdf, but for binned values; cribbed from ecdf"
+  ecdf.binned.common(x, nobs, inverse = FALSE)
+}
+
+iecdf.binned <- function(x, nobs) {
+  "this is the inverse function from ecdf.binned (allowing you to get order statistics easily); probably \"slight\" overkill for that usage"
+  ecdf.binned.common(x, nobs, inverse = TRUE)
+}
+
+summary.binned <- function(vals, nobs) {
+  check.binned("summary.binned", vals, nobs)
+  if ((length(vals[!is.na(vals)]) == 0) ||
+      (length(nobs[!is.na(nobs)]) == 0)) { # "||"? i'm not sure
+    return(c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA))
+  }
+  ## sort our input
+  order <- order(vals)
+  vals <- vals[order]
+  nobs <- nobs[order]
+
+  ## get inverse ecdf for the order statistics
+  iFn <- iecdf.binned(vals, nobs)
+  result <- c("Min."=iFn(0), "1st Qu."=iFn(0.25), "Median"=iFn(0.5), "Mean"=0, "3rd Qu."=iFn(0.75), "Max."=iFn(1))
+
+  ## but, mean needs to be done differently (not an order statistic).
+  ## (max, min, are only "order statistics", as we sorted the matrix
+  ## above)
+  vsum <- sum(vals*nobs)                # sum of the lot
+  population <- sum(nobs)               # number in population
+  result["Mean"] <- vsum/population     # average value
+
+
+  return(result)
+}
