@@ -1131,13 +1131,14 @@ second the number of elements with that value.
       stop("'x' must have 1 or more non-missing values")
     }
     vals <- unique(x)
-    rval <- approxfun(vals, cumsum(tabulate.binned(match(x, vals)), nobs=nobs)/n,
+    rval <- approxfun(vals, cumsum(tabulate.binned(match(x, vals), counts=nobs))/n,
                       method="constant",
                       yleft = 0, yright = 1,
                       f = 0, ties = "ordered")
     class(rval) <- c("ecdf", "stepfun", class(rval))
     assign("nobs", n, envir = environment(rval))
     attr(rval, "call") <- sys.call()
+    rval
   }
 
 
