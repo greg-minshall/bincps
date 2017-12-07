@@ -1120,8 +1120,8 @@ second the number of elements with that value.
   ##   (the unique values in x), returns the corresponding value of the
   ##   CDF in [0,1).
 
-  ecdf.binned <- function(x, nobs) {
-    "like ecdf, but for binned values; cribbed from ecdf"
+  ecdf.binned.common <- function(x, nobs, inverse) {
+    "like ecdf, but for binned values; cribbed from ecdf.  this works for forward function (ecdf.binned) and for inverse function (iecdf.binned)"
     check.binned("summary.ecdf", x, nobs)
     order <- order(x)
     x <- x[order]
@@ -1131,17 +1131,38 @@ second the number of elements with that value.
       stop("'x' must have 1 or more non-missing values")
     }
     vals <- unique(x)
-    rval <- approxfun(vals, cumsum(tabulate.binned(match(x, vals), counts=nobs))/n,
+    X <- vals
+    yleft <- 0
+    yright <- 1
+    Y <- cumsum(tabulate.binned(match(x, vals), counts=nobs))/n
+    if (inverse) {
+      tmp <- X
+      X <- Y
+      Y <- tmp
+      yleft <- x[1]
+      yright <- x[length(x)]
+    }
+    rval <- approxfun(X, Y,
                       method="constant",
-                      yleft = 0, yright = 1,
-                      f = 0, ties = "ordered")
+                      yleft = yleft, yright = yright,
+                      f = 0,              # XXX is this the right f for inverse?
+                      ties = "ordered")
     class(rval) <- c("ecdf", "stepfun", class(rval))
     assign("nobs", n, envir = environment(rval))
     attr(rval, "call") <- sys.call()
     rval
   }
 
+  ecdf.binned <- function(x, nobs) {
+    "like ecdf, but for binned values; cribbed from ecdf"
+    ecdf.binned.common(x, nobs, inverse = FALSE)
+  }
 
+  iecdf.binned <- function(x, nobs) {
+    "this is the inverse function from ecdf.binned (allowing you to get order statistics easily); probably \"slight\" overkill for that usage"
+    ecdf.binned.common(x, nobs, inverse = TRUE)
+  }
+  
   summary.binned <- function(vals, nobs) {
     summary.check("summary.binned", vals, nobs)
     if ((length(vals[!is.na(vals)]) == 0) ||
