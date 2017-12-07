@@ -419,7 +419,7 @@ test file is: ./ipums/19712014.csv.gz
     write.csv(rval$bset, ofile, row.names=FALSE, quote=FALSE);
     if (nrow(rset) != 0) {                # anything to report?
       ## if so, first sort it, then write it out
-      rset <- rset[order(rset$YEAR, rset[, income99]),]
+      rset <- rset[order(rset$YEAR),]
       write.csv(rset, rfile, row.names=FALSE, quote=FALSE)
     }
   }
@@ -699,6 +699,7 @@ test file is: ./ipums/19712014.csv.gz
                  "--rfile", "goo.csv",
                  "--fyear", 2014,
                  "--lyear", lyear,
+                 "--min99", 0,
                  "--max99", 500000,
                  "--binsize", binsize,
                  "--verbose", verbose)
@@ -1149,7 +1150,7 @@ second the number of elements with that value.
                       yleft = yleft, yright = yright,
                       f = 0,              # XXX is this the right f for inverse?
                       ties = "ordered")
-    class(rval) <- c("ecdf", "stepfun", class(rval))
+    # class(rval) <- c("ecdf", "stepfun", class(rval))
     assign("nobs", n, envir = environment(rval))
     attr(rval, "call") <- sys.call()
     rval
