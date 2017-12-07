@@ -419,7 +419,7 @@ test file is: ./ipums/19712014.csv.gz
     write.csv(rval$bset, ofile, row.names=FALSE, quote=FALSE);
     if (nrow(rset) != 0) {                # anything to report?
       ## if so, first sort it, then write it out
-      rset <- rset[order(rset$YEAR),]
+      rset <- rset[order(rset$YEAR, rset$"Max."),]
       write.csv(rset, rfile, row.names=FALSE, quote=FALSE)
     }
   }
@@ -697,7 +697,6 @@ test file is: ./ipums/19712014.csv.gz
     cmdline <- c("--ifile", ifile,
                  "--ofile", "foo.csv",
                  "--rfile", "goo.csv",
-                 "--fyear", 2014,
                  "--lyear", lyear,
                  "--min99", 0,
                  "--max99", 500000,
@@ -1177,9 +1176,17 @@ second the number of elements with that value.
     vals <- vals[order]
     nobs <- nobs[order]
 
-    ## get ecdf
-    Fn <- ecdf.binned(vals, nobs)
-    result <- summary(Fn)                      # get summary
+    ## get inverse ecdf for the order statistics
+    iFn <- iecdf.binned(vals, nobs)
+    result <- c("Min."=iFn(0), "1st Qu."=iFn(0.25), "Median"=iFn(0.5), "Mean"=0, "3rd Qu."=iFn(0.75), "Max."=iFn(1))
+
+    ## but, mean needs to be done differently (not an order statistic).
+    ## (max, min, are only "order statistics", as we sorted the matrix
+    ## above)
+    vsum <- sum(vals*nobs)                # sum of the lot
+    population <- sum(nobs)               # number in population
+    result["Mean"] <- vsum/population     # average value
+  
 
     return(result)
   }
