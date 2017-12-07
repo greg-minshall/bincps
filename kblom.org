@@ -1,6 +1,17 @@
 * [[https://twitter.com/kltblom][Kristian Blom]]: does recent (20 years?) change in US income distribution matter?
-** misc configuration stuff
+** misc configuration stuff :noexport:
 #+property: header-args :noweb yes
+
+#+name: warning
+#+BEGIN_SRC R :exports none
+  ## WARNING:
+  ##
+  ## this file is generated from the emacs .org file "kblom.org" via
+  ## "tangling".  any modifications to this file will be lost the next
+  ## time the .org file is tangled.  this file is provided for the use
+  ## of users who don't use emacs, or don't use org-mode.
+  ## 
+#+END_SRC
 ** investigating
 
 Kristian Blom [[https://twitter.com/kltblom/status/932394678241988609][showed a PDF]] (1971-2015), from Financial Times (based on
@@ -147,7 +158,7 @@ to format one file:
 #+RESULTS:
 
 
-#+BEGIN_SRC awk :shebang "#!/usr/bin/awk -f" :tangle realize
+#+BEGIN_SRC awk :shebang "#!/usr/bin/awk -f"
   BEGIN {
       FS = ",";
       OFS = ",";
@@ -181,7 +192,8 @@ i'll probably have to recode all this as an R script.  how to read a
 gzipped file?  [[http://grokbase.com/t/r/r-help/016v155pth/r-read-data-in-from-gzipped-file][one set of thoughts]].
 : x <- gzfile("./ipums/cps_00006.csv.gz", open="r")
 : y <- read.csv(x, header=TRUE)
-does the right thing.
+does the right thing.  in fact, it turns out that read.csv() will
+detect a .gz file and do the right thing.
 
 getting a file from IPUMS, extract request like this:
 #+BEGIN_QUOTE
@@ -205,7 +217,7 @@ selected.
 
 Attach data from mother, father, spouse or household head as a new
 variable (for example, education of mother).  Describe your extract
-#+end_quote
+#+END_QUOTE
 
 [[http://www.gapminder.org/data/][gapminder]] is another source of data in the world.
 
@@ -306,6 +318,7 @@ test file is: ./ipums/19712014.csv.gz
 
 #+name: bincps
 #+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss
+  <<warning>>
   <<summary.binned>>
 
 
@@ -1036,7 +1049,7 @@ so, what are the most occurring incomes?
 [16]  758  746  745  717  694  668  598  595  593  576  555  540  538  523  508
 #+END_EXAMPLE
 
-** display
+** stats.binned
 
 we need a summary routine for binned objects.  each bin has a "value"
 as well as a number of elements with that value.  we compute the same
@@ -1046,7 +1059,9 @@ the input is a matrix with 2 columns, the first being the value, the
 second the number of elements with that value.
 
 #+name: stats.binned
-#+BEGIN_SRC R :session ss
+#+BEGIN_SRC R :session ss :tangle stats.binned
+  <<warning>>
+
   check.binned <- function(fname, vals, nobs) {
     if (length(vals) == 0) {
       stop(sprintf("%s: no values", fname))
@@ -1186,25 +1201,13 @@ second the number of elements with that value.
     vsum <- sum(vals*nobs)                # sum of the lot
     population <- sum(nobs)               # number in population
     result["Mean"] <- vsum/population     # average value
-  
+
 
     return(result)
   }
 #+END_SRC
 
-#+RESULTS: stats.binned :session ss
-
-#+RESULTS: stats.binned
-
-#+RESULTS: summary.binned
-
-some cribbed from "everylittlebit" above.
-
-this process takes a binned file (e.g., as produced by bincps above),
-and produces yet another binned file, allowing one to clamp the
-maximum or minimum brackets.  portions of the population with incomes
-lower (resp. higher) than the brackets can be either discarded, or
-included in the first (resp. last) last bracket.
+** how to deal with exception reports?
 
 one issue the light of which i haven't seen: should reports of less
 than MIN99, greater than or equal to MAX99, be inserted as comments in
@@ -1228,75 +1231,6 @@ give up.  (presumably those same users -- plus, probably, a much
 broader class of users -- won't think of looking inside the .csv file,
 so won't see the comments describing the file, so won't be helped by
 those.
-
-#+name: bin2bin
-#+BEGIN_SRC R :session ss :var ifile="~/work/misc/econ/kblom/ipums/cps_00006.1962-2017-binned.csv" :var MAX99=500000 :var MIN99=0 :var include=1
-  require(ggplot2)
-
-  ## parameters
-  MAX99 <- 500000
-  MIN99 <- 0
-  ifile <- "~/work/misc/econ/kblom/ipums/cps_00006.1962-2017-binned.csv"
-
-  docums <- function (s) {
-    cumwtsupp = sum(dset[s,]$WTSUPP)
-    dset[s,]$CUMWTSUPP <<- cumsum(dset[s,]$WTSUPP)
-    dset[s,]$CUMPCTWTSUPP <<- dset[s,]$CUMWTSUPP/cumwtsupp
-    cumhwtsupp = sum(dset[s,]$HWTSUPP)
-    dset[s,]$CUMHWTSUPP <<- cumsum(dset[s,]$HWTSUPP)
-    dset[s,]$CUMPCTHWTSUPP <<- dset[s,]$CUMHWTSUPP/cumhwtsupp
-  }  
-
-  data <- read.csv(ifile)
-
-  data$YEAR <- as.factor(data$YEAR)
-
-  data <- data[order(data$HHBRACKET99),]  # sort our input
-
-  ## binsize?  to figure this out, we look at the smallest difference
-  ## between successive HHBRACKET99's
-  x <- data$HHBRACKET99                   # brackets
-  y <- unique(c(x[2,length(x)], NA) - x)  # list of unique deltas + NA
-  binsize <- min(y, na.rm=TRUE)           # take min, ignoring NA
-  if (is.na(binsize)) {
-    stop(sprintf("unable to compute binsize of input file \"%s\"", ifile))
-  }
-
-  ## 2014 had a trial with HFLAG==1; both HFLAG==0 and HFLAG==1 were
-  ## scaled ([H]WTSUPP) such that either would represent the entire US
-  ## population.  we stick with the traditional.
-  data <- data[is.na(data$HFLAG) | data$HFLAG == 0,]
-
-  datalow <- data[data$HHBRACKET99 < MIN99,]
-  datahigh <- data[data$HHBRACKET99 > MAX99,]
-  data <- data[data$HHBRACKET99 >= MIN99 & data$HHBRACKET99 <= MAX99,]
-
-  ## XXX should make sure we are using MIN99+binsize
-  data[1,]$WTSUPP <- data[1,]$WTSUPP + sum(datalow$WTSUPP)
-  data[1,]$HWTSUPP <- data[1,]$HWTSUPP + sum(datalow$HWTSUPP)
-
-  ## XXX should make sure we are using MAX99...
-  data[nrow(data),]$WTSUPP <- data[nrow(data),]$WTSUPP + sum(datahigh$WTSUPP)
-  data[nrow(data),]$HWTSUPP <- data[nrow(data),]$HWTSUPP + sum(datahigh$HWTSUPP)
-
-  # https://stackoverflow.com/a/32487458 on computing cumpct
-  for (year in unique(data$YEAR)) {
-    s <- data$YEAR == year & (is.na(data$HFLAG) | data$HFLAG==0)
-    docums(s)
-    s <- data$YEAR == year & (!is.na(data$HFLAG)) & data$HFLAG==1
-    docums(s)
-  }
-
-
-  ## https://stackoverflow.com/a/12762919
-  ggplot(data, aes(HHBRACKET99, colour = YEAR)) + stat_ecdf()
-
-
-#+END_SRC
-
-#+RESULTS: bin2bin
-
-#+RESULTS:
 
 ** executable R scripts
 
