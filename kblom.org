@@ -487,8 +487,11 @@ test file is: ./ipums/19712014.csv.gz
       }
     }
 
-    mysummary <- function(vals, nobs) {
+    mysummary <- function(vals, nobs=NULL) {
       "like summary, but try for a format consistent across numbers, NA, ..."
+      if (is.null(nobs)) {
+        nobs <- rep(1, length(vals))
+      }
       summary <- summary.binned(vals, nobs);
       if("NA's" %in% names(summary)) {
         summary <- summary[-which(names(summary) == "NA's")]
@@ -506,9 +509,7 @@ test file is: ./ipums/19712014.csv.gz
                        data.frame(t(c(YEAR=year,
                                       HWTSUPP=sum(yset[filter,]$HWTSUPP),
                                       WTSUPP=sum(yset[filter,]$WTSUPP),
-                                      mysummary(yset[filter,income99],
-                                                rep(1,length(yset[filter,
-                                                                  income99]))),
+                                      mysummary(yset[filter,income99]),
                                       COMMENT=commentun))))
       rsethwt <<- rbind(rsethwt,
                        data.frame(t(c(YEAR=year,
@@ -1045,18 +1046,19 @@ the input is a matrix with 2 columns, the first being the value, the
 second the number of elements with that value.
 
 #+name: stats.binned
-#+BEGIN_SRC R
+#+BEGIN_SRC R :session ss
   check.binned <- function(fname, vals, nobs) {
     if (length(vals) == 0) {
-      stop("summary.binned: no values")
+      stop(sprintf("%s: no values", fname))
     } else if (length(nobs) == 0) {
-      stop("summary.binned: no observations")
+      stop(sprintf("%s: no observations", fname))
     } else if (length(vals) != length(nobs)) {
-      stop("summary.binned: length(values) != length(number of observations)")
+      stop(sprintf("%s: length(values) [%d] != length(number of observations) [%d]",
+                   fname, length(vals), length(nobs)))
     } else if (!is.numeric(vals[!is.na(vals)])) {
-      stop("summary.binned: values must be numeric")
+      stop(sprintf("%s: values must be numeric", fname))
     } else if (!is.numeric(nobs[!is.na(nobs)])) {
-      stop("summary.binned: number of observations must be numeric")
+      stop(sprintf("%s: number of observations must be numeric", fname))
     }
   }
 
@@ -1162,9 +1164,9 @@ second the number of elements with that value.
     "this is the inverse function from ecdf.binned (allowing you to get order statistics easily); probably \"slight\" overkill for that usage"
     ecdf.binned.common(x, nobs, inverse = TRUE)
   }
-  
+
   summary.binned <- function(vals, nobs) {
-    summary.check("summary.binned", vals, nobs)
+    check.binned("summary.binned", vals, nobs)
     if ((length(vals[!is.na(vals)]) == 0) ||
         (length(nobs[!is.na(nobs)]) == 0)) { # "||"? i'm not sure
       return(c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA))
@@ -1175,25 +1177,16 @@ second the number of elements with that value.
     nobs <- nobs[order]
 
     ## get ecdf
-    Fn <- ecdf(nobs)
-    x <- summary(Fn)                      # get summary
-    ## so, what is happening here is that the order statistics are being
-    ## computed by ecdf.  ecdf returns where, in **nobs**, the order
-    ## lives.  then, we find the index of (approximately) that value,
-    ## and return the *value* at that index
-    result <- vapply(x,
-                     function (e) { vals[nobs == floor(e)] },
-                     FUN.VALUE=1)
-    ## but, mean needs to be done differently (not an order statistic).
-    ## (max, min, are only "order statistics", as we sorted the matrix
-    ## above)
-    vsum <- sum(vals*nobs)                # sum of the lot
-    population <- sum(nobs)               # number in population
-    result["Mean"] <- vsum/population     # average value
+    Fn <- ecdf.binned(vals, nobs)
+    result <- summary(Fn)                      # get summary
 
     return(result)
   }
 #+END_SRC
+
+#+RESULTS: stats.binned :session ss
+
+#+RESULTS: stats.binned
 
 #+RESULTS: summary.binned
 
