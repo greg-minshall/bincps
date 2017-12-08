@@ -1162,3 +1162,6 @@ give up.  likely those same users -- plus, probably, a much broader
 class of users -- won't think of looking inside the .csv file, so
 won't see the comments describing the file, so won't be helped by
 the so-called "self-description".
+
+i think in an ideal world, i'd provide a command line switch that
+would determine how to deal with these files.
