@@ -1139,16 +1139,17 @@ so, what are the most occurring incomes?
 
 ** how to deal with exception reports?
 
-one issue the light of which i haven't seen: should reports of less
-than MIN99, greater than or equal to MAX99, be inserted as comments in
-the output .csv file, or output to a separate file (rfile, in bincps),
-or printed on the console?
+one issue the light of which i've yet to see: should the "exception"
+reports (of incomes less than less than MIN99, greater than or equal
+to MAX99) be inserted as comments in the output .csv file, or output
+to a separate file (rfile, in bincps), or printed on the console?
 
 the argument for including such reports in the .csv file is that, in
-this case, the .csv file becomes self-describing.  (there's a bit of
-self-description in the file name, and more could be put there, though
-after a while that becomes very awkward.)  self-describing data sets
-are a "GOOD THING".
+this case, the .csv file becomes more self-describing.  (there's a bit
+of self-description in the file name, and more could be put there,
+though after a while that becomes very awkward.)  self-describing data
+sets are a "GOOD THING" (and, even semi-self-describing data sets are,
+at least, a "good thing").
 
 the argument against including such reports in the .csv file is that
 then a pure "read.csv(ifile)" won't work, as read.csv assumes one
@@ -1157,14 +1158,7 @@ while one can document (even in a comment in the .csv file itself!)
 that the .csv file contains comments and that in, e.g., R, one needs
 to call read.csv(..., comment.char="#"); however, a certain percentage
 of potential users will get lost before finding that message and will
-give up.  (presumably those same users -- plus, probably, a much
-broader class of users -- won't think of looking inside the .csv file,
-so won't see the comments describing the file, so won't be helped by
-those.
-
-** executable R scripts
-
-executable R scripts can be made with either Rscript or [[https://github.com/eddelbuettel/littler][littler]].
-
-
-
+give up.  likely those same users -- plus, probably, a much broader
+class of users -- won't think of looking inside the .csv file, so
+won't see the comments describing the file, so won't be helped by
+the so-called "self-description".
