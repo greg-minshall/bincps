@@ -136,6 +136,10 @@ series).  from American Community (?) Survey.
 
 the [[https://www.cbo.gov/publication/51361][CBO]] has data, but mostly quintile-level.
 
+a very nice [[https://www.cbpp.org/][Center on Budget and Policy Priorities]] paper, [[https://www.cbpp.org/research/poverty-and-inequality/a-guide-to-statistics-on-historical-trends-in-income-inequality]["A Guide to
+Statistics on Historical Trends in Income Inequality"]], points at "most
+recent" [[http://eml.berkeley.edu/~saez/TabFig2015prel.xls][Piketty/Saez estimates]].
+
 [[https://cps.ipums.org/cps-action/downloads/extract_files/cps_00002.xml][IPUMS columns]]:
 - YEAR
 - [[https://cps.ipums.org/cps-action/variables/SERIAL][SERIAL]]: household serial number
@@ -317,10 +321,9 @@ real file is: ./ipums/cps_00006.csv.gz
 test file is: ./ipums/19712014.csv.gz
 
 #+name: bincps
-#+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss
+#+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
-  <<summary.binned>>
-
+  <<stats.binned>>
 
   getout <- function(message, code) {
     if (interactive()) {
@@ -397,7 +400,7 @@ test file is: ./ipums/19712014.csv.gz
     if (is.element("HHINCOME", colnames(dset))) {
       income99 <- "HHINCOME99"
       ## now, convert all income to 1999 dollars
-      dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
+      dset <- cbind(dset, HHINCOME99=dset$HHINCOME*dset$CPI99)
     } else if (is.element("HHBRACKET99", colnames(dset))) {
       income99 <- "HHBRACKET99"
       ## what is input binsize?  to figure this out, we look at the
@@ -664,12 +667,12 @@ test file is: ./ipums/19712014.csv.gz
                       help="last year to process; if not specified, the last year in the input file will be used")
     p <- add_argument(p, "--binsize", type="integer", default=1000,
                       help="output bin size")
-    p <- add_argument(p, "--min99", type="integer", default=-Inf,
+    p <- add_argument(p, "--min99", type="integer", default=-Inf, short="-m",
                       help="don't bin dollar amounts below this value")
-    p <- add_argument(p, "--max99", type="integer", default=Inf,
+    p <- add_argument(p, "--max99", type="integer", default=Inf, short="-M",
                       help="don't bin dollar amounts above this value")
     p <- add_argument(p, "--verbose", type="integer", default=0,
-                      help="how much informational/debugging output should be produced")
+                      help="informational/debugging output quantity")
     p <- add_argument(p, "--infminmax", flag=TRUE, default=FALSE,
                       help="should bins for values below min99 (resp. above max99) appear as \"-Inf\" (resp. \"Inf\"); if not, they will be assigned bins just below min99 (resp. just above max99)")
 
@@ -711,15 +714,11 @@ test file is: ./ipums/19712014.csv.gz
                  "--ofile", "foo.csv",
                  "--rfile", "goo.csv",
                  "--lyear", lyear,
-                 "--min99", 0,
-                 "--max99", 500000,
                  "--binsize", binsize,
                  "--verbose", verbose)
 
     main(cmdline)
   }
-
-
 
   options(error=recover)
   options(warn=2)
@@ -732,8 +731,6 @@ test file is: ./ipums/19712014.csv.gz
     print(warnings())
   }
 #+END_SRC
-
-#+RESULTS: bincps
 
 ** performance tuning
 
@@ -1059,7 +1056,7 @@ the input is a matrix with 2 columns, the first being the value, the
 second the number of elements with that value.
 
 #+name: stats.binned
-#+BEGIN_SRC R :session ss :tangle stats.binned
+#+BEGIN_SRC R :session ss :tangle stats.binned :results none
   <<warning>>
 
   check.binned <- function(fname, vals, nobs) {
@@ -1184,7 +1181,7 @@ second the number of elements with that value.
     check.binned("summary.binned", vals, nobs)
     if ((length(vals[!is.na(vals)]) == 0) ||
         (length(nobs[!is.na(nobs)]) == 0)) { # "||"? i'm not sure
-      return(c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA))
+      return(c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, "Max."=NA))
     }
     ## sort our input
     order <- order(vals)
