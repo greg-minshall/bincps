@@ -1,4 +1,4 @@
-* [[https://twitter.com/kltblom][Kristian Blom]]: does recent (20 years?) change in US income distribution matter?
+* [[https://twitter.com/kltblom][Kristian Blom]]: does recent (40+ years) change in US income distribution matter?
 ** misc configuration stuff :noexport:
 #+property: header-args :noweb yes
 
@@ -12,10 +12,19 @@
   ## of users who don't use emacs, or don't use org-mode.
   ## 
 #+END_SRC
-** investigating
+** introduction
 
 Kristian Blom [[https://twitter.com/kltblom/status/932394678241988609][showed a PDF]] (1971-2015), from Financial Times (based on
-data from Pew Trust).  i don't see where to get that data.  but,
+data from Pew Trust).  Blom asked, given that the past forty-plus
+years has seen *everyone* do better, should we be worried about the
+growing inequality?
+
+for me, i felt the need to see the data as a CDF to really understand
+what was going on.  this led to a quest to find appropriate data (for
+the US).
+
+** where to find data?
+
 [[https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls][Census Bureau]] has something that breaks down by each fifth and top 5%.
 
 #+BEGIN_SRC R :session ss :var tseries=tseries
@@ -31,7 +40,8 @@ colnames(tseries) <- c("year", "number", "lowest", "second", "third", "fourth", 
 | fourth     |
 | llimittop5 |
 
-he has about 50 buckets.  i have 6.  sigh.
+however, the FT graph Blom showed has about fifty buckets, whereas the
+Census data seems to have have six.
 
 #+name: tseries
 #+BEGIN_SRC sh
@@ -110,13 +120,13 @@ new06_000.txt: 2003
 
 ([[https://www.census.gov/popclock/][US, world population clock]])
 
-[[https://usa.ipums.org/usa/][ipums.org]] is some sort of data service.  (it uses [[http://www.nber.org/data/current-population-survey-data.html][NBER data]].)  the
-ipums data is unaggregated.  about 2MB for a file (1995).  and, of
-course, many variables i don't understand.  plus, in nominal dollars.
-but, the fact that it is unaggregated means that one can put in real
-dollars *before* binning.  (though, when looking at a CDF, one can
-convert each year's bin's into real dollars after the fact without
-affecting things.)
+[[https://usa.ipums.org/usa/][ipums.org]] is a data service which uses [[http://www.nber.org/data/current-population-survey-data.html][NBER data]].  the ipums data is
+unaggregated.  about 2MB for a file (1995).  and, of course, many
+variables i don't understand.  plus, in nominal dollars.  but, the
+fact that it is unaggregated means that one can put in real dollars
+*before* binning.  (though, when looking at a CDF, one can convert
+each year's bin's into real dollars after the fact without affecting
+things.)
 
 [[http://www.pressure.to/works/hbai_in_r/][households below average income]] analysis in R.  for UK data, however.
 
@@ -132,13 +142,18 @@ regardless of whether their businesses are incorporated."
 the [[https://statisticalatlas.com/United-States/Household-Income][Statistical Atlas]] has nice graphics (though maybe not time
 series).  from American Community (?) Survey.
 
-[[https://www.cbpp.org/research/poverty-and-inequality/a-guide-to-statistics-on-historical-trends-in-income-inequality][a-guide-to-statistics-on-historical-trends-in-income-inequality]].
-
-the [[https://www.cbo.gov/publication/51361][CBO]] has data, but mostly quintile-level.
+the [[https://www.cbo.gov/publication/51361][CBO]] has data (under "Data and Supplemental Information"), but
+mostly quintile-level.
 
 a very nice [[https://www.cbpp.org/][Center on Budget and Policy Priorities]] paper, [[https://www.cbpp.org/research/poverty-and-inequality/a-guide-to-statistics-on-historical-trends-in-income-inequality]["A Guide to
 Statistics on Historical Trends in Income Inequality"]], points at "most
 recent" [[http://eml.berkeley.edu/~saez/TabFig2015prel.xls][Piketty/Saez estimates]].
+
+[[http://www.gapminder.org/data/][gapminder]] is another source of data in the world (not just US).
+
+** looking at the ipums data
+
+the ipums data seems the easiest to use.
 
 [[https://cps.ipums.org/cps-action/downloads/extract_files/cps_00002.xml][IPUMS columns]]:
 - YEAR
@@ -161,7 +176,7 @@ to format one file:
 
 #+RESULTS:
 
-
+this would have been "tangled" (saved) as "realize".
 #+BEGIN_SRC awk :shebang "#!/usr/bin/awk -f"
   BEGIN {
       FS = ",";
@@ -212,7 +227,6 @@ ESTIMATED SIZE:642.4 MB
  
 OPTIONS
 
-
 Data quality flags are not available for any of the variables you've
 selected.
 
@@ -222,16 +236,16 @@ selected.
 Attach data from mother, father, spouse or household head as a new
 variable (for example, education of mother).  Describe your extract
 #+END_QUOTE
-
-[[http://www.gapminder.org/data/][gapminder]] is another source of data in the world.
+(in fact, the data set, from 1962--2017, was 82MB compressed, 520MB
+uncompressed.)
 
 ** deflating
 
 need to change from nominal to real dollars.  [[https://www.dallasfed.org/research/basics/nominal.cfm][Dallas Fed]] has some
 explanation.
 
-[[https://cps.ipums.org/cps/cpi99.shtml][IPUMS]] has a variable, [[https://cps.ipums.org/cps-action/variables/CPI99][CPI99]], that can be used to convert everything
-to/from 1999 dollars.
+on the other hand, conveniently, [[https://cps.ipums.org/cps/cpi99.shtml][IPUMS]] has a variable, [[https://cps.ipums.org/cps-action/variables/CPI99][CPI99]], that can
+be used to convert everything to/from 1999 dollars.
 
 ** citing IPUMS
 
@@ -251,74 +265,24 @@ data as follows:
 IPUMS-CPS, University of Minnesota, www.ipums.org
 #+END_QUOTE
 
-** everylittlebit
-
-real file is: ./ipums/cps_00006.csv.gz
-#+name: everylittlebit
-#+BEGIN_SRC R :session ss :var fname="./ipums/19712014.csv.gz"
-  docums <- function (s) {
-    cumwtsupp = sum(dset[s,]$WTSUPP)
-    dset[s,]$CUMWTSUPP <<- cumsum(dset[s,]$WTSUPP)
-    dset[s,]$CUMPCTWTSUPP <<- dset[s,]$CUMWTSUPP/cumwtsupp
-    cumhwtsupp = sum(dset[s,]$HWTSUPP)
-    dset[s,]$CUMHWTSUPP <<- cumsum(dset[s,]$HWTSUPP)
-    dset[s,]$CUMPCTHWTSUPP <<- dset[s,]$CUMHWTSUPP/cumhwtsupp
-  }  
-
-  require(ggplot2)
-
-  TOOHIGH = 10000000
-
-  x <- gzfile(fname, open="r")
-  dset <- read.csv(x, header=TRUE)
-  # years are factors in our usage
-  dset$YEAR <- as.factor(dset$YEAR)
-  dset <- cbind(dset, HHINCOME1999=dset$HHINCOME*dset$CPI99)
-  # http://answers.popdata.org/2014-WTSUPP-appears-doubled-q2066078.aspx
-  dset <- dset[HFLAG==0,]
-  # sort
-  dset <- dset[order(dset$YEAR, dset$HHINCOME1999),]
-  # negative incomes?  describe
-  nrow(dset[dset$HHINCOME1999<0,])
-  summary(dset[dset$HHINCOME1999<0,"HHINCOME1999"])
-  # now, get rid of negative incomes
-  dset <- dset[dset$HHINCOME1999 >= 0,]
-  # unrealistically (?) high incomes?  describe
-  nrow(dset[dset$HHINCOME1999>TOOHIGH,])
-  # (use HHINCOME, since we'd like to understand *reported* [recorded?]
-  # value)
-  summary(dset[dset$HHINCOME1999>TOOHIGH,c("YEAR","HHINCOME")])
-  # now, get rid of all of those
-  dset <- dset[dset$HHINCOME1999 <= TOOHIGH,]
-  # cumulative sums of [H]WTSUPP (relies on being ordered)
-  dset <- cbind(dset, CUMWTSUPP=0, CUMPCTWTSUPP=0, CUMHWTSUPP=0, CUMPCTHWTSUPP=0)
-  # https://stackoverflow.com/a/32487458 on computing cumpct
-  for (year in unique(dset$YEAR)) {
-    s <- dset$YEAR == year & (is.na(dset$HFLAG) | dset$HFLAG==0)
-    docums(s)
-    s <- dset$YEAR == year & (!is.na(dset$HFLAG)) & dset$HFLAG==1
-    docums(s)
-  }
-#+END_SRC
-
-#+RESULTS: everylittlebit
-
 ** bincps
    :PROPERTIES:
    :ORDERED:  t
    :END:
 
-what we want to do is create a file which is a "binned" version of the
-full-detail file.  this includes "rolling up" the [H]WTSUPP columns by
-year, dropping the SERIAL, CPSID, PERNUM, CPSIDP columns in the
-process.  the HHINCOME is replaced by a (computed) HHINCOME1999: the
-reported HHINCOME in 1999 dollars.  this is so bins are comparable
-between years.  (additionally, the MONTH column may be NA'd, if there
-is more than one month in a bin -- unlikely, given that the releases
-seem to be in March of every year.)
+in our file, the HHINCOME column is replaced by a (computed)
+HHINCOME1999: the reported HHINCOME in 1999 dollars.  this is so bins
+are comparable between years.  we use IPUMS' CPI99 column for this
+purpose.
 
-real file is: ./ipums/cps_00006.csv.gz
-test file is: ./ipums/19712014.csv.gz
+then, what we want is create a file which is a "binned" version of the
+full-detail file which, instead of the detail file's HHINCOME column,
+will have a HHBRACKET99, which will include all data with HHINCOME99
+in the same "bracket" ("bin"), of $1,000, say.  this involves "rolling
+up" the [H]WTSUPP columns by year, dropping the SERIAL, CPSID, PERNUM,
+CPSIDP columns in the process.  (additionally, the MONTH column may be NA'd, if there is more
+than one month in a bin -- unlikely, given that the releases seem to
+be in March of every year.)
 
 #+name: bincps
 #+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss :results none
@@ -734,12 +698,35 @@ test file is: ./ipums/19712014.csv.gz
 
 ** performance tuning
 
+the original version of this code processed each (non-trivial) year in
+about 5 minutes on my system.  this turned out to be due to my habit,
+motivated by trying to save main store usage, of not creating
+subsetted copies of the massive dataset 'dset', but rather just using
+"filters".  code such as:
+:       sna <- sy & snabit
+and then accessing 'dset' via the filter
+: if (nrow(yset[sna,]) != 0)
+
+so, i modified the code to create a new dataset, 'yset', for each
+year, then use filters to access inside that dataset while processing
+that year's data.  this got the time to process a year's worth of data
+to fall to 5-20 seconds.
+
+i became curious to know how these numbers related to the number of
+observations in each year.  here we use awk(1) to count how many
+observations are used in each year.
+
 #+name: yearpeople
 #+BEGIN_SRC sh :cache yes
-zcat ipums/cps_00006.csv.gz | awk 'BEGIN { FS="," } /^[12]/ { print $1}' | words -f
+  zcat ipums/cps_00006.csv.gz |
+      awk 'BEGIN { FS="," } /^[12]/ { print $1}' |
+      words -f                    # words returns each word seen, along
+                                  # with the number of times that word
+                                  # was seen (the "-f", "frequency",
+                                  # flag)
 #+END_SRC
 
-#+RESULTS[046937802a865ff27c58d43f36f6e73699980d2c]: yearpeople
+#+RESULTS[ea0344ff23fa76aad213c3cc0bd2cc671e5f2113]: yearpeople
 | 1962 |  71741 |
 | 1963 |  55882 |
 | 1964 |  54543 |
@@ -860,6 +847,10 @@ this is from a run
 | 2016 | Thu Nov 30 17:53:31 2017 |
 | 2017 | Thu Nov 30 17:53:46 2017 |
 
+then, we use some R code to put the preceding two outputs together and
+compute the number of seconds per person.
+
+#+name: peoplepersecond
 #+BEGIN_SRC R :session ss :var yeartimes=yeartimes :var yearpeople=yearpeople
   rownames(yearpeople) <- yearpeople[,1]
   colnames(yearpeople) <- c("pyear", "people")
@@ -873,7 +864,9 @@ this is from a run
   cbind(year=years$tyear, perperson=years$delta)
 #+END_SRC
 
-#+RESULTS:
+so, the number of people processed per second is:
+
+#+RESULTS: peoplepersecond
 | 1962 | 3260.95454545455 |
 | 1963 | 2540.09090909091 |
 | 1964 | 2479.22727272727 |
@@ -930,66 +923,6 @@ this is from a run
 | 2015 | 9046.54545454545 |
 | 2016 | 8431.22727272727 |
 | 2017 |              nil |
-
-so, the number of people processed per seconds
-
-#+RESULTS:
-| 1962 |              nil |
-| 1963 | 2540.09090909091 |
-| 1964 | 2479.22727272727 |
-| 1965 | 2477.36363636364 |
-| 1966 |           5002.5 |
-| 1967 | 3121.63636363636 |
-| 1968 | 6859.68181818182 |
-| 1969 | 6902.18181818182 |
-| 1970 | 6591.95454545455 |
-| 1971 | 6673.72727272727 |
-| 1972 | 6383.27272727273 |
-| 1973 | 6191.86363636364 |
-| 1974 | 6058.27272727273 |
-| 1975 | 5914.72727272727 |
-| 1976 | 6152.31818181818 |
-| 1977 | 7309.04545454545 |
-| 1978 | 7077.54545454545 |
-| 1979 | 7026.95454545455 |
-| 1980 | 8249.45454545455 |
-| 1981 | 8243.54545454545 |
-| 1982 | 7395.59090909091 |
-| 1983 |           7392.5 |
-| 1984 | 7325.77272727273 |
-| 1985 | 7334.63636363636 |
-| 1986 | 7166.40909090909 |
-| 1987 | 7066.72727272727 |
-| 1988 |             7090 |
-| 1989 | 6576.68181818182 |
-| 1990 | 7185.40909090909 |
-| 1991 |           7203.5 |
-| 1992 | 7081.63636363636 |
-| 1993 | 7054.40909090909 |
-| 1994 | 6861.04545454545 |
-| 1995 | 6801.90909090909 |
-| 1996 | 5930.72727272727 |
-| 1997 | 5993.36363636364 |
-| 1998 | 5982.59090909091 |
-| 1999 | 6014.72727272727 |
-| 2000 | 6077.72727272727 |
-| 2001 | 9921.31818181818 |
-| 2002 | 9873.59090909091 |
-| 2003 | 9837.45454545455 |
-| 2004 | 9692.77272727273 |
-| 2005 | 9574.90909090909 |
-| 2006 | 9480.09090909091 |
-| 2007 | 9392.68181818182 |
-| 2008 |             9382 |
-| 2009 | 9450.95454545455 |
-| 2010 | 9536.45454545455 |
-| 2011 | 9317.40909090909 |
-| 2012 | 9154.45454545455 |
-| 2013 | 9210.63636363636 |
-| 2014 | 9070.72727272727 |
-| 2015 | 9046.54545454545 |
-| 2016 | 8431.22727272727 |
-| 2017 | 8450.63636363636 |
 
 ** most occurring incomes
 
