@@ -1,3 +1,11 @@
+## WARNING:
+##
+## this file is generated from the emacs .org file "kblom.org" via
+## "tangling".  any modifications to this file will be lost the next
+## time the .org file is tangled.  this file is provided for the use
+## of users who don't use emacs, or don't use org-mode.
+## 
+
 check.binned <- function(fname, vals, nobs) {
   if (length(vals) == 0) {
     stop(sprintf("%s: no values", fname))
@@ -120,7 +128,7 @@ summary.binned <- function(vals, nobs) {
   check.binned("summary.binned", vals, nobs)
   if ((length(vals[!is.na(vals)]) == 0) ||
       (length(nobs[!is.na(nobs)]) == 0)) { # "||"? i'm not sure
-    return(c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, Max=NA))
+    return(c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, "Max."=NA))
   }
   ## sort our input
   order <- order(vals)

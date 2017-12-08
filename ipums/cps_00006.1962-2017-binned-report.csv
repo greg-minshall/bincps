@@ -1,7 +1,19 @@
-"","YEAR","NROW","Min.","X1st.Qu.","Median","Mean","X3rd.Qu.","Max.","NA.s","COMMENT"
-"1","1962","71741",NA,NA,NA,"NaN",NA,NA,"71741","income not provided"
-"2","1963","55882",NA,NA,NA,"NaN",NA,NA,"55882","income not provided"
-"3","1964","54543",NA,NA,NA,"NaN",NA,NA,"54543","income not provided"
-"4","1965","54502",NA,NA,NA,"NaN",NA,NA,"54502","income not provided"
-"5","1966","110055",NA,NA,NA,"NaN",NA,NA,"110055","income not provided"
-"6","1967","68676",NA,NA,NA,"NaN",NA,NA,"68676","income not provided"
+YEAR,HWTSUPP,WTSUPP,Min,X1st.Qu.,Median,Mean,X3rd.Qu.,Max.,COMMENT
+1962,126152506.24,127479110.5,NA,NA,NA,NA,NA,NA,(unweighted) income not provided
+1962,126152506.24,127479110.5,NA,NA,NA,NA,NA,NA,(hwtsupp-weighted) income not provided
+1962,126152506.24,127479110.5,NA,NA,NA,NA,NA,NA,(wtsupp-weighted) income not provided
+1963,125744057.4213,129674913.5689,NA,NA,NA,NA,NA,NA,(unweighted) income not provided
+1963,125744057.4213,129674913.5689,NA,NA,NA,NA,NA,NA,(hwtsupp-weighted) income not provided
+1963,125744057.4213,129674913.5689,NA,NA,NA,NA,NA,NA,(wtsupp-weighted) income not provided
+1964,130793734.88,131860730.07,NA,NA,NA,NA,NA,NA,(unweighted) income not provided
+1964,130793734.88,131860730.07,NA,NA,NA,NA,NA,NA,(hwtsupp-weighted) income not provided
+1964,130793734.88,131860730.07,NA,NA,NA,NA,NA,NA,(wtsupp-weighted) income not provided
+1965,132096574.13,133885649.82,NA,NA,NA,NA,NA,NA,(unweighted) income not provided
+1965,132096574.13,133885649.82,NA,NA,NA,NA,NA,NA,(hwtsupp-weighted) income not provided
+1965,132096574.13,133885649.82,NA,NA,NA,NA,NA,NA,(wtsupp-weighted) income not provided
+1966,134559728.9351,137069092.2293,NA,NA,NA,NA,NA,NA,(unweighted) income not provided
+1966,134559728.9351,137069092.2293,NA,NA,NA,NA,NA,NA,(hwtsupp-weighted) income not provided
+1966,134559728.9351,137069092.2293,NA,NA,NA,NA,NA,NA,(wtsupp-weighted) income not provided
+1967,141707355.8182,138696666.0035,NA,NA,NA,NA,NA,NA,(unweighted) income not provided
+1967,141707355.8182,138696666.0035,NA,NA,NA,NA,NA,NA,(hwtsupp-weighted) income not provided
+1967,141707355.8182,138696666.0035,NA,NA,NA,NA,NA,NA,(wtsupp-weighted) income not provided
