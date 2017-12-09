@@ -14,10 +14,10 @@
 #+END_SRC
 ** introduction
 
-in a [[https://twitter.com/kltblom/status/932394678241988609][tweet]], Kristian Blom showed [[file:./DPCIA2AUQAEO0lv.jpg][a histogram]] (1971-2015), from
-Financial Times (based on data from Pew Trust).  Blom asked, given
-that the past forty-plus years has seen *everyone* do better, should
-we be worried about the growing inequality?
+in a [[https://twitter.com/kltblom/status/932394678241988609][tweet]] from 19 November, 2017, Kristian Blom showed [[file:./DPCIA2AUQAEO0lv.jpg][a histogram]]
+(1971-2015), from Financial Times (based on data from Pew Trust).
+Blom asked, given that the past forty-plus years has seen *everyone*
+do better, should we be worried about the growing inequality?
 
 for me, i felt the need to see the data as a CDF to really understand
 what was going on.  this led to a quest to find appropriate data (for
@@ -1197,12 +1197,22 @@ would determine how to deal with these files.
     my.iecdf[[year]] <- iecdf.binned(dset[sy,]$HHBRACKET99, dset[sy,supp])
   }
 
-  myggplot <- function(years) {
+  ggp.ecdf <- function(years) {
     base <- ggplot(data.frame(x=c(0,200000)), aes(x))
     for (y in years) {
       base <- base + stat_function(fun=my.ecdf[[y]], aes_(colour=as.factor(y)))
     }
     base
+  }
+  ggp.tiles <- function(years, tiles=c(0.1, 0.9)) {
+    base <- ggplot()
+    for (y in years) {
+      base <- base + geom_line(data=data.frame(year=as.factor(y),
+                                  tile=tiles,
+                                  hhincome99=my.iecdf[[y]](tiles)),
+                                aes(x=tile, y=hhincome99, colour=year))
+    }
+    eval(base)
   }
 
 #+END_SRC
