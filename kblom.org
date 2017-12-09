@@ -421,6 +421,34 @@ second the number of elements with that value.
 
     return(result)
   }
+
+  rebin.binned <- function(vals, nobs, nvals) {
+    require(iterators, quietly=TRUE)
+    "given a set of bins (values), with its set of observations counts, produce a new set of bins, with a new set of observation counts.  the old values vals must fit \"integrally\" into the new vals.  returns the new observation counts."
+    newcount <- vector()
+    iter.nvals <- iter(nvals)
+    nv <- nextElem(iter.nvals)
+    iter.vals <- iter(vals)
+    iter.nobs <- iter(nobs)
+    v <- nextElem(iter.vals)
+    count <- 0
+    nnobs <- integer()
+    tryCatch(
+             repeat {
+               while (v > nv) {
+                 nnobs <- c(nnobs, count)
+                 count <- 0
+                 nv <- nextElem(iter.nvals)
+               }
+               while (v <= nv) {
+                 count <- count + nextElem(iter.nobs)
+                 v <- nextElem(iter.vals)
+               }
+             },
+             error=function(e) if (e$message != "StopIteration") e,
+             finally=nnobs <- c(nnobs, count))
+    nnobs
+  }
 #+END_SRC
 
 ** bincps
@@ -1183,6 +1211,8 @@ would determine how to deal with these files.
   supp <- "HWTSUPP"                       # which variant to use
 
   dset <- read.csv(ifile, header=TRUE)
+  dset <- dset[dset$HFLAG == FALSE | is.na(dset$HFLAG),]
+  dset <- dset[dset$YEAR>1967,]        # before 1967, NA data
   dset$FYEAR <- as.factor(dset$YEAR)      # years are (often) factors to us
 
   min <- min(dset$HHBRACKET99, na.rm=TRUE)
@@ -1202,9 +1232,11 @@ would determine how to deal with these files.
     for (y in years) {
       base <- base + stat_function(fun=my.ecdf[[y]], aes_(colour=as.factor(y)))
     }
-    base
+    eval(base)
   }
-  ggp.tiles <- function(years, tiles=c(0.1, 0.9)) {
+
+  ggp.tiles <- function(years=c(1972, 2014), tiles=c(0.1, 0.9)) {
+    "plot the tiles for a given set of deciles over a set of years"
     base <- ggplot()
     for (y in years) {
       base <- base + geom_point(data=data.frame(year=as.factor(y),
@@ -1213,6 +1245,13 @@ would determine how to deal with these files.
                                 aes(x=tile, y=hhincome99, colour=year))
     }
     eval(base)
+  }
+
+  pyear <- function(iecdf, y1, y2, tiles) {
+    "what is the annual rate of growth for a given decile between years y1 and y2?"
+    my1 <- min(y1, y2)
+    my2 <- max(y1, y2)
+    (iecdf[[y2]](tiles)/my.iecdf[[y1]](tiles))^(1/(y2-y1))-1
   }
 
 #+END_SRC
