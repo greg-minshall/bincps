@@ -1207,7 +1207,7 @@ would determine how to deal with these files.
   ggp.tiles <- function(years, tiles=c(0.1, 0.9)) {
     base <- ggplot()
     for (y in years) {
-      base <- base + geom_line(data=data.frame(year=as.factor(y),
+      base <- base + geom_point(data=data.frame(year=as.factor(y),
                                   tile=tiles,
                                   hhincome99=my.iecdf[[y]](tiles)),
                                 aes(x=tile, y=hhincome99, colour=year))
@@ -1216,3 +1216,5 @@ would determine how to deal with these files.
   }
 
 #+END_SRC
+
+#+RESULTS:
