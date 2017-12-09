@@ -1200,7 +1200,7 @@ would determine how to deal with these files.
   myggplot <- function(years) {
     base <- ggplot(data.frame(x=c(0,200000)), aes(x))
     for (y in years) {
-      base <- base + stat_function(fun=my.ecdf[[y]], aes(colour=as.factor(y)))
+      base <- base + stat_function(fun=my.ecdf[[y]], aes_(colour=as.factor(y)))
     }
     base
   }
