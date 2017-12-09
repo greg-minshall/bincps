@@ -1183,18 +1183,26 @@ would determine how to deal with these files.
   supp <- "HWTSUPP"                       # which variant to use
 
   dset <- read.csv(ifile, header=TRUE)
-  dset$YEAR <- as.factor(dset$YEAR)       # years are factors to us
+  dset$FYEAR <- as.factor(dset$YEAR)      # years are (often) factors to us
 
   min <- min(dset$HHBRACKET99, na.rm=TRUE)
   max <- max(dset$HHBRACKET99, na.rm=TRUE)
   binsize <- 1000                         # XXX
 
-  x <- seq(from=min, to=max, by=binsize)
-  xyset <- data.frame()
+  my.ecdf <- list()
+  my.iecdf <- list()
   for (year in unique(dset$YEAR)) {
     sy <- dset$YEAR == year
-    ecdf <- ecdf.binned(dset[sy,]$HHBRACKET99, dset[sy,supp])
-    xyset <- rbind(xyset, data.frame(year=year, x=x, y=ecdf(x)))
+    my.ecdf[[year]] <- ecdf.binned(dset[sy,]$HHBRACKET99, dset[sy,supp])
+    my.iecdf[[year]] <- iecdf.binned(dset[sy,]$HHBRACKET99, dset[sy,supp])
+  }
+
+  myggplot <- function(years) {
+    base <- ggplot(data.frame(x=c(0,200000)), aes(x))
+    for (y in years) {
+      base <- base + stat_function(fun=my.ecdf[[y]], aes(colour=as.factor(y)))
+    }
+    base
   }
 
 #+END_SRC
