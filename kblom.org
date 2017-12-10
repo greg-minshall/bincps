@@ -1282,7 +1282,6 @@ would determine how to deal with these files.
   dset <- read.csv(ifile, header=TRUE)
   dset <- dset[dset$HFLAG == FALSE | is.na(dset$HFLAG),]
   dset <- dset[dset$YEAR>1967,]        # before 1967, NA data
-  dset$FYEAR <- as.factor(dset$YEAR)      # years are (often) factors to us
 
   min <- min(dset$HHBRACKET99, na.rm=TRUE)
   max <- max(dset$HHBRACKET99, na.rm=TRUE)
@@ -1322,5 +1321,35 @@ would determine how to deal with these files.
     my2 <- max(y1, y2)
     (iecdf[[y2]](tiles)/my.iecdf[[y1]](tiles))^(1/(y2-y1))-1
   }
+
+  rebinvals <- function(min, max=NA, binsize) {
+    "return the set of new values for a given resize"
+    x <- min(c(min, max), na.rm=TRUE)
+    y <- max(c(min, max), na.rm=TRUE)
+    min <- x
+    max <- y
+    smin <- sign(min)
+    smax <- sign(max)
+    lo <- smin*(as.integer(abs(min)/binsize)*binsize)
+    hi <- smax*(as.integer((abs(max)+binsize)/binsize)*binsize)
+    return(seq(lo, hi, binsize))
+  }
+
+  repro.chart <- function(dset) {
+    yset <- dset[dset$YEAR==2016,]
+    binsize <- 5000                       # what FT used
+    nvals <- rebinlimits(min(yset$HHBRACKET99, na.rm=TRUE),
+                         max(yset$HHBRACKET99, na.rm=TRUE),
+                         binsize)
+    nobs <- rebin.binned(vals=dset$HHBRACKET99, nobs=dset$HWTSUPP, newvals=newvals)
+    nvals <- newvals[nobs!=0]
+    nobs <- nobs[nobs!=0]
+    nobs <- nobs[nvals >= 0 & nvals <= 200000]
+    tobs <- sum(nobs)
+    nvals <- nvals[nvals >= 0 & nvals <= 200000]
+    df <- data.frame(vals=nvals, nobs=nobs)
+    ggplot(df, aes(vals, nobs/tobs))+geom_step()
+  }
+                   
 #+END_SRC
 
