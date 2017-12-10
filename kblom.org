@@ -466,13 +466,14 @@ second the number of elements with that value.
   test.rebin.binned <- function() {
     "some unit tests"
     ## basic functionality works?
-    if (!all(rebin.binned(c(1:20), seq(1,20), seq(2,20,by=2)) ==
-             seq(3, 39, 4))) {
+    if (!identical(rebin.binned(c(1:20), seq(1,20), seq(2,20,by=2)),
+                   seq(3, 39, 4))) {
       stop("test.rebin.binned: verification failed")
     }
-    ## what if old bin had something too big, but unobserved?
-    if (!all(rebin.binned(c(1:21), c(seq(1,20),0), seq(2,20,by=2)) ==
-             seq(3, 39, 4))) {
+
+  ## what if old bin had something too big, but unobserved?
+    if (!identical(rebin.binned(c(1:21), c(seq(1,20),0), seq(2,20,by=2)),
+                   seq(3, 39, 4))) {
       stop("test.rebin.binned: verification failed")
     }
   }
