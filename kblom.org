@@ -427,6 +427,11 @@ second the number of elements with that value.
   produce a new set of bins, with a new set of observation counts.
   the old values vals must fit \"integrally\" into the new vals.
   returns the new observation counts."
+    ## only care about actual observed outcomes (and, this makes it
+    ## easier to have newvals technically smaller than max(vals), in
+    ## case where max(vals) is not actually an observed value.
+    vals <- vals[nobs!=0]
+    nobs <- nobs[nobs!=0]
     if (!ordered) {
       path <- order(vals)
       newvals <- newvals[order(newvals)]
@@ -437,26 +442,39 @@ second the number of elements with that value.
       stop(sprintf("rebin.binned: length(vals) [%d] != length(nobs) [%d]",
                     length(vals), length(nobs)))
     }
-    if (vals[length(vals)] > newvals[length(newvals)]) { # by order(), s/b max
-      ## XXX could be a bit looser, only worry where nobs != 0
-      stop(sprintf("rebin.binned: largest current bin (%d) greater than largest new bin (%d)",
-                    vals[length(vals)], newvals[length(newvals)]))
+    if (vals[length(vals)] > newvals[length(newvals)]) {
+      stop(sprintf("rebin.binned: largest current observed bin (%d) greater than largest new bin (%d)",
+                   vals[length(vals)], newvals[length(newvals)]))
     }
-    j <- 1                                # index into newvals
-    newnobs <- integer()                  # initialize return value
-    count <- 0                            # intialize count (newnobs element)
+    j <- 1                              # index into newvals
+    rval <- integer()                   # initialize return value
+    count <- 0                          # intialize count (rval element)
     for (i in path) {
-      while (vals[i] > newvals[j]) {      # test above guarantees eventual success
-        newnobs <- c(newnobs, count)
+      while (vals[i] > newvals[j]) { # test above guarantees eventual success
+        rval <- c(rval, count)
         count <- 0
         j <- j+1
       }
       count <- count + nobs[i]
     }
-    newnobs <- c(newnobs, count)          # get last count
-    ## fill out newnobs
-    newnobs <- c(newnobs, rep(0, length(newvals)-length(newnobs)))
-    newnobs                               # return value
+    rval <- c(rval, count)                # get last count
+    ## fill out rval
+    rval <- c(rval, rep(0, length(newvals)-length(rval)))
+    rval                                  # return value
+  }
+
+  test.rebin.binned <- function() {
+    "some unit tests"
+    ## basic functionality works?
+    if (!all(rebin.binned(c(1:20), seq(1,20), seq(2,20,by=2)) ==
+             seq(3, 39, 4))) {
+      stop("test.rebin.binned: verification failed")
+    }
+    ## what if old bin had something too big, but unobserved?
+    if (!all(rebin.binned(c(1:21), c(seq(1,20),0), seq(2,20,by=2)) ==
+             seq(3, 39, 4))) {
+      stop("test.rebin.binned: verification failed")
+    }
   }
 #+END_SRC
 
