@@ -422,32 +422,44 @@ second the number of elements with that value.
     return(result)
   }
 
-  rebin.binned <- function(vals, nobs, nvals) {
-    require(iterators, quietly=TRUE)
-    "given a set of bins (values), with its set of observations counts, produce a new set of bins, with a new set of observation counts.  the old values vals must fit \"integrally\" into the new vals.  returns the new observation counts."
-    newcount <- vector()
-    iter.nvals <- iter(nvals)
-    nv <- nextElem(iter.nvals)
-    iter.vals <- iter(vals)
-    iter.nobs <- iter(nobs)
-    v <- nextElem(iter.vals)
+  rebin.binned <- function(vals, nobs, newvals, ordered=FALSE) {
+    require(iterators, quietly=TRUE)      # XXX could do without, but nice to have
+    "given a set of bins (values), with its set of observations counts,
+  produce a new set of bins, with a new set of observation counts.
+  the old values vals must fit \"integrally\" into the new vals.
+  returns the new observation counts."
+    if (!ordered) {
+      path <- order(vals)
+      newvals <- newvals[order(newvals)]
+    } else {
+      path <- 1:length(vals)
+    }
+    if (length(vals) != length(nobs)) {
+      error(sprintf("rebin.binned: length(vals) [%d] != length(nobs) [%d]",
+                    length(vals), length(nobs)))
+    }
+    if (vals[length(vals)] > newvals[length(newvals)]) { # by order(), s/b max
+      ## XXX could be a bit looser, only worry where nobs != 0
+      error(sprintf("rebin.binned: largest current value (%d) greater than largest new value (%d)",
+                    vals[length(vals)], newvals[length(newvals)]))
+    }
+    iter.newvals <- iter(newvals)
+    nv <- nextElem(iter.newvals)
     count <- 0
-    nnobs <- integer()
-    tryCatch(
-             repeat {
-               while (v > nv) {
-                 nnobs <- c(nnobs, count)
-                 count <- 0
-                 nv <- nextElem(iter.nvals)
-               }
-               while (v <= nv) {
-                 count <- count + nextElem(iter.nobs)
-                 v <- nextElem(iter.vals)
-               }
-             },
-             error=function(e) if (e$message != "StopIteration") e,
-             finally=nnobs <- c(nnobs, count))
-    nnobs
+    newnobs <- integer()
+    for (i in path) {
+      v <- vals[i]
+      while (v > nv) {
+        newnobs <- c(newnobs, count)
+        count <- 0
+        nv <- nextElem(iter.newvals)
+      }
+      count <- count + nobs[i]
+    }
+    newnobs <- c(newnobs, count)          # get last count
+    ## fill out newnobs
+    newnobs <- c(newnobs, rep(0, length(newvals)-length(newnobs)))
+    newnobs                               # return value
   }
 #+END_SRC
 
