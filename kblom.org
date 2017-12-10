@@ -450,10 +450,12 @@ second the number of elements with that value.
     rval <- integer()                   # initialize return value
     count <- 0                          # intialize count (rval element)
     for (i in path) {
-      while (vals[i] > newvals[j]) { # test above guarantees eventual success
-        rval <- c(rval, count)
-        count <- 0
-        j <- j+1
+      if (vals[i] > newvals[j]) {         # we're in a new bucket
+        rval <- c(rval, count)            # so, finish out the previous bucket
+        toskip <- sum(vals[i] > newvals[j:length(newvals)])
+        count <- 0                        # reinitialize count
+        rval <- c(rval, rep(0, toskip-1)) # we may have quite a way to go
+        j <- j+toskip                     # fast forward
       }
       count <- count + nobs[i]
     }
@@ -1233,7 +1235,7 @@ i think in an ideal world, i'd provide a command line switch that
 would determine how to deal with these files.
 ** looking at the data
 
-#+BEGIN_SRC R :session ss
+#+BEGIN_SRC R :session ss :results none
   require(ggplot, quietly=TRUE)
 
   supp <- "HWTSUPP"                       # which variant to use
@@ -1281,7 +1283,5 @@ would determine how to deal with these files.
     my2 <- max(y1, y2)
     (iecdf[[y2]](tiles)/my.iecdf[[y1]](tiles))^(1/(y2-y1))-1
   }
-
 #+END_SRC
 
-#+RESULTS:
