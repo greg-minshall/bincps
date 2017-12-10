@@ -777,7 +777,7 @@ be in March of every year.)
       ## get rid of out of universe, etc., codes
       ## https://cps.ipums.org/cps/inctaxcodes.shtml
       if ("HHINCOME" %in% colnames(yset)) {
-        stopbit <- yset[,"HHINCOME"] %in% c(99998, 9999998, 99999, 9999999, -9997)
+        stopbit <- yset[,"HHINCOME"] %in% c(-9999997, -9999, 9999, 99990, 99991, 99992, 99994, 99995, 99996, 99997, 99998, 99999, 99999999)
         stop <- sy & stopbit
         if (nrow(yset[stop,]) != 0) {
           rsetting(stop, "topcodes (Census Bureau/IPUMS coded as invalid)")
