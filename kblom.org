@@ -489,7 +489,6 @@ second the number of elements with that value.
       }
       count <- count + nobs[i]
     }
-    browser()
     rval <- c(rval, count)                # get last count
     ## fill out rval
     rval <- c(rval, rep(0, length(newvals)-length(rval)))
