@@ -423,7 +423,6 @@ second the number of elements with that value.
   }
 
   rebin.binned <- function(vals, nobs, newvals, ordered=FALSE) {
-    require(iterators, quietly=TRUE)      # XXX could do without, but nice to have
     "given a set of bins (values), with its set of observations counts,
   produce a new set of bins, with a new set of observation counts.
   the old values vals must fit \"integrally\" into the new vals.
@@ -435,24 +434,22 @@ second the number of elements with that value.
       path <- 1:length(vals)
     }
     if (length(vals) != length(nobs)) {
-      error(sprintf("rebin.binned: length(vals) [%d] != length(nobs) [%d]",
+      stop(sprintf("rebin.binned: length(vals) [%d] != length(nobs) [%d]",
                     length(vals), length(nobs)))
     }
     if (vals[length(vals)] > newvals[length(newvals)]) { # by order(), s/b max
       ## XXX could be a bit looser, only worry where nobs != 0
-      error(sprintf("rebin.binned: largest current value (%d) greater than largest new value (%d)",
+      stop(sprintf("rebin.binned: largest current bin (%d) greater than largest new bin (%d)",
                     vals[length(vals)], newvals[length(newvals)]))
     }
-    iter.newvals <- iter(newvals)
-    nv <- nextElem(iter.newvals)
-    count <- 0
-    newnobs <- integer()
+    j <- 1                                # index into newvals
+    newnobs <- integer()                  # initialize return value
+    count <- 0                            # intialize count (newnobs element)
     for (i in path) {
-      v <- vals[i]
-      while (v > nv) {
+      while (vals[i] > newvals[j]) {      # test above guarantees eventual success
         newnobs <- c(newnobs, count)
         count <- 0
-        nv <- nextElem(iter.newvals)
+        j <- j+1
       }
       count <- count + nobs[i]
     }
