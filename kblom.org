@@ -239,6 +239,36 @@ variable (for example, education of mother).  Describe your extract
 (in fact, the data set, from 1962--2017, was 82MB compressed, 520MB
 uncompressed.)
 
+*** topcodes
+
+ipums [[https://cps.ipums.org/cps-action/variables/HHINCOME#codes_section][HHINCOME]] uses "[[https://cps.ipums.org/cps/inctaxcodes.shtml][topcodes]]" (and bottom codes) to encode
+exceptions.  the popular "99999999" means "Not in universe" (NIU) --
+something about the respondent
+
+#+name: topcodes
+#+BEGIN_SRC sh
+  zcat ipums/cps_00006.csv.gz | \
+      awk 'BEGIN{FS=","} {print $7}' | \
+      grep '\<9999' | \
+      words -f | \
+      sort -n
+#+END_SRC
+
+#+RESULTS: topcodes
+| -9999997 |  129 |
+|    -9999 |  781 |
+|     9999 |  194 |
+|    99990 |   12 |
+|    99991 |    4 |
+|    99992 |    8 |
+|    99994 |    9 |
+|    99995 |    8 |
+|    99996 |   16 |
+|    99997 |   14 |
+|    99998 |   12 |
+|    99999 |  525 |
+| 99999999 | 2704 |
+
 ** deflating
 
 need to change from nominal to real dollars.  [[https://www.dallasfed.org/research/basics/nominal.cfm][Dallas Fed]] has some
@@ -459,6 +489,7 @@ second the number of elements with that value.
       }
       count <- count + nobs[i]
     }
+    browser()
     rval <- c(rval, count)                # get last count
     ## fill out rval
     rval <- c(rval, rep(0, length(newvals)-length(rval)))
@@ -695,6 +726,8 @@ be in March of every year.)
       if("NA's" %in% names(summary)) {
         summary <- summary[-which(names(summary) == "NA's")]
       }
+      ## make names consistent (else rbind() complains)
+      names(summary) <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
       return(summary)
     }
 
@@ -739,6 +772,17 @@ be in March of every year.)
       sy <- TRUE                          # initially, take all in this year
       if (verbose > 0) {
         cat(sprintf("%s %s\n", year, date()))
+      }
+
+      ## get rid of out of universe, etc., codes
+      ## https://cps.ipums.org/cps/inctaxcodes.shtml
+      if ("HHINCOME" %in% colnames(yset)) {
+        stopbit <- yset[,"HHINCOME"] %in% c(99998, 9999998, 99999, 9999999, -9997)
+        stop <- sy & stopbit
+        if (nrow(yset[stop,]) != 0) {
+          rsetting(stop, "topcodes (Census Bureau/IPUMS coded as invalid)")
+          sy <- sy & !stopbit             # get rid of these
+        }
       }
 
       snabit <- is.na(yset[,income99])
@@ -901,10 +945,6 @@ be in March of every year.)
                       verbose=1            # how verbose to be
                       ) {
     cmdline <- c("--ifile", ifile,
-                 "--ofile", "foo.csv",
-                 "--rfile", "goo.csv",
-                 "--lyear", lyear,
-                 "--binsize", binsize,
                  "--verbose", verbose)
 
     main(cmdline)
