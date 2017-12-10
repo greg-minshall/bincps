@@ -149,3 +149,61 @@ summary.binned <- function(vals, nobs) {
 
   return(result)
 }
+
+rebin.binned <- function(vals, nobs, newvals, ordered=FALSE) {
+  "given a set of bins (values), with its set of observations counts,
+produce a new set of bins, with a new set of observation counts.
+the old values vals must fit \"integrally\" into the new vals.
+returns the new observation counts."
+  ## only care about actual observed outcomes (and, this makes it
+  ## easier to have newvals technically smaller than max(vals), in
+  ## case where max(vals) is not actually an observed value.
+  vals <- vals[nobs!=0]
+  nobs <- nobs[nobs!=0]
+  if (!ordered) {
+    path <- order(vals)
+    newvals <- newvals[order(newvals)]
+  } else {
+    path <- 1:length(vals)
+  }
+  if (length(vals) != length(nobs)) {
+    stop(sprintf("rebin.binned: length(vals) [%d] != length(nobs) [%d]",
+                  length(vals), length(nobs)))
+  }
+  if (vals[length(vals)] > newvals[length(newvals)]) {
+    stop(sprintf("rebin.binned: largest current observed bin (%d) greater than largest new bin (%d)",
+                 vals[length(vals)], newvals[length(newvals)]))
+  }
+  j <- 1                              # index into newvals
+  rval <- integer()                   # initialize return value
+  count <- 0                          # intialize count (rval element)
+  for (i in path) {
+    if (vals[i] > newvals[j]) {         # we're in a new bucket
+      rval <- c(rval, count)            # so, finish out the previous bucket
+      toskip <- sum(vals[i] > newvals[j:length(newvals)])
+      count <- 0                        # reinitialize count
+      rval <- c(rval, rep(0, toskip-1)) # we may have quite a way to go
+      j <- j+toskip                     # fast forward
+    }
+    count <- count + nobs[i]
+  }
+  rval <- c(rval, count)                # get last count
+  ## fill out rval
+  rval <- c(rval, rep(0, length(newvals)-length(rval)))
+  rval                                  # return value
+}
+
+test.rebin.binned <- function() {
+  "some unit tests"
+  ## basic functionality works?
+  if (!identical(rebin.binned(c(1:20), seq(1,20), seq(2,20,by=2)),
+                 seq(3, 39, 4))) {
+    stop("test.rebin.binned: verification failed")
+  }
+
+## what if old bin had something too big, but unobserved?
+  if (!identical(rebin.binned(c(1:21), c(seq(1,20),0), seq(2,20,by=2)),
+                 seq(3, 39, 4))) {
+    stop("test.rebin.binned: verification failed")
+  }
+}
