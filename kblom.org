@@ -1329,7 +1329,7 @@ would determine how to deal with these files.
     min <- min(c(limita, limitb), na.rm=TRUE)
     max <- max(c(limita, limitb), na.rm=TRUE)
     lo <- (floor(min/binsize)+1)*binsize
-    hi <- (ceiling(max/binsize)+1)*binsize
+    hi <- (floor(max/binsize)+1)*binsize
     return(seq(lo, hi, binsize))
   }
 
