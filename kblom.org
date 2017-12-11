@@ -1335,21 +1335,45 @@ would determine how to deal with these files.
     return(seq(lo, hi, binsize))
   }
 
-  repro.chart <- function(dset) {
-    yset <- dset[dset$YEAR==2016,]
-    binsize <- 5000                       # what FT used
-    nvals <- rebinlimits(min(yset$HHBRACKET99, na.rm=TRUE),
+  repro.chart <- function(dset,
+                          hist=2016,
+                          line=1972,
+                          binsize=5000) { # FT used binsize 5000
+    ## get 2015 part of chart
+    yset <- dset[dset$YEAR==hist,]
+    tidyup <- function(yset) {
+      nvals <- rebinvals(min(yset$HHBRACKET99, na.rm=TRUE),
                          max(yset$HHBRACKET99, na.rm=TRUE),
                          binsize)
-    nobs <- rebin.binned(vals=dset$HHBRACKET99, nobs=dset$HWTSUPP, newvals=newvals)
-    nvals <- newvals[nobs!=0]
-    nobs <- nobs[nobs!=0]
-    nobs <- nobs[nvals >= 0 & nvals <= 200000]
-    tobs <- sum(nobs)
-    nvals <- nvals[nvals >= 0 & nvals <= 200000]
-    df <- data.frame(vals=nvals, nobs=nobs)
-    ggplot(df, aes(vals, nobs/tobs))+geom_step()
+      nobs <- rebin.binned(vals=yset$HHBRACKET99,
+                           nobs=yset$HWTSUPP,
+                           newvals=newvals)
+      ## get rid of never-observed values (efficiency)
+      nvals <- newvals[nobs!=0]
+      nobs <- nobs[nobs!=0]
+      ## now, clamp upper end at 200,000
+      ## first, propagate counts of the higher incomes to end of chart
+      # highest <- max(nvals[nvals <= 200000], na.rm=TRUE)
+      # nobs[nvals==highest] <- sum(nobs[nvals>highest])
+      ## now, delete the higher values
+      nobs <- nobs[nvals >= 0 & nvals <= 200000]
+      nvals <- nvals[nvals >= 0 & nvals <= 200000]
+      ## data frame it
+      df <- data.frame(vals=nvals, nobs=nobs)
+    }
+    df <- tidyup(yset)
+    tobs <- sum(df$nobs)
+    base <- ggplot()
+    base <- base + geom_step(data=df, aes(vals, nobs/tobs))
+
+    ## now, work on 1971
+    yset <- dset[dset$YEAR==line,]
+    df <- tidyup(yset)
+    tobs <- sum(df$nobs)
+    base <- base + geom_line(data=df, aes(vals, nobs/tobs))
+
+    eval(base)                            # actually display
   }
-                   
+
 #+END_SRC
 
