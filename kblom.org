@@ -1322,16 +1322,14 @@ would determine how to deal with these files.
     (iecdf[[y2]](tiles)/my.iecdf[[y1]](tiles))^(1/(y2-y1))-1
   }
 
-  rebinvals <- function(min, max=NA, binsize) {
-    "return the set of new values for a given resize"
-    x <- min(c(min, max), na.rm=TRUE)
-    y <- max(c(min, max), na.rm=TRUE)
-    min <- x
-    max <- y
-    smin <- sign(min)
-    smax <- sign(max)
-    lo <- smin*(as.integer(abs(min)/binsize)*binsize)
-    hi <- smax*(as.integer((abs(max)+binsize)/binsize)*binsize)
+  rebinvals <- function(limita, limitb=NA, binsize) {
+    "return the set of new values for a given new BINSIZE.  
+    can specify MIN and MAX, or just pass the set of observations
+    and the new min, max, will be computed."
+    min <- min(c(limita, limitb), na.rm=TRUE)
+    max <- max(c(limita, limitb), na.rm=TRUE)
+    lo <- (floor(min/binsize)+1)*binsize
+    hi <- (ceiling(max/binsize)+1)*binsize
     return(seq(lo, hi, binsize))
   }
 
