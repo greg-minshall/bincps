@@ -495,6 +495,17 @@ second the number of elements with that value.
     rval                                  # return value
   }
 
+  rebinvals.binned <- function(limita, limitb=NA, binsize) {
+    "return the set of new values for a given new BINSIZE.  
+    can specify MIN and MAX, or just pass the set of observations
+    and the new min, max, will be computed."
+    min <- min(c(limita, limitb), na.rm=TRUE)
+    max <- max(c(limita, limitb), na.rm=TRUE)
+    lo <- (floor(min/binsize)+1)*binsize
+    hi <- (floor(max/binsize)+1)*binsize
+    return(seq(lo, hi, binsize))
+  }
+
   test.rebin.binned <- function() {
     "some unit tests"
     ## basic functionality works?
@@ -503,12 +514,48 @@ second the number of elements with that value.
       stop("test.rebin.binned: verification failed")
     }
 
-  ## what if old bin had something too big, but unobserved?
+    ## what if old bin had something too big, but unobserved?
     if (!identical(rebin.binned(c(1:21), c(seq(1,20),0), seq(2,20,by=2)),
                    seq(3, 39, 4))) {
       stop("test.rebin.binned: verification failed")
     }
   }
+
+
+  test.rebinvals.binned <- function() {
+    "trivial unit test for rebinvals; built around
+    for (i in c(-6:6, 24:29)) print(rebinvals(i:29, binsize=5))"
+    testpat <- list(
+                    list(-6, c(-5, 0, 5, 10, 15, 20, 25, 30)),
+                    list(-5, c(0, 5, 10, 15, 20, 25, 30)),
+                    list(-4, c(0, 5, 10, 15, 20, 25, 30)),
+                    list(-3, c(0, 5, 10, 15, 20, 25, 30)),
+                    list(-2, c(0, 5, 10, 15, 20, 25, 30)),
+                    list(-1, c(0, 5, 10, 15, 20, 25, 30)),
+                    list(0, c(5, 10, 15, 20, 25, 30)),
+                    list(1, c(5, 10, 15, 20, 25, 30)),
+                    list(2, c(5, 10, 15, 20, 25, 30)),
+                    list(3, c(5, 10, 15, 20, 25, 30)),
+                    list(4, c(5, 10, 15, 20, 25, 30)),
+                    list(5, c(10, 15, 20, 25, 30)),
+                    list(6, c(10, 15, 20, 25, 30)),
+                    list(24, c(25, 30)),
+                    list(25, c(30)),
+                    list(26, c(30)),
+                    list(27, c(30)),
+                    list(28, c(30)),
+                    list(29, c(30)))
+    for (x in testpat) {
+      i <- x[[1]]
+      z <- x[[2]]
+      zz <- rebinvals(i:29, binsize=5)
+      if (!identical(z, zz)) {
+        print(z); print(zz);
+      }
+    }
+  }
+
+
 #+END_SRC
 
 ** bincps
@@ -1322,17 +1369,6 @@ would determine how to deal with these files.
     (iecdf[[y2]](tiles)/my.iecdf[[y1]](tiles))^(1/(y2-y1))-1
   }
 
-  rebinvals <- function(limita, limitb=NA, binsize) {
-    "return the set of new values for a given new BINSIZE.  
-    can specify MIN and MAX, or just pass the set of observations
-    and the new min, max, will be computed."
-    min <- min(c(limita, limitb), na.rm=TRUE)
-    max <- max(c(limita, limitb), na.rm=TRUE)
-    lo <- (floor(min/binsize)+1)*binsize
-    hi <- (floor(max/binsize)+1)*binsize
-    return(seq(lo, hi, binsize))
-  }
-
   repro.chart <- function(dset,
                           hist=2016,
                           line=1972,
@@ -1370,40 +1406,15 @@ would determine how to deal with these files.
     base <- base + geom_step(data=df[df$year == line,])
 
     eval(base)                            # actually display
-  }
 
-  rebinvals.test <- function() {
-    "trivial unit test for rebinvals; built around
-for (i in c(-6:6, 24:29)) print(rebinvals(i:29, binsize=5))"
-    testpat <- list(
-                    list(-6, c(-5, 0, 5, 10, 15, 20, 25, 30)),
-                    list(-5, c(0, 5, 10, 15, 20, 25, 30)),
-                    list(-4, c(0, 5, 10, 15, 20, 25, 30)),
-                    list(-3, c(0, 5, 10, 15, 20, 25, 30)),
-                    list(-2, c(0, 5, 10, 15, 20, 25, 30)),
-                    list(-1, c(0, 5, 10, 15, 20, 25, 30)),
-                    list(0, c(5, 10, 15, 20, 25, 30)),
-                    list(1, c(5, 10, 15, 20, 25, 30)),
-                    list(2, c(5, 10, 15, 20, 25, 30)),
-                    list(3, c(5, 10, 15, 20, 25, 30)),
-                    list(4, c(5, 10, 15, 20, 25, 30)),
-                    list(5, c(10, 15, 20, 25, 30)),
-                    list(6, c(10, 15, 20, 25, 30)),
-                    list(24, c(25, 30)),
-                    list(25, c(30)),
-                    list(26, c(30)),
-                    list(27, c(30)),
-                    list(28, c(30)),
-                    list(29, c(30)))
-    for (x in testpat) {
-      i <- x[[1]]
-      z <- x[[2]]
-      zz <- rebinvals(i:29, binsize=5)
-      if (!identical(z, zz)) {
-        print(z); print(zz);
-      }
+    ## by the way, the differences between the two curves should sum to
+    ## (approx) zero
+    sbzero <- sum((df[df$year==hist,"nobs"]/df[df$year==hist,"tobs"]) -
+                  (df[df$year==line,"nobs"]/df[df$year==line,"tobs"]))
+    if (abs(sbzero) > 0.001) {
+      stop(sprintf("[approx] integral between curves s/b zero, is %g", sbzero))
     }
-  }
 
+  }
 #+END_SRC
 
