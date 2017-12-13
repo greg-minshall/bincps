@@ -523,8 +523,8 @@ second the number of elements with that value.
 
 
   test.rebinvals.binned <- function() {
-    "trivial unit test for rebinvals; built around
-    for (i in c(-6:6, 24:29)) print(rebinvals(i:29, binsize=5))"
+    "trivial unit test for rebinvals.binned; built around
+    for (i in c(-6:6, 24:29)) print(rebinvals.binned(i:29, binsize=5))"
     testpat <- list(
                     list(-6, c(-5, 0, 5, 10, 15, 20, 25, 30)),
                     list(-5, c(0, 5, 10, 15, 20, 25, 30)),
@@ -548,7 +548,7 @@ second the number of elements with that value.
     for (x in testpat) {
       i <- x[[1]]
       z <- x[[2]]
-      zz <- rebinvals(i:29, binsize=5)
+      zz <- rebinvals.binned(i:29, binsize=5)
       if (!identical(z, zz)) {
         print(z); print(zz);
       }
@@ -1376,9 +1376,9 @@ would determine how to deal with these files.
     ## get 2015 part of chart
     yset <- dset[dset$YEAR==hist,]
     tidyup <- function(yset, year) {
-      nvals <- rebinvals(min(yset$HHBRACKET99, na.rm=TRUE),
-                         max(yset$HHBRACKET99, na.rm=TRUE),
-                         binsize)
+      nvals <- rebinvals.binned(min(yset$HHBRACKET99, na.rm=TRUE),
+                                max(yset$HHBRACKET99, na.rm=TRUE),
+                                binsize)
       nobs <- rebin.binned(vals=yset$HHBRACKET99,
                            nobs=yset$HWTSUPP,
                            newvals=newvals)
