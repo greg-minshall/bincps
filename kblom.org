@@ -1367,9 +1367,42 @@ would determine how to deal with these files.
     df <- rbind(df, tidyup(yset, line))
     base <- ggplot(df, aes(vals, nobs/tobs, colour=year))
     base <- base + geom_step(data=df[df$year == hist,])
-    base <- base + geom_smooth(data=df[df$year == line,], method="loess", se=FALSE)
+    base <- base + geom_step(data=df[df$year == line,])
 
     eval(base)                            # actually display
+  }
+
+  rebinvals.test <- function() {
+    "trivial unit test for rebinvals; built around
+for (i in c(-6:6, 24:29)) print(rebinvals(i:29, binsize=5))"
+    testpat <- list(
+                    list(-6, c(-5, 0, 5, 10, 15, 20, 25, 30)),
+                    list(-5, c(0, 5, 10, 15, 20, 25, 30)),
+                    list(-4, c(0, 5, 10, 15, 20, 25, 30)),
+                    list(-3, c(0, 5, 10, 15, 20, 25, 30)),
+                    list(-2, c(0, 5, 10, 15, 20, 25, 30)),
+                    list(-1, c(0, 5, 10, 15, 20, 25, 30)),
+                    list(0, c(5, 10, 15, 20, 25, 30)),
+                    list(1, c(5, 10, 15, 20, 25, 30)),
+                    list(2, c(5, 10, 15, 20, 25, 30)),
+                    list(3, c(5, 10, 15, 20, 25, 30)),
+                    list(4, c(5, 10, 15, 20, 25, 30)),
+                    list(5, c(10, 15, 20, 25, 30)),
+                    list(6, c(10, 15, 20, 25, 30)),
+                    list(24, c(25, 30)),
+                    list(25, c(30)),
+                    list(26, c(30)),
+                    list(27, c(30)),
+                    list(28, c(30)),
+                    list(29, c(30)))
+    for (x in testpat) {
+      i <- x[[1]]
+      z <- x[[2]]
+      zz <- rebinvals(i:29, binsize=5)
+      if (!identical(z, zz)) {
+        print(z); print(zz);
+      }
+    }
   }
 
 #+END_SRC
