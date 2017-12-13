@@ -1339,7 +1339,7 @@ would determine how to deal with these files.
                           binsize=5000) { # FT used binsize 5000
     ## get 2015 part of chart
     yset <- dset[dset$YEAR==hist,]
-    tidyup <- function(yset) {
+    tidyup <- function(yset, year) {
       nvals <- rebinvals(min(yset$HHBRACKET99, na.rm=TRUE),
                          max(yset$HHBRACKET99, na.rm=TRUE),
                          binsize)
@@ -1349,6 +1349,7 @@ would determine how to deal with these files.
       ## get rid of never-observed values (efficiency)
       nvals <- newvals[nobs!=0]
       nobs <- nobs[nobs!=0]
+      tobs <- sum(nobs)               # sum over all (even high earners)
       ## now, clamp upper end at 200,000
       ## first, propagate counts of the higher incomes to end of chart
       # highest <- max(nvals[nvals <= 200000], na.rm=TRUE)
@@ -1357,18 +1358,16 @@ would determine how to deal with these files.
       nobs <- nobs[nvals >= 0 & nvals <= 200000]
       nvals <- nvals[nvals >= 0 & nvals <= 200000]
       ## data frame it
-      df <- data.frame(vals=nvals, nobs=nobs)
+      df <- data.frame(year=as.factor(year), vals=nvals, nobs=nobs, tobs=tobs)
     }
-    df <- tidyup(yset)
-    tobs <- sum(df$nobs)
-    base <- ggplot()
-    base <- base + geom_step(data=df, aes(vals, nobs/tobs))
+    df <- tidyup(yset, hist)
 
     ## now, work on 1971
     yset <- dset[dset$YEAR==line,]
-    df <- tidyup(yset)
-    tobs <- sum(df$nobs)
-    base <- base + geom_line(data=df, aes(vals, nobs/tobs))
+    df <- rbind(df, tidyup(yset, line))
+    base <- ggplot(df, aes(vals, nobs/tobs, colour=year))
+    base <- base + geom_step(data=df[df$year == hist,], aes(vals, nobs/tobs))
+    base <- base + geom_line(data=df[df$year == line,], aes(vals, nobs/tobs))
 
     eval(base)                            # actually display
   }
