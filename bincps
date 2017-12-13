@@ -201,6 +201,17 @@ returns the new observation counts."
   rval                                  # return value
 }
 
+rebinvals.binned <- function(limita, limitb=NA, binsize) {
+  "return the set of new values for a given new BINSIZE.  
+  can specify MIN and MAX, or just pass the set of observations
+  and the new min, max, will be computed."
+  min <- min(c(limita, limitb), na.rm=TRUE)
+  max <- max(c(limita, limitb), na.rm=TRUE)
+  lo <- (floor(min/binsize)+1)*binsize
+  hi <- (floor(max/binsize)+1)*binsize
+  return(seq(lo, hi, binsize))
+}
+
 test.rebin.binned <- function() {
   "some unit tests"
   ## basic functionality works?
@@ -209,12 +220,48 @@ test.rebin.binned <- function() {
     stop("test.rebin.binned: verification failed")
   }
 
-## what if old bin had something too big, but unobserved?
+  ## what if old bin had something too big, but unobserved?
   if (!identical(rebin.binned(c(1:21), c(seq(1,20),0), seq(2,20,by=2)),
                  seq(3, 39, 4))) {
     stop("test.rebin.binned: verification failed")
   }
 }
+
+
+test.rebinvals.binned <- function() {
+  "trivial unit test for rebinvals.binned; built around
+  for (i in c(-6:6, 24:29)) print(rebinvals.binned(i:29, binsize=5))"
+  testpat <- list(
+                  list(-6, c(-5, 0, 5, 10, 15, 20, 25, 30)),
+                  list(-5, c(0, 5, 10, 15, 20, 25, 30)),
+                  list(-4, c(0, 5, 10, 15, 20, 25, 30)),
+                  list(-3, c(0, 5, 10, 15, 20, 25, 30)),
+                  list(-2, c(0, 5, 10, 15, 20, 25, 30)),
+                  list(-1, c(0, 5, 10, 15, 20, 25, 30)),
+                  list(0, c(5, 10, 15, 20, 25, 30)),
+                  list(1, c(5, 10, 15, 20, 25, 30)),
+                  list(2, c(5, 10, 15, 20, 25, 30)),
+                  list(3, c(5, 10, 15, 20, 25, 30)),
+                  list(4, c(5, 10, 15, 20, 25, 30)),
+                  list(5, c(10, 15, 20, 25, 30)),
+                  list(6, c(10, 15, 20, 25, 30)),
+                  list(24, c(25, 30)),
+                  list(25, c(30)),
+                  list(26, c(30)),
+                  list(27, c(30)),
+                  list(28, c(30)),
+                  list(29, c(30)))
+  for (x in testpat) {
+    i <- x[[1]]
+    z <- x[[2]]
+    zz <- rebinvals.binned(i:29, binsize=5)
+    if (!identical(z, zz)) {
+      print(z); print(zz);
+    }
+  }
+}
+
+
 
 getout <- function(message, code) {
   if (interactive()) {
@@ -406,6 +453,8 @@ bincps1 <- function(dset,                # inherits other locals from
     if("NA's" %in% names(summary)) {
       summary <- summary[-which(names(summary) == "NA's")]
     }
+    ## make names consistent (else rbind() complains)
+    names(summary) <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
     return(summary)
   }
 
@@ -450,6 +499,17 @@ bincps1 <- function(dset,                # inherits other locals from
     sy <- TRUE                          # initially, take all in this year
     if (verbose > 0) {
       cat(sprintf("%s %s\n", year, date()))
+    }
+
+    ## get rid of out of universe, etc., codes
+    ## https://cps.ipums.org/cps/inctaxcodes.shtml
+    if ("HHINCOME" %in% colnames(yset)) {
+      stopbit <- yset[,"HHINCOME"] %in% c(-9999997, -9999, 9999, 99990, 99991, 99992, 99994, 99995, 99996, 99997, 99998, 99999, 99999999)
+      stop <- sy & stopbit
+      if (nrow(yset[stop,]) != 0) {
+        rsetting(stop, "topcodes (Census Bureau/IPUMS coded as invalid)")
+        sy <- sy & !stopbit             # get rid of these
+      }
     }
 
     snabit <- is.na(yset[,income99])
@@ -612,10 +672,6 @@ runargs <- function(ifile,      # input file
                     verbose=1            # how verbose to be
                     ) {
   cmdline <- c("--ifile", ifile,
-               "--ofile", "foo.csv",
-               "--rfile", "goo.csv",
-               "--lyear", lyear,
-               "--binsize", binsize,
                "--verbose", verbose)
 
   main(cmdline)
