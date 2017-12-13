@@ -1352,8 +1352,8 @@ would determine how to deal with these files.
       tobs <- sum(nobs)               # sum over all (even high earners)
       ## now, clamp upper end at 200,000
       ## first, propagate counts of the higher incomes to end of chart
-      # highest <- max(nvals[nvals <= 200000], na.rm=TRUE)
-      # nobs[nvals==highest] <- sum(nobs[nvals>highest])
+      highest <- max(nvals[nvals <= 200000], na.rm=TRUE)
+      nobs[nvals==highest] <- sum(nobs[nvals>highest])
       ## now, delete the higher values
       nobs <- nobs[nvals >= 0 & nvals <= 200000]
       nvals <- nvals[nvals >= 0 & nvals <= 200000]
@@ -1366,8 +1366,8 @@ would determine how to deal with these files.
     yset <- dset[dset$YEAR==line,]
     df <- rbind(df, tidyup(yset, line))
     base <- ggplot(df, aes(vals, nobs/tobs, colour=year))
-    base <- base + geom_step(data=df[df$year == hist,], aes(vals, nobs/tobs))
-    base <- base + geom_line(data=df[df$year == line,], aes(vals, nobs/tobs))
+    base <- base + geom_step(data=df[df$year == hist,])
+    base <- base + geom_smooth(data=df[df$year == line,], method="loess", se=FALSE)
 
     eval(base)                            # actually display
   }
