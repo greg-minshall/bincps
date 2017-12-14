@@ -1324,26 +1324,46 @@ would determine how to deal with these files.
 #+BEGIN_SRC R :session ss :results none
   require(ggplot, quietly=TRUE)
 
+  MAXHH <- 200000
   supp <- "HWTSUPP"                       # which variant to use
+  binsize <- 1000                         # XXX
+  LOWESTYEAR <- 1967                      # before 1967, NA data
+
+  tidyup <- function(nvals, nobs, year) {
+    "take the input dataset, cap it"
+    ## now, clamp upper end at MAXHH (200,000, say)
+    ## first, propagate counts of the higher incomes to end of chart
+    highest <- max(nvals[nvals <= MAXHH], na.rm=TRUE)
+    nobs[nvals==highest] <- nobs[nvals==highest] + sum(nobs[nvals>highest])
+    ## now, delete the higher values
+    nobs <- nobs[nvals >= 0 & nvals <= MAXHH]
+    nvals <- nvals[nvals >= 0 & nvals <= MAXHH]
+    ## get rid of never-observed values, if any (efficiency)
+    nvals <- nvals[nobs!=0]
+    nobs <- nobs[nobs!=0]
+    ## data frame it
+    df <- data.frame(year=as.factor(year), vals=nvals, nobs=nobs)
+  }
 
   dset <- read.csv(ifile, header=TRUE)
   dset <- dset[dset$HFLAG == FALSE | is.na(dset$HFLAG),]
-  dset <- dset[dset$YEAR>1967,]        # before 1967, NA data
+  dset <- dset[dset$YEAR>LOWESTYEAR,]     # before 1967, NA data
 
   min <- min(dset$HHBRACKET99, na.rm=TRUE)
   max <- max(dset$HHBRACKET99, na.rm=TRUE)
-  binsize <- 1000                         # XXX
 
+  ## create ECDF and inverse (IECDF)
   my.ecdf <- list()
   my.iecdf <- list()
   for (year in unique(dset$YEAR)) {
-    sy <- dset$YEAR == year
-    my.ecdf[[year]] <- ecdf.binned(dset[sy,]$HHBRACKET99, dset[sy,supp])
-    my.iecdf[[year]] <- iecdf.binned(dset[sy,]$HHBRACKET99, dset[sy,supp])
+    yset <- dset[dset$YEAR==year,]
+    tidy <- tidyup(yset[,"HHBRACKET99"], yset[,supp], year)
+    my.ecdf[[year]] <- ecdf.binned(tidy$vals, tidy$nobs)
+    my.iecdf[[year]] <- iecdf.binned(tidy$vals, tidy$nobs)
   }
 
-  ggp.ecdf <- function(years) {
-    base <- ggplot(data.frame(x=c(0,200000)), aes(x))
+  ggp.ecdf <- function(years=c(1973, 2015)) {
+    base <- ggplot(data.frame(x=c(0,MAXHH)), aes(x))
     for (y in years) {
       base <- base + stat_function(fun=my.ecdf[[y]], aes_(colour=as.factor(y)))
     }
@@ -1375,21 +1395,6 @@ would determine how to deal with these files.
                           binsize=5000) { # FT used binsize 5000
     ## get 2015 part of chart
     yset <- dset[dset$YEAR==hist,]
-    tidyup <- function(nvals, nobs, year) {
-      ## get rid of never-observed values (efficiency)
-      nvals <- newvals[nobs!=0]
-      nobs <- nobs[nobs!=0]
-      tobs <- sum(nobs)               # sum over all (even high earners)
-      ## now, clamp upper end at 200,000
-      ## first, propagate counts of the higher incomes to end of chart
-      highest <- max(nvals[nvals <= 200000], na.rm=TRUE)
-      nobs[nvals==highest] <- sum(nobs[nvals>highest])
-      ## now, delete the higher values
-      nobs <- nobs[nvals >= 0 & nvals <= 200000]
-      nvals <- nvals[nvals >= 0 & nvals <= 200000]
-      ## data frame it
-      df <- data.frame(year=as.factor(year), vals=nvals, nobs=nobs, tobs=tobs)
-    }
     df <- tidyup(nvals=rebinvals.binned(min(yset$HHBRACKET99, na.rm=TRUE),
                    max(yset$HHBRACKET99, na.rm=TRUE), binsize),
                  nobs=rebin.binned(vals=yset$HHBRACKET99, nobs=yset$HWTSUPP,
@@ -1404,6 +1409,7 @@ would determine how to deal with these files.
                    newvals=newvals),
                  year=line)
     df <- rbind(df, df2)
+    tobs <- sum(df$nobs)
     base <- ggplot(df, aes(vals, nobs/tobs, colour=year))
     base <- base + geom_step(data=df[df$year == hist,])
     base <- base + geom_step(data=df[df$year == line,])
@@ -1412,8 +1418,8 @@ would determine how to deal with these files.
 
     ## by the way, the differences between the two curves should sum to
     ## (approx) zero
-    sbzero <- sum((df[df$year==hist,"nobs"]/df[df$year==hist,"tobs"]) -
-                  (df[df$year==line,"nobs"]/df[df$year==line,"tobs"]))
+    sbzero <- sum((df[df$year==hist,"nobs"]/tobs)
+                  (df[df$year==line,"nobs"]/tobs))
     if (abs(sbzero) > 0.001) {
       stop(sprintf("[approx] integral between curves s/b zero, is %g", sbzero))
     }
