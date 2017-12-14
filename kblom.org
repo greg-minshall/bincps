@@ -1347,7 +1347,7 @@ would determine how to deal with these files.
     for (y in years) {
       base <- base + stat_function(fun=my.ecdf[[y]], aes_(colour=as.factor(y)))
     }
-    eval(base)
+    print(base)
   }
 
   ggp.tiles <- function(years=c(1972, 2014), tiles=c(0.1, 0.9)) {
@@ -1359,7 +1359,7 @@ would determine how to deal with these files.
                                   hhincome99=my.iecdf[[y]](tiles)),
                                 aes(x=tile, y=hhincome99, colour=year))
     }
-    eval(base)
+    print(base)
   }
 
   pyear <- function(iecdf, y1, y2, tiles) {
@@ -1375,13 +1375,7 @@ would determine how to deal with these files.
                           binsize=5000) { # FT used binsize 5000
     ## get 2015 part of chart
     yset <- dset[dset$YEAR==hist,]
-    tidyup <- function(yset, year) {
-      nvals <- rebinvals.binned(min(yset$HHBRACKET99, na.rm=TRUE),
-                                max(yset$HHBRACKET99, na.rm=TRUE),
-                                binsize)
-      nobs <- rebin.binned(vals=yset$HHBRACKET99,
-                           nobs=yset$HWTSUPP,
-                           newvals=newvals)
+    tidyup <- function(nvals, nobs, year) {
       ## get rid of never-observed values (efficiency)
       nvals <- newvals[nobs!=0]
       nobs <- nobs[nobs!=0]
@@ -1396,16 +1390,25 @@ would determine how to deal with these files.
       ## data frame it
       df <- data.frame(year=as.factor(year), vals=nvals, nobs=nobs, tobs=tobs)
     }
-    df <- tidyup(yset, hist)
+    df <- tidyup(nvals=rebinvals.binned(min(yset$HHBRACKET99, na.rm=TRUE),
+                   max(yset$HHBRACKET99, na.rm=TRUE), binsize),
+                 nobs=rebin.binned(vals=yset$HHBRACKET99, nobs=yset$HWTSUPP,
+                   newvals=newvals),
+                 year=hist)
 
     ## now, work on 1971
     yset <- dset[dset$YEAR==line,]
-    df <- rbind(df, tidyup(yset, line))
+    df2 <- tidyup(nvals=rebinvals.binned(min(yset$HHBRACKET99, na.rm=TRUE),
+                   max(yset$HHBRACKET99, na.rm=TRUE), binsize),
+                 nobs=rebin.binned(vals=yset$HHBRACKET99, nobs=yset$HWTSUPP,
+                   newvals=newvals),
+                 year=line)
+    df <- rbind(df, df2)
     base <- ggplot(df, aes(vals, nobs/tobs, colour=year))
     base <- base + geom_step(data=df[df$year == hist,])
     base <- base + geom_step(data=df[df$year == line,])
 
-    eval(base)                            # actually display
+    print(base)                           # actually display
 
     ## by the way, the differences between the two curves should sum to
     ## (approx) zero
@@ -1414,7 +1417,7 @@ would determine how to deal with these files.
     if (abs(sbzero) > 0.001) {
       stop(sprintf("[approx] integral between curves s/b zero, is %g", sbzero))
     }
-
+    return(base)
   }
 #+END_SRC
 
