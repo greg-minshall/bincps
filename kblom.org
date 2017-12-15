@@ -1329,7 +1329,7 @@ would determine how to deal with these files.
   binsize <- 1000                         # XXX
   LOWESTYEAR <- 1967                      # before 1967, NA data
 
-  tidyup <- function(nvals, nobs, year) {
+  tidyup <- function(nvals, nobs) {
     "take the input dataset, cap it"
     ## now, clamp upper end at MAXHH (200,000, say)
     ## first, propagate counts of the higher incomes to end of chart
@@ -1342,7 +1342,7 @@ would determine how to deal with these files.
     nvals <- nvals[nobs!=0]
     nobs <- nobs[nobs!=0]
     ## data frame it
-    df <- data.frame(year=as.factor(year), vals=nvals, nobs=nobs)
+    df <- data.frame(vals=nvals, nobs=nobs)
   }
 
   dset <- read.csv(ifile, header=TRUE)
@@ -1357,7 +1357,7 @@ would determine how to deal with these files.
   my.iecdf <- list()
   for (year in unique(dset$YEAR)) {
     yset <- dset[dset$YEAR==year,]
-    tidy <- tidyup(yset[,"HHBRACKET99"], yset[,supp], year)
+    tidy <- tidyup(yset[,"HHBRACKET99"], yset[,supp])
     my.ecdf[[year]] <- ecdf.binned(tidy$vals, tidy$nobs)
     my.iecdf[[year]] <- iecdf.binned(tidy$vals, tidy$nobs)
   }
@@ -1395,21 +1395,22 @@ would determine how to deal with these files.
                           binsize=5000) { # FT used binsize 5000
     ## get 2015 part of chart
     yset <- dset[dset$YEAR==hist,]
-    df <- tidyup(nvals=rebinvals.binned(min(yset$HHBRACKET99, na.rm=TRUE),
-                   max(yset$HHBRACKET99, na.rm=TRUE), binsize),
-                 nobs=rebin.binned(vals=yset$HHBRACKET99, nobs=yset$HWTSUPP,
-                   newvals=newvals),
-                 year=hist)
+    newvals <- rebinvals.binned(min(yset$HHBRACKET99, na.rm=TRUE),
+                                max(yset$HHBRACKET99, na.rm=TRUE), binsize)
+    dfh <- tidyup(nvals=newvals,
+                  nobs=rebin.binned(vals=yset$HHBRACKET99, nobs=yset$HWTSUPP,
+                    newvals=newvals))
+    dfh <- cbind(dfh, year=as.factor(hist), tobs=sum(dfh$nobs))
 
     ## now, work on 1971
     yset <- dset[dset$YEAR==line,]
-    df2 <- tidyup(nvals=rebinvals.binned(min(yset$HHBRACKET99, na.rm=TRUE),
-                   max(yset$HHBRACKET99, na.rm=TRUE), binsize),
-                 nobs=rebin.binned(vals=yset$HHBRACKET99, nobs=yset$HWTSUPP,
-                   newvals=newvals),
-                 year=line)
-    df <- rbind(df, df2)
-    tobs <- sum(df$nobs)
+    newvals <- rebinvals.binned(min(yset$HHBRACKET99, na.rm=TRUE),
+                   max(yset$HHBRACKET99, na.rm=TRUE), binsize)
+    dfl <- tidyup(nvals=newvals,
+                  nobs=rebin.binned(vals=yset$HHBRACKET99, nobs=yset$HWTSUPP,
+                    newvals=newvals))
+    dfl <- cbind(dfl, year=as.factor(line), tobs=sum(dfl$nobs))
+    df <- rbind(dfh, dfl)
     base <- ggplot(df, aes(vals, nobs/tobs, colour=year))
     base <- base + geom_step(data=df[df$year == hist,])
     base <- base + geom_step(data=df[df$year == line,])
@@ -1418,8 +1419,9 @@ would determine how to deal with these files.
 
     ## by the way, the differences between the two curves should sum to
     ## (approx) zero
-    sbzero <- sum((df[df$year==hist,"nobs"]/tobs)
-                  (df[df$year==line,"nobs"]/tobs))
+    sh <- df$year==hist
+    sl <- df$year==line
+    sbzero <- sum(df[sh,"nobs"]/df[sh, "tobs"] - df[sl,"nobs"]/df[sl,"tobs"])
     if (abs(sbzero) > 0.001) {
       stop(sprintf("[approx] integral between curves s/b zero, is %g", sbzero))
     }
