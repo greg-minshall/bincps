@@ -1327,27 +1327,43 @@ would determine how to deal with these files.
   MAXHH <- 200000
   supp <- "HWTSUPP"                       # which variant to use
   binsize <- 1000                         # XXX
-  LOWESTYEAR <- 1967                      # before 1967, NA data
+  LOWESTYEAR <- 1968                      # before 1968, NA data
 
-  tidyup <- function(nvals, nobs) {
+  tidyup <- function(nvals, nobs, maxval) {
     "take the input dataset, cap it"
-    ## now, clamp upper end at MAXHH (200,000, say)
+    ## now, clamp upper end at maxval (200,000, say)
     ## first, propagate counts of the higher incomes to end of chart
-    highest <- max(nvals[nvals <= MAXHH], na.rm=TRUE)
+    highest <- max(nvals[nvals <= maxval], na.rm=TRUE)
+    if (!is.numeric(highest)) {
+      stop(sprintf("tidyup: all values greater than maxval (%g)", maxval))
+    }
     nobs[nvals==highest] <- nobs[nvals==highest] + sum(nobs[nvals>highest])
     ## now, delete the higher values
-    nobs <- nobs[nvals >= 0 & nvals <= MAXHH]
-    nvals <- nvals[nvals >= 0 & nvals <= MAXHH]
+    slowenough <- nvals <= maxval
+    nobs <- nobs[slowenough]
+    nvals <- nvals[slowenough]
+    ## what about too low?  assume 0
+    lowest <- min(nvals[nvals >= 0], na.rm=TRUE)
+    if (!is.numeric(lowest)) {
+      stop(sprintf("tidyup: all values less than maxval (%g) also less than zero",
+                   maxval))
+    }
+    ## count them, and get rid of them
+    nobs[nvals == lowest] <- nobs[nvals==lowest] + sum(nobs[nvals<0])
+    shighenough <- nvals >= 0
+    nobs <- nobs[shighenough]
+    nvals <- nvals[shighenough]
     ## get rid of never-observed values, if any (efficiency)
-    nvals <- nvals[nobs!=0]
-    nobs <- nobs[nobs!=0]
+    sn0 <- nobs != 0
+    nvals <- nvals[sn0]
+    nobs <- nobs[sn0]
     ## data frame it
     df <- data.frame(vals=nvals, nobs=nobs)
   }
 
   dset <- read.csv(ifile, header=TRUE)
   dset <- dset[dset$HFLAG == FALSE | is.na(dset$HFLAG),]
-  dset <- dset[dset$YEAR>LOWESTYEAR,]     # before 1967, NA data
+  dset <- dset[dset$YEAR>=LOWESTYEAR,]     # before 1967, NA data
 
   min <- min(dset$HHBRACKET99, na.rm=TRUE)
   max <- max(dset$HHBRACKET99, na.rm=TRUE)
@@ -1357,7 +1373,7 @@ would determine how to deal with these files.
   my.iecdf <- list()
   for (year in unique(dset$YEAR)) {
     yset <- dset[dset$YEAR==year,]
-    tidy <- tidyup(yset[,"HHBRACKET99"], yset[,supp])
+    tidy <- tidyup(yset[,"HHBRACKET99"], yset[,supp], MAXHH)
     my.ecdf[[year]] <- ecdf.binned(tidy$vals, tidy$nobs)
     my.iecdf[[year]] <- iecdf.binned(tidy$vals, tidy$nobs)
   }
@@ -1399,7 +1415,7 @@ would determine how to deal with these files.
                                 max(yset$HHBRACKET99, na.rm=TRUE), binsize)
     dfh <- tidyup(nvals=newvals,
                   nobs=rebin.binned(vals=yset$HHBRACKET99, nobs=yset$HWTSUPP,
-                    newvals=newvals))
+                    newvals=newvals), MAXHH)
     dfh <- cbind(dfh, year=as.factor(hist), tobs=sum(dfh$nobs))
 
     ## now, work on 1971
@@ -1408,7 +1424,7 @@ would determine how to deal with these files.
                    max(yset$HHBRACKET99, na.rm=TRUE), binsize)
     dfl <- tidyup(nvals=newvals,
                   nobs=rebin.binned(vals=yset$HHBRACKET99, nobs=yset$HWTSUPP,
-                    newvals=newvals))
+                    newvals=newvals), MAXHH)
     dfl <- cbind(dfl, year=as.factor(line), tobs=sum(dfl$nobs))
     df <- rbind(dfh, dfl)
     base <- ggplot(df, aes(vals, nobs/tobs, colour=year))
