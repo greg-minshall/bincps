@@ -1326,7 +1326,7 @@ would determine how to deal with these files.
 
   MAXHH <- 200000
   supp <- "HWTSUPP"                       # which variant to use
-  hhbracket <- "HHBRACKET99"              # just for coding beauty
+  bracket <- "HHBRACKET99"                # just for coding beauty
   binsize <- 1000                         # XXX
   LOWESTYEAR <- 1968                      # before 1968, NA data
 
@@ -1366,8 +1366,8 @@ would determine how to deal with these files.
   dset <- dset[dset$HFLAG == FALSE | is.na(dset$HFLAG),]
   dset <- dset[dset$YEAR>=LOWESTYEAR,]     # before 1967, NA data
 
-  min <- min(dset[, hhbracket], na.rm=TRUE)
-  max <- max(dset[, hhbracket], na.rm=TRUE)
+  min <- min(dset[, bracket], na.rm=TRUE)
+  max <- max(dset[, bracket], na.rm=TRUE)
 
   ## create ECDF and inverse (IECDF)
   my.ecdf <- list()
@@ -1375,16 +1375,16 @@ would determine how to deal with these files.
   for (year in unique(dset$YEAR)) {
     sy <- dset$YEAR==year
     yset <- dset[dset$YEAR==year,]
-    tidy <- tidyup(dset[sy,hhbracket], dset[sy,supp], MAXHH)
+    tidy <- tidyup(dset[sy,bracket], dset[sy,supp], MAXHH)
     ## now, get rid of outliers (tidyup included in 0, MAXHH indicies)
-    dset <- dset[-which(sy & (dset[,hhbracket] < 0 | dset[,hhbracket] > MAXHH)),]
+    dset <- dset[-which(sy & (dset[,bracket] < 0 | dset[,bracket] > MAXHH)),]
     sy <- dset$YEAR==year
-    if (!all(dset[sy,hhbracket] == tidy$vals)) {
+    if (!all(dset[sy,bracket] == tidy$vals)) {
       stop(sprintf("internal error"))
     }
     dset[sy,supp] <- tidy$nobs
-    my.ecdf[[year]] <- ecdf.binned(dset[sy, hhbracket], dset[sy, supp])
-    my.iecdf[[year]] <- iecdf.binned(dset[sy, hhbracket], dset[sy, supp])
+    my.ecdf[[year]] <- ecdf.binned(dset[sy, bracket], dset[sy, supp])
+    my.iecdf[[year]] <- iecdf.binned(dset[sy, bracket], dset[sy, supp])
   }
 
   ggp.ecdf <- function(years=c(1973, 2015)) {
@@ -1420,20 +1420,20 @@ would determine how to deal with these files.
                           binsize=5000) { # FT used binsize 5000
     ## get 2015 part of chart
     yset <- dset[dset$YEAR==hist,]
-    newvals <- rebinvals.binned(min(yset[,hhbracket], na.rm=TRUE),
-                                max(yset[,hhbracket], na.rm=TRUE), binsize)
-    dfh <- tidyup(nvals=newvals,
-                  nobs=rebin.binned(vals=yset[,hhbracket], nobs=yset$HWTSUPP,
-                    newvals=newvals), MAXHH)
+    newvals <- rebinvals.binned(min(yset[,bracket], na.rm=TRUE),
+                                max(yset[,bracket], na.rm=TRUE), binsize)
+    dfh <- data.frame(vals=newvals,
+                  nobs=rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
+                    newvals=newvals))
     dfh <- cbind(dfh, year=as.factor(hist), tobs=sum(dfh$nobs))
 
     ## now, work on 1971
     yset <- dset[dset$YEAR==line,]
-    newvals <- rebinvals.binned(min(yset[,hhbracket], na.rm=TRUE),
-                   max(yset[,hhbracket], na.rm=TRUE), binsize)
-    dfl <- tidyup(nvals=newvals,
-                  nobs=rebin.binned(vals=yset[,hhbracket], nobs=yset$HWTSUPP,
-                    newvals=newvals), MAXHH)
+    newvals <- rebinvals.binned(min(yset[,bracket], na.rm=TRUE),
+                   max(yset[,bracket], na.rm=TRUE), binsize)
+    dfl <- data.frame(vals=newvals,
+                  nobs=rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
+                    newvals=newvals))
     dfl <- cbind(dfl, year=as.factor(line), tobs=sum(dfl$nobs))
     df <- rbind(dfh, dfl)
     base <- ggplot(df, aes(vals, nobs/tobs, colour=year))
