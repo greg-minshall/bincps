@@ -1412,9 +1412,14 @@ would determine how to deal with these files.
     my.iecdfs
   }
 
+  ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
+  ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
   ggp.ecdf <- function(dset, years=c(1973, 2015)) {
     my.ecdfs <- looking.create.ecdfs(dset)
-    base <- ggplot(data.frame(x=c(0,attr(dset, "maxhh"))), aes(x))
+    base <- ggplot(data.frame(x=c(0,attr(dset, "maxhh"))), aes(x)) +
+      ggtitle("Cumulative Distribution Function (CDF) of household incomes in the United States (1999 dollars)") +
+        xlab(attr(dset, "bracket")) + ylab("Cumulative fraction") +
+          scale_colour_discrete(name="Year")
     for (y in years) {
       base <- base + stat_function(fun=my.ecdfs[[y]],
                                    aes_(colour=as.factor(y)))
@@ -1425,14 +1430,16 @@ would determine how to deal with these files.
   ggp.tiles <- function(dset, years=c(1972, 2014), tiles=c(0.1, 0.9)) {
     "plot the tiles for a given set of deciles over a set of years"
     my.iecdfs <- looking.create.iecdfs(dset)
-    base <- ggplot()
+    base <- ggplot() +
+      ggtitle("Select deciles of household income in the United States (1999 dollars)") +
+        ylab(attr(dset, "bracket"))
     for (y in years) {
-      df <- data.frame(year=as.factor(y),
-                       tile=tiles,
+      df <- data.frame(Year=as.factor(y),
+                       Decile=tiles,
                        hhbracket99=my.iecdfs[[y]](tiles))
-      base <- base + geom_point(data=df, aes(x=tile,
+      base <- base + geom_point(data=df, aes(x=Decile,
                                   y=hhbracket99,
-                                  colour=year))
+                                  colour=Year))
     }
     print(base)
   }
