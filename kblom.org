@@ -1324,12 +1324,6 @@ would determine how to deal with these files.
 #+BEGIN_SRC R :session ss :results none
   require(ggplot, quietly=TRUE)
 
-  MAXHH <- 200000
-  supp <- "HWTSUPP"                       # which variant to use
-  bracket <- "HHBRACKET99"                # just for coding beauty
-  binsize <- 1000                         # XXX
-  LOWESTYEAR <- 1968                      # before 1968, NA data
-
   tidyup <- function(nvals, nobs, maxval) {
     "take the input dataset, cap it"
     ## now, clamp upper end at maxval (200,000, say)
@@ -1362,47 +1356,81 @@ would determine how to deal with these files.
     df <- data.frame(vals=nvals, nobs=nobs)
   }
 
-  dset <- read.csv(ifile, header=TRUE)
-  dset <- dset[dset$HFLAG == FALSE | is.na(dset$HFLAG),]
-  dset <- dset[dset$YEAR>=LOWESTYEAR,]     # before 1967, NA data
+  looking.dset <- function(ifile,         # input file name
+                           maxhh=200000,
+                           supp="HWTSUPP", # which variant to use
+                           bracket="HHBRACKET99", # just for coding beauty
+                           binsize=1000,          # XXX
+                           fyear=1968) { # before 1968, NA data
+    dset <- read.csv(ifile, header=TRUE)
+    dset <- dset[dset$HFLAG == FALSE | is.na(dset$HFLAG),]
+    dset <- dset[dset$YEAR>=fyear,]       # before 1967, NA data
 
-  min <- min(dset[, bracket], na.rm=TRUE)
-  max <- max(dset[, bracket], na.rm=TRUE)
+    min <- min(dset[, bracket], na.rm=TRUE)
+    max <- max(dset[, bracket], na.rm=TRUE)
 
-  ## create ECDF and inverse (IECDF)
-  my.ecdf <- list()
-  my.iecdf <- list()
-  for (year in unique(dset$YEAR)) {
-    sy <- dset$YEAR==year
-    yset <- dset[dset$YEAR==year,]
-    tidy <- tidyup(dset[sy,bracket], dset[sy,supp], MAXHH)
-    ## now, get rid of outliers (tidyup included in 0, MAXHH indicies)
-    dset <- dset[-which(sy & (dset[,bracket] < 0 | dset[,bracket] > MAXHH)),]
-    sy <- dset$YEAR==year
-    if (!all(dset[sy,bracket] == tidy$vals)) {
-      stop(sprintf("internal error"))
+    for (year in unique(dset$YEAR)) {
+      sy <- dset$YEAR==year
+      yset <- dset[dset$YEAR==year,]
+      tidy <- tidyup(dset[sy,bracket], dset[sy,supp], maxhh)
+      ## now, get rid of outliers (tidyup included in 0, maxhh indicies)
+      dset <- dset[-which(sy & (dset[,bracket] < 0 | dset[,bracket] > maxhh)),]
+      sy <- dset$YEAR==year
+      if (!all(dset[sy,bracket] == tidy$vals)) {
+        stop(sprintf("internal error"))
+      }
+      dset[sy,supp] <- tidy$nobs
     }
-    dset[sy,supp] <- tidy$nobs
-    my.ecdf[[year]] <- ecdf.binned(dset[sy, bracket], dset[sy, supp])
-    my.iecdf[[year]] <- iecdf.binned(dset[sy, bracket], dset[sy, supp])
+    ## now, remember parameters in attributes
+    attr(dset, "maxhh") <- maxhh
+    attr(dset, "supp") <- supp
+    attr(dset, "bracket") <- bracket
+    attr(dset, "binsize") <- binsize
+    attr(dset, "fyear") <- fyear
+    dset
   }
 
-  ggp.ecdf <- function(years=c(1973, 2015)) {
-    base <- ggplot(data.frame(x=c(0,MAXHH)), aes(x))
+  looking.ecdfs <- function(dset) {
+    ## create ECDF
+    my.ecdf <- list()
+    for (year in unique(dset$YEAR)) {
+      sy <- dset$YEAR==year
+      my.ecdf[[year]] <- ecdf.binned(dset[sy, attr(dset, "bracket")],
+                                     dset[sy, attr(dset, "supp")])
+    }
+    my.ecdf
+  }
+
+  looking.iecdfs <- function(dset) {
+    ## create inverse (IECDF)
+    my.iecdf <- list()
+    for (year in unique(dset$YEAR)) {
+      sy <- dset$YEAR==year
+      my.iecdf[[year]] <- iecdf.binned(dset[sy, attr(dset, "bracket")],
+                                       dset[sy, attr(dset, "supp")])
+    }
+    my.iecdf
+  }
+
+  ggp.ecdf <- function(dset, years=c(1973, 2015)) {
+    myecdfs <- looking.ecdfs(dset)
+    base <- ggplot(data.frame(x=c(0,maxhh)), aes(x))
     for (y in years) {
-      base <- base + stat_function(fun=my.ecdf[[y]], aes_(colour=as.factor(y)))
+      base <- base + stat_function(fun=my.ecdfs[[y]],
+                                   aes_(colour=as.factor(y)))
     }
     print(base)
   }
 
-  ggp.tiles <- function(years=c(1972, 2014), tiles=c(0.1, 0.9)) {
+  ggp.tiles <- function(dset, years=c(1972, 2014), tiles=c(0.1, 0.9)) {
     "plot the tiles for a given set of deciles over a set of years"
+    myiecdfs <- looking.iecdfs(dset)
     base <- ggplot()
     for (y in years) {
-      base <- base + geom_point(data=data.frame(year=as.factor(y),
-                                  tile=tiles,
-                                  hhincome99=my.iecdf[[y]](tiles)),
-                                aes(x=tile, y=hhincome99, colour=year))
+      df <- data.frame(year=as.factor(y),
+                       tile=tiles,
+                       hhincome99=my.iecdfs[[y]](tiles))
+      base <- base + geom_point(data=df, aes(x=tile, y=hhincome99, colour=year))
     }
     print(base)
   }
@@ -1451,6 +1479,45 @@ would determine how to deal with these files.
       stop(sprintf("[approx] integral between curves s/b zero, is %g", sbzero))
     }
     return(base)
+  }
+
+  main <- function(args=NULL) {
+    require(argparser, quietly=TRUE)
+
+    p <- arg_parser("looking")
+    p <- arg_parser(p, "--ifile", type="character", default=NA,
+                    help="name of input file")
+    p <- add_argument(p, "--maxhh", type="numeric", default=200000,
+                      help="cap on household income (larger values will be counted in last bin")
+    p <- add_argument(p, "--supp", type="character", default="HWTSUPP",
+                      help="column name to use as count")
+    p <- add_argument(p, "--bracket", type="character", default="HHBRACKET99",
+                      help="column name to use as income")
+    p <- add_argument(p, "--binsize", type="integer", default=1000,
+                      help="size of each bin")
+    p <- add_argument(p, "--fyear", type="integer", default=1968,
+                      help="first year of input dataset to process")
+
+    if (is.null(args)) {
+      argv <- parse_args(p)
+    } else {
+      argv <- parse_args(p, args)
+    }
+
+    looking.dset(ifile=argv$ifile,
+                         maxhh=argv$maxhh,
+                         supp=argv$supp,
+                         bracket=argv$bracket,
+                         binsize=argv$binsize,
+                         fyear=argv$fyear)
+  }
+
+  options(error=recover)
+  options(warn=2)
+
+  if (!interactive()) {
+    main()
+    print(warnings())
   }
 #+END_SRC
 
