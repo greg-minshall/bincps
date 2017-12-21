@@ -1381,9 +1381,11 @@ the following code is common to all our visualizations
       dset[sy,argv$supp] <- tidy$nobs
     }
     ## now, remember parameters in attributes
-    for (a in names(attributes(argv))) {
-      print(a)
-      attr(dset, a) <- argv[a]
+    for (a in names(argv)) {
+      if (a != "") {
+        print(a)
+        attr(dset, a) <- argv[a]
+      }
     }
     dset
   }
@@ -1487,8 +1489,12 @@ the following code is common to all our visualizations
 #+BEGIN_SRC R :tangle looking.replot :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
+  <<stats.binned>>
+
 
   repro.chart <- function(dset,
+                          bracket="HHBRACKET99",
+                          supp="HWTSUPP",
                           hist=2016,
                           line=1972,
                           binsize=5000) { # FT used binsize 5000
@@ -1538,9 +1544,9 @@ the following code is common to all our visualizations
       argv <- parse_args(p, args)
     }
 
-    print(argv)
-
-    looking.dset(argv)
+    dset <- looking.dset(argv)
+    repro.chart(dset, bracket=argv$bracket)
+    readline("hit CR when done")
   }
 
   options(error=recover)
