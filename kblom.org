@@ -1383,7 +1383,6 @@ the following code is common to all our visualizations
     ## now, remember parameters in attributes
     for (a in names(argv)) {
       if (a != "") {
-        print(a)
         attr(dset, a) <- argv[a]
       }
     }
@@ -1545,16 +1544,24 @@ the following code is common to all our visualizations
     }
 
     dset <- looking.dset(argv)
-    repro.chart(dset, bracket=argv$bracket)
-    readline("hit CR when done")
+
+    ## get X11 running: https://stackoverflow.com/a/8168190
+    X11()
+
+    repro.chart(dset, bracket=argv$bracket, supp=argv$supp)
+    require(grid, quietly=TRUE)
+    grid.locator()
+    return(0)
   }
 
   options(error=recover)
   options(warn=2)
 
   if (!interactive()) {
-    main()
-    print(warnings())
+    rval <- main()
+    if (length(warnings()) != 0) {
+      print(warnings())
+    }
   }
 #+END_SRC
 
