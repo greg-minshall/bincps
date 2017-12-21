@@ -1321,8 +1321,11 @@ i think in an ideal world, i'd provide a command line switch that
 would determine how to deal with these files.
 ** looking at the data
 
+the following code is common to all our visualizations
+#+name: looking.bits
 #+BEGIN_SRC R :session ss :results none
-  require(ggplot, quietly=TRUE)
+  <<warning>>
+  require(ggplot2, quietly=TRUE)
 
   looking.tidyup <- function(nvals, nobs, maxval) {
     "take the input dataset, cap it"
@@ -1356,37 +1359,32 @@ would determine how to deal with these files.
     df <- data.frame(vals=nvals, nobs=nobs)
   }
 
-  looking.dset <- function(ifile,         # input file name
-                           maxhh=200000,
-                           supp="HWTSUPP", # which variant to use
-                           bracket="HHBRACKET99", # just for coding beauty
-                           binsize=1000,          # XXX
-                           fyear=1968) { # before 1968, NA data
-    dset <- read.csv(ifile, header=TRUE)
+  looking.dset <- function(argv) {        # command line args
+    dset <- read.csv(argv$ifile, header=TRUE)
     dset <- dset[dset$HFLAG == FALSE | is.na(dset$HFLAG),]
-    dset <- dset[dset$YEAR>=fyear,]       # before 1967, NA data
+    dset <- dset[dset$YEAR>=argv$fyear,]  # before 1967, NA data
 
-    min <- min(dset[, bracket], na.rm=TRUE)
-    max <- max(dset[, bracket], na.rm=TRUE)
+    min <- min(dset[, argv$bracket], na.rm=TRUE)
+    max <- max(dset[, argv$bracket], na.rm=TRUE)
 
     for (year in unique(dset$YEAR)) {
       sy <- dset$YEAR==year
       yset <- dset[dset$YEAR==year,]
-      tidy <- looking.tidyup(dset[sy,bracket], dset[sy,supp], maxhh)
+      tidy <- looking.tidyup(dset[sy,argv$bracket], dset[sy,argv$supp], argv$maxhh)
       ## now, get rid of outliers (looking.tidyup included in 0, maxhh indicies)
-      dset <- dset[-which(sy & (dset[,bracket] < 0 | dset[,bracket] > maxhh)),]
+      dset <- dset[-which(sy & (dset[,argv$bracket] < 0 |
+                                dset[,argv$bracket] > argv$maxhh)),]
       sy <- dset$YEAR==year
-      if (!all(dset[sy,bracket] == tidy$vals)) {
+      if (!all(dset[sy,argv$bracket] == tidy$vals)) {
         stop(sprintf("internal error"))
       }
-      dset[sy,supp] <- tidy$nobs
+      dset[sy,argv$supp] <- tidy$nobs
     }
     ## now, remember parameters in attributes
-    attr(dset, "maxhh") <- maxhh
-    attr(dset, "supp") <- supp
-    attr(dset, "bracket") <- bracket
-    attr(dset, "binsize") <- binsize
-    attr(dset, "fyear") <- fyear
+    for (a in names(attributes(argv))) {
+      print(a)
+      attr(dset, a) <- argv[a]
+    }
     dset
   }
 
@@ -1451,6 +1449,45 @@ would determine how to deal with these files.
     (iecdf[[y2]](tiles)/my.iecdfs[[y1]](tiles))^(1/(y2-y1))-1
   }
 
+  ## different utilities need different combinations of (a common set
+  ## of) parameters
+  buildparser <- function(name, need) {
+    require(argparser, quietly=TRUE)
+
+    p <- arg_parser(name)
+    if ("ifile" %in% need) {
+      p <- add_argument(p, "--ifile", type="character", default=NA,
+                        help="name of input file")
+    }
+    if ("maxhh" %in% need) {
+      p <- add_argument(p, "--maxhh", type="numeric", default=200000,
+                        help="cap on household income (larger values will be counted in last bin")
+    }
+    if ("supp" %in% need) {
+      p <- add_argument(p, "--supp", type="character", default="HWTSUPP",
+                        help="column name to use as count")
+    }
+    if ("bracket" %in% need) {
+      p <- add_argument(p, "--bracket", type="character", default="HHBRACKET99",
+                        help="column name to use as income")
+    }
+    if ("binsize" %in% need) {
+      p <- add_argument(p, "--binsize", type="integer", default=1000,
+                        help="size of each bin")
+    }
+    if ("fyear" %in% need) {
+      p <- add_argument(p, "--fyear", type="integer", default=1968,
+                        help="first year of input dataset to process")
+    }
+
+    p
+  }
+#+END_SRC
+
+#+BEGIN_SRC R :tangle looking.replot :shebang "#!/usr/bin/env Rscript" :session ss :results none
+  <<warning>>
+  <<looking.bits>>
+
   repro.chart <- function(dset,
                           hist=2016,
                           line=1972,
@@ -1490,22 +1527,10 @@ would determine how to deal with these files.
     return(base)
   }
 
-  main <- function(args=NULL) {
-    require(argparser, quietly=TRUE)
 
-    p <- arg_parser("looking")
-    p <- arg_parser(p, "--ifile", type="character", default=NA,
-                    help="name of input file")
-    p <- add_argument(p, "--maxhh", type="numeric", default=200000,
-                      help="cap on household income (larger values will be counted in last bin")
-    p <- add_argument(p, "--supp", type="character", default="HWTSUPP",
-                      help="column name to use as count")
-    p <- add_argument(p, "--bracket", type="character", default="HHBRACKET99",
-                      help="column name to use as income")
-    p <- add_argument(p, "--binsize", type="integer", default=1000,
-                      help="size of each bin")
-    p <- add_argument(p, "--fyear", type="integer", default=1968,
-                      help="first year of input dataset to process")
+  main <- function(args=NULL) {
+    p <- buildparser(name="looking",
+                     need=c("ifile", "maxhh", "supp", "bracket", "binsize", "fyear"))
 
     if (is.null(args)) {
       argv <- parse_args(p)
@@ -1513,12 +1538,9 @@ would determine how to deal with these files.
       argv <- parse_args(p, args)
     }
 
-    looking.dset(ifile=argv$ifile,
-                         maxhh=argv$maxhh,
-                         supp=argv$supp,
-                         bracket=argv$bracket,
-                         binsize=argv$binsize,
-                         fyear=argv$fyear)
+    print(argv)
+
+    looking.dset(argv)
   }
 
   options(error=recover)
