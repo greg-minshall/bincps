@@ -325,39 +325,6 @@ second the number of elements with that value.
     }
   }
 
-  tabulate.binned <- function(bin, counts, nbins = max(1L, bin, na.rm = TRUE)) {
-    "tabulate binned integers: 'bin' is observation; 'counts' are counts of corresponding observation; much cribbed from tabulate()"
-    if ((!is.numeric(bin)) && !is.factor(bin)) {
-      stop("'bin' must be numeric or a factor")
-    }
-    if (!is.numeric(counts)) {
-      stop("'nobs' must be numeric")
-    }
-    if (typeof(bin) != "integer") {
-      bin <- as.integer(bin)
-    }
-    if (nbins > .Machine$integer.max) {
-      stop(sprintf("attempt to make a table with >= %d elements",
-                   .Machine$integer.max))
-    }
-    nbins <- as.integer(nbins)
-    if (is.na(nbins)) {
-      stop(gettextf("invalid value of %s", "'nbins'"), domain = NA)
-    }
-    if (length(bin) != length(counts)) {
-      stop(sprintf("length 'bin' %d not same as length 'counts' %d",
-                   length(bin), length(counts)))
-    }
-    ## tabulate here calls .Internal(tabulate(bin, nbins)).  we, not
-    ## having recourse to this...
-    rval <- rep(0, max(bin))              # this is the result
-    vals <- unique(bin)
-    for (val in vals) {
-      rval[val] <- sum(counts[bin==val])  # if counts == 1, same as tabulate()
-    }
-    rval
-  }
-
   ## so, in ecdf():
 
   ## - vals are the unique values of x
