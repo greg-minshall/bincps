@@ -308,6 +308,8 @@ second the number of elements with that value.
 #+BEGIN_SRC R :session ss :tangle stats.binned :results none
   <<warning>>
 
+  require(Hmisc, quietly=TRUE)
+
   check.binned <- function(fname, vals, nobs) {
     if (length(vals) == 0) {
       stop(sprintf("%s: no values", fname))
