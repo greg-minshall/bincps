@@ -352,9 +352,9 @@ second the number of elements with that value.
   ##   (the unique values in x), returns the corresponding value of the
   ##   CDF in [0,1).
 
-  ecdf.binned.common <- function(x, nobs, inverse) {
+  ecdf.binned.common <- function(x, nobs, inverse, from) {
     "like ecdf, but for binned values; cribbed from ecdf.  this works for forward function (ecdf.binned) and for inverse function (iecdf.binned)"
-    check.binned("summary.ecdf", x, nobs)
+    check.binned(from, x, nobs)
     wet <- wtd.Ecdf(x=x, weights=nobs)     # get table
     if (!inverse) {
       X <- wet$x
@@ -380,12 +380,14 @@ second the number of elements with that value.
 
   ecdf.binned <- function(x, nobs) {
     "like ecdf, but for binned values; cribbed from ecdf"
-    ecdf.binned.common(x, nobs, inverse = FALSE)
+    ecdf.binned.common(x, nobs, inverse = FALSE, "ecdf.binned")
   }
 
   iecdf.binned <- function(x, nobs) {
-    "this is the inverse function from ecdf.binned (allowing you to get order statistics easily); probably \"slight\" overkill for that usage"
-    ecdf.binned.common(x, nobs, inverse = TRUE)
+    "this is the inverse function from ecdf.binned
+   (allowing you to get order statistics easily);
+  probably \"slight\" overkill for that usage"
+    ecdf.binned.common(x, nobs, inverse = TRUE, "iecdf.binned")
   }
 
   summary.binned <- function(vals, nobs) {
@@ -403,7 +405,7 @@ second the number of elements with that value.
   }
 
   rebin.binned <- function(vals, nobs, newvals, ordered=FALSE) {
-    "given a set of bins (values), with its set of observations counts,
+    "given a set of values, with its set of observations counts,
   produce a new set of bins, with a new set of observation counts.
   the old values vals must fit \"integrally\" into the new vals.
   returns the new observation counts."
@@ -504,8 +506,6 @@ second the number of elements with that value.
       }
     }
   }
-
-
 #+END_SRC
 
 ** bincps
@@ -1361,38 +1361,6 @@ the following code is common to all our visualizations
     my.iecdfs
   }
 
-  ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
-  ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
-  ggp.ecdf <- function(dset, years=c(1973, 2015)) {
-    my.ecdfs <- looking.create.ecdfs(dset)
-    base <- ggplot(data.frame(x=c(0,attr(dset, "maxhh"))), aes(x)) +
-      ggtitle("Cumulative Distribution Function (CDF) of household incomes in the United States (1999 dollars)") +
-        xlab(attr(dset, "bracket")) + ylab("Cumulative fraction") +
-          scale_colour_discrete(name="Year")
-    for (y in years) {
-      base <- base + stat_function(fun=my.ecdfs[[y]],
-                                   aes_(colour=as.factor(y)))
-    }
-    print(base)
-  }
-
-  ggp.tiles <- function(dset, years=c(1972, 2014), tiles=c(0.1, 0.9)) {
-    "plot the tiles for a given set of deciles over a set of years"
-    my.iecdfs <- looking.create.iecdfs(dset)
-    base <- ggplot() +
-      ggtitle("Select deciles of household income in the United States (1999 dollars)") +
-        ylab(attr(dset, "bracket"))
-    for (y in years) {
-      df <- data.frame(Year=as.factor(y),
-                       Decile=tiles,
-                       hhbracket99=my.iecdfs[[y]](tiles))
-      base <- base + geom_point(data=df, aes(x=Decile,
-                                  y=hhbracket99,
-                                  colour=Year))
-    }
-    print(base)
-  }
-
   pyear <- function(iecdf, y1, y2, tiles) {
     "what is the annual rate of growth for a given decile between years y1 and y2?"
     my1 <- min(y1, y2)
@@ -1430,6 +1398,14 @@ the following code is common to all our visualizations
       p <- add_argument(p, "--fyear", type="integer", default=1968,
                         help="first year of input dataset to process")
     }
+    if ("graphics" %in% need) {
+      p <- add_argument(p, "--graphics", type="character", default="X11",
+                        help="medium (\"X11\", \"pdf\", \"png\", etc.) to hold output graph")
+    }
+    if ("graphopts" %in% need) {
+      p <- add_argument(p, "--graphopts", type="character", default=NULL,
+                        help="options specific to --graphics type")
+    }
 
     p
   }
@@ -1439,6 +1415,40 @@ the following code is common to all our visualizations
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
+
+  
+  ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
+  ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
+  ggp.ecdf <- function(dset, years=c(1973, 2015)) {
+    my.ecdfs <- looking.create.ecdfs(dset)
+    base <- ggplot(data.frame(x=c(0,attr(dset, "maxhh"))), aes(x)) +
+      ggtitle("Cumulative Distribution Function (CDF) of household incomes in the United States (1999 dollars)") +
+        xlab(attr(dset, "bracket")) + ylab("Cumulative fraction") +
+          scale_colour_discrete(name="Year")
+    for (y in years) {
+      base <- base + stat_function(fun=my.ecdfs[[y]],
+                                   aes_(colour=as.factor(y)))
+    }
+    print(base)
+  }
+
+  ggp.tiles <- function(dset, years=c(1972, 2014), tiles=c(0.1, 0.9)) {
+    "plot the tiles for a given set of deciles over a set of years"
+    my.iecdfs <- looking.create.iecdfs(dset)
+    base <- ggplot() +
+      ggtitle("Select deciles of household income in the United States (1999 dollars)") +
+        ylab(attr(dset, "bracket"))
+    for (y in years) {
+      df <- data.frame(Year=as.factor(y),
+                       Decile=tiles,
+                       hhbracket99=my.iecdfs[[y]](tiles))
+      base <- base + geom_point(data=df, aes(x=Decile,
+                                  y=hhbracket99,
+                                  colour=Year))
+    }
+    print(base)
+  }
+
 
 
   repro.chart <- function(dset,
