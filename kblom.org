@@ -847,7 +847,7 @@ be in March of every year.)
   ## NB: as a side effect of testing writeability, on a successful
   ## return, FNAME *will* exist (but, be empty).
   dealwithoutputfilename <- function(ifile, fname, use, lastbits) {
-    require(assertthat, quietly=TRUE)
+    require(assertthat, quietly=TRUE)     # XXX still needed?
 
     if (is.na(fname)) {                    # compute filename
       x <- strsplit(ifile, ".", fixed=TRUE)[[1]]
@@ -1375,39 +1375,74 @@ the following code is common to all our visualizations
 
     p <- arg_parser(name)
     if ("ifile" %in% need) {
+      need <- subset(need, need!= "ifile")
       p <- add_argument(p, "--ifile", type="character", default=NA,
                         help="name of input file")
     }
     if ("maxhh" %in% need) {
+      need <- subset(need, need!="maxhh")
       p <- add_argument(p, "--maxhh", type="numeric", default=200000,
                         help="cap on household income (larger values will be counted in last bin")
     }
     if ("supp" %in% need) {
+      need <- subset(need, need!="supp")
       p <- add_argument(p, "--supp", type="character", default="HWTSUPP",
                         help="column name to use as count")
     }
     if ("bracket" %in% need) {
+      need <- subset(need, need!="bracket")
       p <- add_argument(p, "--bracket", type="character", default="HHBRACKET99",
                         help="column name to use as income")
     }
     if ("binsize" %in% need) {
+      need <- subset(need, need!="binsize")
       p <- add_argument(p, "--binsize", type="integer", default=1000,
                         help="size of each bin")
     }
     if ("fyear" %in% need) {
+      need <- subset(need, need!="fyear")
       p <- add_argument(p, "--fyear", type="integer", default=1968,
                         help="first year of input dataset to process")
     }
     if ("graphics" %in% need) {
+      need <- subset(need, need!="graphics")
       p <- add_argument(p, "--graphics", type="character", default="X11",
                         help="medium (\"X11\", \"pdf\", \"png\", etc.) to hold output graph")
     }
     if ("graphopts" %in% need) {
+      need <- subset(need, need!="graphopts")
       p <- add_argument(p, "--graphopts", type="character", default=NULL,
                         help="options specific to --graphics type")
     }
+    ## detect bad arguments in need
+    if (length(need) != 0) {
+      print(need)
+      stop("programming error: unknown \"need\" values to buildparser()")
+    }
 
     p
+  }
+
+  dograph <- function(graphics, graphopts) {
+    if (grepl("^x11$", graphics, ignore.case=TRUE)) {
+      ## get X11 running: https://stackoverflow.com/a/8168190
+      X11()
+    } else if (grepl("^pdf$", graphics, ignore.case=TRUE)) {
+      pdf()
+    } else if (grepl("^png$", graphics, ignore.case=TRUE)) {
+      png()
+    } else {
+      stop(sprintf("unknown --graphics option value \"%s\"; known values: \"X11\", \"pdf\", \"png\"",
+                   graphics))
+    }
+  }
+
+  undograph <- function(graphics, graphopts) {
+    if (grepl("^x11$", graphics, ignore.case=TRUE)) {
+      require(grid, quietly=TRUE)
+      grid.locator()
+    }
+    dev.off()
   }
 #+END_SRC
 
@@ -1416,7 +1451,7 @@ the following code is common to all our visualizations
   <<looking.bits>>
   <<stats.binned>>
 
-  
+
   ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
   ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
   ggp.ecdf <- function(dset, years=c(1973, 2015)) {
@@ -1495,7 +1530,11 @@ the following code is common to all our visualizations
 
   main <- function(args=NULL) {
     p <- buildparser(name="looking",
-                     need=c("ifile", "maxhh", "supp", "bracket", "binsize", "fyear"))
+                     need=c("ifile",
+                       "maxhh", "supp", "bracket", "fyear",
+                       "binsize",
+                       "graphics", "graphopts"
+                       ))
 
     if (is.null(args)) {
       argv <- parse_args(p)
@@ -1505,12 +1544,9 @@ the following code is common to all our visualizations
 
     dset <- looking.dset(argv)
 
-    ## get X11 running: https://stackoverflow.com/a/8168190
-    X11()
-
+    dograph(argv$graphics, argv$graphopts)
     repro.chart(dset, bracket=argv$bracket, supp=argv$supp)
-    require(grid, quietly=TRUE)
-    grid.locator()
+    undograph(argv$graphics, argv$graphopts)
     return(0)
   }
 
