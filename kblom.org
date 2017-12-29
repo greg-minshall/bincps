@@ -1409,9 +1409,9 @@ the following code is common to all our visualizations
       p <- add_argument(p, "--graphics", type="character", default="X11",
                         help="medium (\"X11\", \"pdf\", \"png\", etc.) to hold output graph")
     }
-    if ("graphopts" %in% need) {
-      need <- subset(need, need!="graphopts")
-      p <- add_argument(p, "--graphopts", type="character", default=NULL,
+    if ("gopts" %in% need) {
+      need <- subset(need, need!="gopts")
+      p <- add_argument(p, "--gopts", type="character", default=NULL,
                         help="options specific to --graphics type")
     }
     ## detect bad arguments in need
@@ -1423,24 +1423,28 @@ the following code is common to all our visualizations
     p
   }
 
-  dograph <- function(graphics, graphopts) {
+  dograph <- function(graphics, gopts) {
+    "point our graphic output at a particular device (X11, pdf, png)"
+    cmd <- graphics                       # default
     if (grepl("^x11$", graphics, ignore.case=TRUE)) {
       ## get X11 running: https://stackoverflow.com/a/8168190
-      X11()
     } else if (grepl("^pdf$", graphics, ignore.case=TRUE)) {
-      pdf()
     } else if (grepl("^png$", graphics, ignore.case=TRUE)) {
-      png()
     } else {
       stop(sprintf("unknown --graphics option value \"%s\"; known values: \"X11\", \"pdf\", \"png\"",
                    graphics))
     }
+    eval(paste(c(cmd, "(", gopts, ")")))
+
   }
 
-  undograph <- function(graphics, graphopts) {
+  undograph <- function(graphics, gopts) {
+    "after processing, close the graphics device"
     if (grepl("^x11$", graphics, ignore.case=TRUE)) {
       require(grid, quietly=TRUE)
+      cat("click on the graph to end:")
       grid.locator()
+      cat("\n")
     }
     dev.off()
   }
@@ -1533,7 +1537,7 @@ the following code is common to all our visualizations
                      need=c("ifile",
                        "maxhh", "supp", "bracket", "fyear",
                        "binsize",
-                       "graphics", "graphopts"
+                       "graphics", "gopts"
                        ))
 
     if (is.null(args)) {
@@ -1544,9 +1548,9 @@ the following code is common to all our visualizations
 
     dset <- looking.dset(argv)
 
-    dograph(argv$graphics, argv$graphopts)
+    dograph(argv$graphics, argv$gopts)
     repro.chart(dset, bracket=argv$bracket, supp=argv$supp)
-    undograph(argv$graphics, argv$graphopts)
+    undograph(argv$graphics, argv$gopts)
     return(0)
   }
 
