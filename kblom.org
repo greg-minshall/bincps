@@ -1409,9 +1409,24 @@ the following code is common to all our visualizations
       p <- add_argument(p, "--graphics", type="character", default="X11",
                         help="medium (\"X11\", \"pdf\", \"png\", etc.) to hold output graph")
     }
+    if ("gfile" %in% need) {
+      need <- subset(need, need!="gfile")
+      p <- add_argument(p, "--gfile", type="character", default=NA,
+                        help="output graphics file name\n\t(UNTESTED: for X11, display name)")
+    }
+    if ("height" %in% need) {
+      need <- subset(need, need!="height")
+      p <- add_argument(p, "--height", type="integer", default=NA,
+                        help="height of graphic output")
+    }
+    if ("width" %in% need) {
+      need <- subset(need, need!="width")
+      p <- add_argument(p, "--width", type="integer", default=NA,
+                        help="width of graphic output")
+    }
     if ("gopts" %in% need) {
       need <- subset(need, need!="gopts")
-      p <- add_argument(p, "--gopts", type="character", default=NULL,
+      p <- add_argument(p, "--gopts", type="character", default="",
                         help="options specific to --graphics type")
     }
     ## detect bad arguments in need
@@ -1423,15 +1438,41 @@ the following code is common to all our visualizations
     p
   }
 
-  dograph <- function(graphics, gopts) {
+  dograph <- function(graphics, gfile, height, width, gopts) {
     "point our graphic output at a particular device (X11, pdf, png)"
-    cmd <- graphics                       # default
-    if (grepl("^x11$", graphics, ignore.case=TRUE)) {
+    topts <- function(name, value) {
+      sub(" *$", "",
+          gsub("  *", " ",
+               paste(
+                     sprintf("%s=%s", name, value),
+                     gopts, sep=",")))
+    }
+    got <- function(which) {
+      grepl(sprintf("\"^%s$\"", which), graphics, ignore.case=TRUE)
+    }
+    lgraphics <- tolower(graphics)
+    cmd <- lgraphics                      # default
+    if (is.numeric(height)) {
+      gopts <- topts("height", height)
+    }
+    if (is.numeric(width)) {
+      gopts <- topts("width", width)
+    }
+    if (lgraphics == "x11") {
       ## get X11 running: https://stackoverflow.com/a/8168190
-    } else if (grepl("^pdf$", graphics, ignore.case=TRUE)) {
+      if (is.character(gfile)) {
+        gopts <- topts("display", gfile)
+      }
+    } else if (got("pdf")) {
+      if (!is.null(gfile)) {
+        gopts <- topts("file", gfile)
+      }
     } else if (grepl("^png$", graphics, ignore.case=TRUE)) {
+      if (!is.null(gfile)) {
+        gopts <- topts("file", gfile)
+      }
     } else {
-      stop(sprintf("unknown --graphics option value \"%s\"; known values: \"X11\", \"pdf\", \"png\"",
+      stop(sprintf("unknown --graphics option value \"%s\"; known values: \"x11\", \"pdf\", \"png\" (case independent)",
                    graphics))
     }
     eval(paste(c(cmd, "(", gopts, ")")))
@@ -1537,7 +1578,8 @@ the following code is common to all our visualizations
                      need=c("ifile",
                        "maxhh", "supp", "bracket", "fyear",
                        "binsize",
-                       "graphics", "gopts"
+                       "graphics", "gfile", "gopts",
+                       "height", "width"
                        ))
 
     if (is.null(args)) {
@@ -1548,7 +1590,11 @@ the following code is common to all our visualizations
 
     dset <- looking.dset(argv)
 
-    dograph(argv$graphics, argv$gopts)
+    dograph(graphics=argv$graphics,
+            gfile=argv$gfile,
+            height=argv$height,
+            width=argv$width,
+            gopts=argv$gopts)
     repro.chart(dset, bracket=argv$bracket, supp=argv$supp)
     undograph(argv$graphics, argv$gopts)
     return(0)
