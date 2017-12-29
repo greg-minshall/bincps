@@ -1416,12 +1416,12 @@ the following code is common to all our visualizations
     }
     if ("height" %in% need) {
       need <- subset(need, need!="height")
-      p <- add_argument(p, "--height", type="integer", default=NA,
+      p <- add_argument(p, "--height", type="numeric", default=NA,
                         help="height of graphic output")
     }
     if ("width" %in% need) {
       need <- subset(need, need!="width")
-      p <- add_argument(p, "--width", type="integer", default=NA,
+      p <- add_argument(p, "--width", type="numeric", default=NA,
                         help="width of graphic output")
     }
     if ("gopts" %in% need) {
@@ -1441,41 +1441,41 @@ the following code is common to all our visualizations
   dograph <- function(graphics, gfile, height, width, gopts) {
     "point our graphic output at a particular device (X11, pdf, png)"
     topts <- function(name, value) {
-      sub(" *$", "",
+      if (is.character(value)) {
+        value <- sprintf("\"%s\"", value)
+      }
+      sub("[ ,]*$", "",
           gsub("  *", " ",
                paste(
                      sprintf("%s=%s", name, value),
                      gopts, sep=",")))
     }
-    got <- function(which) {
-      grepl(sprintf("\"^%s$\"", which), graphics, ignore.case=TRUE)
-    }
     lgraphics <- tolower(graphics)
     cmd <- lgraphics                      # default
-    if (is.numeric(height)) {
+    if (!is.na(height)) {
       gopts <- topts("height", height)
     }
-    if (is.numeric(width)) {
+    if (!is.na(width)) {
       gopts <- topts("width", width)
     }
     if (lgraphics == "x11") {
       ## get X11 running: https://stackoverflow.com/a/8168190
-      if (is.character(gfile)) {
+      if (!is.na(gfile)) {
         gopts <- topts("display", gfile)
       }
-    } else if (got("pdf")) {
-      if (!is.null(gfile)) {
+    } else if (lgraphics == "pdf") {
+      if (!is.na(gfile)) {
         gopts <- topts("file", gfile)
       }
-    } else if (grepl("^png$", graphics, ignore.case=TRUE)) {
-      if (!is.null(gfile)) {
+    } else if (lgraphics == "png") {
+      if (!is.nacharacter(gfile)) {
         gopts <- topts("file", gfile)
       }
     } else {
       stop(sprintf("unknown --graphics option value \"%s\"; known values: \"x11\", \"pdf\", \"png\" (case independent)",
                    graphics))
     }
-    eval(paste(c(cmd, "(", gopts, ")")))
+    eval(parse(text=paste(cmd, "(", gopts, ")", sep="")))
 
   }
 
