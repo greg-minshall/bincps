@@ -308,7 +308,7 @@ second the number of elements with that value.
 #+BEGIN_SRC R :session ss :tangle stats.binned :results none
   <<warning>>
 
-  require(Hmisc, quietly=TRUE)
+  require(Hmisc, warn.conflicts=FALSE, quietly=TRUE)
 
   check.binned <- function(fname, vals, nobs) {
     if (length(vals) == 0) {
@@ -1491,7 +1491,7 @@ the following code is common to all our visualizations
   }
 #+END_SRC
 
-#+BEGIN_SRC R :tangle looking.replot :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle looking.ecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1512,6 +1512,51 @@ the following code is common to all our visualizations
     print(base)
   }
 
+  main <- function(args=NULL) {
+    p <- buildparser(name="looking",
+                     need=c("ifile",
+                       "maxhh", "supp", "bracket", "fyear",
+                       "binsize",
+                       "graphics", "gfile", "gopts",
+                       "height", "width"
+                       ))
+
+    if (is.null(args)) {
+      argv <- parse_args(p)
+    } else {
+      argv <- parse_args(p, args)
+    }
+
+    dset <- looking.dset(argv)
+
+    dograph(graphics=argv$graphics,
+            gfile=argv$gfile,
+            height=argv$height,
+            width=argv$width,
+            gopts=argv$gopts)
+    repro.chart(dset, bracket=argv$bracket, supp=argv$supp)
+    undograph(argv$graphics, argv$gopts)
+    return(0)
+  }
+
+  options(error=recover)
+  options(warn=2)
+
+  if (!interactive()) {
+    rval <- main()
+    if (length(warnings()) != 0) {
+      print(warnings())
+    }
+  }
+#+END_SRC
+
+
+#+BEGIN_SRC R :tangle looking.tiles :shebang "#!/usr/bin/env Rscript" :session ss :results none
+  <<warning>>
+  <<looking.bits>>
+  <<stats.binned>>
+
+
   ggp.tiles <- function(dset, years=c(1972, 2014), tiles=c(0.1, 0.9)) {
     "plot the tiles for a given set of deciles over a set of years"
     my.iecdfs <- looking.create.iecdfs(dset)
@@ -1529,6 +1574,49 @@ the following code is common to all our visualizations
     print(base)
   }
 
+  main <- function(args=NULL) {
+    p <- buildparser(name="looking",
+                     need=c("ifile",
+                       "maxhh", "supp", "bracket", "fyear",
+                       "binsize",
+                       "graphics", "gfile", "gopts",
+                       "height", "width"
+                       ))
+
+    if (is.null(args)) {
+      argv <- parse_args(p)
+    } else {
+      argv <- parse_args(p, args)
+    }
+
+    dset <- looking.dset(argv)
+
+    dograph(graphics=argv$graphics,
+            gfile=argv$gfile,
+            height=argv$height,
+            width=argv$width,
+            gopts=argv$gopts)
+    repro.chart(dset, bracket=argv$bracket, supp=argv$supp)
+    undograph(argv$graphics, argv$gopts)
+    return(0)
+  }
+
+  options(error=recover)
+  options(warn=2)
+
+  if (!interactive()) {
+    rval <- main()
+    if (length(warnings()) != 0) {
+      print(warnings())
+    }
+  }
+#+END_SRC
+
+
+#+BEGIN_SRC R :tangle looking.replot :shebang "#!/usr/bin/env Rscript" :session ss :results none
+  <<warning>>
+  <<looking.bits>>
+  <<stats.binned>>
 
 
   repro.chart <- function(dset,
