@@ -1,0 +1,38 @@
+* A small contribution to income inequality analysis
+
+in a [[https://twitter.com/kltblom/status/932394678241988609][Tweet]] from 19 November, 2017, Kristian Blom showed [[file:./DPCIA2AUQAEO0lv.jpg][a histogram]]
+(1971-2015), from Financial Times (based on data from Pew Trust).
+Blom asked, given that the past forty-plus years has seen *everyone*
+do better, should we be worried about the growing inequality?
+
+While Blom's question was asking for a qualitative answer, here I
+treat the question technically.
+
+Blom showed the following graphic, apparently from a video from the
+Financial Times.
+
+[[file:DPCIA2AUQAEO0lv.jpg]]
+
+For me, i felt the need to see the data as a CDF to really understand
+what was going on.  this led to a quest to find appropriate data (for
+the US).
+
+** Acknowledgements
+
+First, I would like to acknowledge the great database that [[http://www.ipums.org][IPUMS-CS]]
+has made available:
+#+BEGIN_QUOTE
+Sarah Flood, Miriam King, Steven Ruggles, and J. Robert
+Warren. Integrated Public Use Microdata Series, Current Population
+Survey: Version 5.0 [dataset]. Minneapolis, MN: University of
+Minnesota, 2017.  https://doi.org/10.18128/D030.V5.0
+#+END_QUOTE
+
+Second, my analysis has been done in the R statistical programming
+environment, and my thanks to them:
+#+BEGIN_QUOTE
+R Core Team (2017). R: A language and environment for statistical
+computing. R Foundation for Statistical Computing, Vienna, Austria.
+URL https://www.R-project.org/.
+#+END_QUOTE
+
