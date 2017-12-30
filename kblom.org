@@ -373,7 +373,7 @@ second the number of elements with that value.
                       f = 0,              # XXX is this the right f for inverse?
                       ties = "ordered")
     # class(rval) <- c("ecdf", "stepfun", class(rval))
-    assign("nobs", n, envir = environment(rval))
+    assign("nobs", sum(nobs), envir = environment(rval))
     attr(rval, "call") <- sys.call()
     rval
   }
@@ -1276,6 +1276,7 @@ the following code is common to all our visualizations
 #+BEGIN_SRC R :session ss :results none
   <<warning>>
   require(ggplot2, quietly=TRUE)
+  require(assertthat, quietly=TRUE)
 
   looking.tidyup <- function(nvals, nobs, maxval) {
     "take the input dataset, cap it"
@@ -1333,7 +1334,7 @@ the following code is common to all our visualizations
     ## now, remember parameters in attributes
     for (a in names(argv)) {
       if (a != "") {
-        attr(dset, a) <- argv[a]
+        attr(dset, a) <- argv[[a]]
       }
     }
     dset
@@ -1429,6 +1430,16 @@ the following code is common to all our visualizations
       p <- add_argument(p, "--gopts", type="character", default="",
                         help="options specific to --graphics type")
     }
+    if ("years" %in% need) {
+      need <- subset(need, need!="years")
+      p <- add_argument(p, "--years", type="character",
+                        help="years to graph")
+    }
+    if ("tiles" %in% need) {
+      need <- subset(need, need!="tiles")
+      p <- add_argument(p, "--tiles", type="character",
+                        help="percentiles to mark")
+    }
     ## detect bad arguments in need
     if (length(need) != 0) {
       print(need)
@@ -1436,6 +1447,16 @@ the following code is common to all our visualizations
     }
 
     p
+  }
+
+  doyears <- function(stryears) {
+    assert_that(!is.na(stryears), msg="required parameter --years missing")
+    as.numeric(unlist(strsplit(stryears, "[ ,]+")))
+  }
+
+  dotiles <- function(strtiles) {
+    assert_that(!is.na(strtiles), msg="required parameter --tiles missing")
+    as.numeric(unlist(strsplit(strtiles, "[ ,]+")))
   }
 
   dograph <- function(graphics, gfile, height, width, gopts) {
@@ -1580,7 +1601,8 @@ the following code is common to all our visualizations
                        "maxhh", "supp", "bracket", "fyear",
                        "binsize",
                        "graphics", "gfile", "gopts",
-                       "height", "width"
+                       "height", "width",
+                       "years", "tiles"
                        ))
 
     if (is.null(args)) {
@@ -1589,6 +1611,9 @@ the following code is common to all our visualizations
       argv <- parse_args(p, args)
     }
 
+    argv$tiles <- dotiles(argv$tiles)
+    argv$years <- doyears(argv$years)
+
     dset <- looking.dset(argv)
 
     dograph(graphics=argv$graphics,
@@ -1596,7 +1621,7 @@ the following code is common to all our visualizations
             height=argv$height,
             width=argv$width,
             gopts=argv$gopts)
-    repro.chart(dset, bracket=argv$bracket, supp=argv$supp)
+    ggp.tiles(dset, years=argv$years, tiles=argv$tiles)
     undograph(argv$graphics, argv$gopts)
     return(0)
   }
