@@ -1539,7 +1539,8 @@ the following code is common to all our visualizations
                        "maxhh", "supp", "bracket", "fyear",
                        "binsize",
                        "graphics", "gfile", "gopts",
-                       "height", "width"
+                       "height", "width",
+                       "years"
                        ))
 
     if (is.null(args)) {
@@ -1548,6 +1549,8 @@ the following code is common to all our visualizations
       argv <- parse_args(p, args)
     }
 
+    argv$years <- doyears(argv$years)
+
     dset <- looking.dset(argv)
 
     dograph(graphics=argv$graphics,
@@ -1555,7 +1558,7 @@ the following code is common to all our visualizations
             height=argv$height,
             width=argv$width,
             gopts=argv$gopts)
-    repro.chart(dset, bracket=argv$bracket, supp=argv$supp)
+    ggp.ecdf(dset, years=argv$years)
     undograph(argv$graphics, argv$gopts)
     return(0)
   }
