@@ -1,5 +1,18 @@
 * A small contribution to income inequality analysis
 
+** meta :noexport:
+
+the following takes (what should be links ending in) strings that end
+in ".IMG" and changes them to end in either ".pdf" or ".png",
+depending on whether the current export is to latex or html.
+#+BEGIN_SRC emacs-lisp :exports results :results none
+  (defun get-image-names (backend)
+  (let ((rment (if (equal backend 'html) ".png" ".pdf")))
+    (while (re-search-forward "[.]IMG\\>" nil t)
+      (replace-match rment t))))
+  (add-hook 'org-export-before-parsing-hook 'get-image-names)
+#+END_SRC
+
 ** Introduction
 
 in a [[https://twitter.com/kltblom/status/932394678241988609][Tweet]] from 19 November, 2017, Kristian Blom showed [[file:./DPCIA2AUQAEO0lv.jpg][a histogram]]
@@ -20,40 +33,6 @@ treat the question technically.
 For me, i felt the need to see the data as a [[https://en.wikipedia.org/wiki/Cumulative_distribution_function][CDF]] to really understand
 what was going on.  Using data from [[http://www.ipums.org][IPUMS-CS]], I was able to create the
 following graphic:
-
-
-#+LINK: IMG %(ext)
-
-#+begin_src emacs-lisp :exports results :results silent
-    (defun ext (base)
-      (format "%s.%s" base
-              (if (and (boundp 'backend) (equal backend 'html)) "svg" "pdf")))
-#+end_src
-
-[[IMG:replot]]
-
-
-#+BIND: org-export-filter-link-functions (get-image-name)
-#+begin_src emacs-lisp :exports results :results none
-  (defun get-image-name (s backend info)
-    (print s)
-    (print backend)
-    (if (equal backend 'html)
-        (replace-regexp-in-string ".IMG$" ".png" s t)
-      (replace-regexp-in-string ".IMG$" ".pdf" s t)))
-#+end_src
-
-
-#+BEGIN_SRC emacs-lisp :exports results :results output :eval query-export
-  (progn
-    (print "this")
-    (print org-export-allow-bind-keywords)
-    (print org-export-filter-link-functions))
-#+END_SRC
-
-#+BEGIN_SRC R :results output :export results
-cat("this\n")
-#+END_SRC
 
 [[file:replot.IMG]]
 
@@ -78,3 +57,4 @@ URL https://www.R-project.org/.
 
 Third, my approach to anything statistical is indebted to [[https://en.wikipedia.org/wiki/John_Tukey][John Tukey]]'s
 /Exploratory Data Analysis/, a book i highly recommend.
+
