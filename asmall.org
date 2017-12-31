@@ -7,9 +7,10 @@ in ".IMG" and changes them to end in either ".pdf" or ".png",
 depending on whether the current export is to latex or html.
 #+BEGIN_SRC emacs-lisp :exports results :results none
   (defun get-image-names (backend)
-  (let ((rment (if (equal backend 'html) ".png" ".pdf")))
-    (while (re-search-forward "[.]IMG\\>" nil t)
-      (replace-match rment t))))
+    (let ((rment (if (equal backend 'html) ".png" ".pdf"))
+          (case-fold-search nil))
+      (while (re-search-forward "[.]IMG\\>" nil t)
+        (replace-match rment t))))
   (add-hook 'org-export-before-parsing-hook 'get-image-names)
 #+END_SRC
 
