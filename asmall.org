@@ -23,13 +23,14 @@ following graphic:
 
 
 #+LINK: IMG %(ext)
+
 #+begin_src emacs-lisp :exports results :results silent
-    (defmacro ext (base)
+    (defun ext (base)
       (format "%s.%s" base
               (if (and (boundp 'backend) (equal backend 'html)) "svg" "pdf")))
 #+end_src
 
-[[IMG:thisandthat]]
+[[IMG:replot]]
 
 
 #+BIND: org-export-filter-link-functions (get-image-name)
