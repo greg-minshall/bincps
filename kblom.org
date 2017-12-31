@@ -1408,7 +1408,7 @@ the following code is common to all our visualizations
     if ("graphics" %in% need) {
       need <- subset(need, need!="graphics")
       p <- add_argument(p, "--graphics", type="character", default="X11",
-                        help="medium (\"X11\", \"pdf\", \"png\", etc.) to hold output graph")
+                        help="medium (\"X11\", \"pdf\", \"png\", \"svg\", etc.) to hold output graph")
     }
     if ("gfile" %in% need) {
       need <- subset(need, need!="gfile")
@@ -1460,7 +1460,7 @@ the following code is common to all our visualizations
   }
 
   dograph <- function(graphics, gfile, height, width, gopts) {
-    "point our graphic output at a particular device (X11, pdf, png)"
+    "point our graphic output at a particular device (X11, pdf, png, svg)"
     topts <- function(name, value) {
       if (is.character(value)) {
         value <- sprintf("\"%s\"", value)
@@ -1489,11 +1489,15 @@ the following code is common to all our visualizations
         gopts <- topts("file", gfile)
       }
     } else if (lgraphics == "png") {
-      if (!is.nacharacter(gfile)) {
+      if (!is.na(gfile)) {
+        gopts <- topts("file", gfile)
+      }
+    } else if (lgraphics == "svg") {
+      if (!is.na(gfile)) {
         gopts <- topts("file", gfile)
       }
     } else {
-      stop(sprintf("unknown --graphics option value \"%s\"; known values: \"x11\", \"pdf\", \"png\" (case independent)",
+      stop(sprintf("unknown --graphics option value \"%s\"; known values: \"x11\", \"pdf\", \"png\", \"svg\" (case independent)",
                    graphics))
     }
     eval(parse(text=paste(cmd, "(", gopts, ")", sep="")))
@@ -1512,7 +1516,7 @@ the following code is common to all our visualizations
   }
 #+END_SRC
 
-#+BEGIN_SRC R :tangle looking.ecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle create.ecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1575,7 +1579,7 @@ the following code is common to all our visualizations
 #+END_SRC
 
 
-#+BEGIN_SRC R :tangle looking.tiles :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1641,7 +1645,7 @@ the following code is common to all our visualizations
 #+END_SRC
 
 
-#+BEGIN_SRC R :tangle looking.replot :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle create.replot :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
