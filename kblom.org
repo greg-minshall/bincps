@@ -1432,7 +1432,7 @@ the following code is common to all our visualizations
     }
     if ("years" %in% need) {
       need <- subset(need, need!="years")
-      p <- add_argument(p, "--years", type="character",
+      p <- add_argument(p, "--years", type="character", default="1972,2016", # XXX
                         help="years to graph")
     }
     if ("tiles" %in% need) {
