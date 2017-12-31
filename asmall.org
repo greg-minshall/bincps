@@ -21,14 +21,40 @@ For me, i felt the need to see the data as a [[https://en.wikipedia.org/wiki/Cum
 what was going on.  Using data from [[http://www.ipums.org][IPUMS-CS]], I was able to create the
 following graphic:
 
+
+#+LINK: IMG %(ext)
 #+begin_src emacs-lisp :exports results :results silent
     (defmacro ext (base)
       (format "%s.%s" base
-              (if (and (boundp 'backend) (equal backend 'html)) "png" "pdf")))
+              (if (and (boundp 'backend) (equal backend 'html)) "svg" "pdf")))
 #+end_src
 
-[[elisp:(ext replot)]]
-[[file:replot.pdf]]
+[[IMG:thisandthat]]
+
+
+#+BIND: org-export-filter-link-functions (get-image-name)
+#+begin_src emacs-lisp :exports results :results none
+  (defun get-image-name (s backend info)
+    (print s)
+    (print backend)
+    (if (equal backend 'html)
+        (replace-regexp-in-string ".IMG$" ".png" s t)
+      (replace-regexp-in-string ".IMG$" ".pdf" s t)))
+#+end_src
+
+
+#+BEGIN_SRC emacs-lisp :exports results :results output :eval query-export
+  (progn
+    (print "this")
+    (print org-export-allow-bind-keywords)
+    (print org-export-filter-link-functions))
+#+END_SRC
+
+#+BEGIN_SRC R :results output :export results
+cat("this\n")
+#+END_SRC
+
+[[file:replot.IMG]]
 
 ** Acknowledgements
 
