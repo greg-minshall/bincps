@@ -73,6 +73,29 @@ I have been lazy.  When I say a year (1972, say), above, I mean the
 report the Census Bureau issued in that year which, in fact, reports
 on data collected on the previous year (1971, say).
 
+** Appendices
+*** CDF
+*** High income issues
+
+not enough data points?  Piketty, Saez, et al.
+
+*** Low income issues
+
+low income quality of life may be highly influenced by social "safety
+net" (welfare) programs.  so, loss of N% over 40 years may not
+translate to an N% lower quality of life.
+
+*** Most reported incomes
+
+*** Who gets what percent of the national income?
+
+A lot of money is paid out in income in the United States.  How is
+this money distributed among the various income groups?  Here is a CDF
+which shows what percent of the total national income is paid out to
+which income groups in the US.
+
+HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
+
 ** Acknowledgements
 
 First, I would like to acknowledge the great database that [[http://www.ipums.org][IPUMS-CS]]
