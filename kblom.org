@@ -1516,7 +1516,7 @@ the following code is common to all our visualizations
   }
 #+END_SRC
 
-#+BEGIN_SRC R :tangle create.ecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1578,6 +1578,13 @@ the following code is common to all our visualizations
   }
 #+END_SRC
 
+#+BEGIN_SRC sh :tangle create.ecdf :shebang "#!/bin/sh" :results none :eval never
+  ./create.ecdf.common $*
+#+END_SRC
+
+#+BEGIN_SRC sh :tangle create.ecdf2 :shebang "#!/bin/sh" :results none :eval never
+  ./create.ecdf.common $* --maxhh 50000
+#+END_SRC
 
 #+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
