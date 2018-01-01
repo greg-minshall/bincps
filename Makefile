@@ -5,7 +5,7 @@ UNBINNED = ${IPUMS}/cps_00006.csv.gz
 BINS = ${IPUMS}/cps_00006.1962-2017-binned.csv
 
 # graphs for our text
-GRAPHS = replot ecdf
+GRAPHS = replot ecdf ecdf2
 
 GRAPHSPDF = $(GRAPHS:=.pdf)
 GRAPHSPNG = $(GRAPHS:=.png)

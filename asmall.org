@@ -5,6 +5,14 @@
 the following takes (what should be links ending in) strings that end
 in ".IMG" and changes them to end in either ".pdf" or ".png",
 depending on whether the current export is to latex or html.
+
+this is definitely a sledge hammer approach.  there are other
+techniques that seem promising, in particular using org-mode's
+'#+BIND' keyword with org-export-filter-link-functions, but i was
+unable to make that work.
+
+this code runs as org-mode starts to export, and changes everything
+under the sun.
 #+BEGIN_SRC emacs-lisp :exports results :results none
   (defun get-image-names (backend)
     (let ((rment (if (equal backend 'html) ".png" ".pdf"))
@@ -31,11 +39,34 @@ treat the question technically.
 
 ** The data
 
-For me, i felt the need to see the data as a [[https://en.wikipedia.org/wiki/Cumulative_distribution_function][CDF]] to really understand
-what was going on.  Using data from [[http://www.ipums.org][IPUMS-CS]], I was able to create the
-following graphic:
+For me, i felt the need to see the data as a (empirical) cumulative
+function ([[https://en.wikipedia.org/wiki/Cumulative_distribution_function][CDF]]) to really understand what was going on.  Using data
+from [[http://www.ipums.org][IPUMS-CS]], I was able to create the following graphic (which is
+presented in 1999 dollars, not the2014 dollars of the FT graph):
 
 [[file:replot.IMG]]
+
+This is not by any means exactly as the FT graphic Blom tweeted.
+However, if you squint, it is roughly the same.
+
+If you will grant me that the two graphs represent the same
+distribution of household incomes, then we can now look at the CDF of
+the dataset underlying the second graphic:
+
+[[file:ecdf.IMG]]
+
+In the above, we see that about 30% of US households have done better
+in the years since 1972.  If we blow up the section for household
+incomes below $50,000, we can see what happens around that area in
+more detail:
+
+[[file:ecdf2.IMG]]
+
+Here it becomes clearer that for somewhat more than one quarter of US
+households, the years since 1972 have not improved their economic lot,
+have, in fact, made their economic situation worse.
+
+
 
 ** Acknowledgements
 
@@ -57,5 +88,4 @@ URL https://www.R-project.org/.
 #+END_QUOTE
 
 Third, my approach to anything statistical is indebted to [[https://en.wikipedia.org/wiki/John_Tukey][John Tukey]]'s
-/Exploratory Data Analysis/, a book i highly recommend.
-
+[[https://en.wikipedia.org/wiki/Exploratory_data_analysis][/Exploratory Data Analysis/]], a book I highly recommend.
