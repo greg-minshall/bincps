@@ -67,6 +67,11 @@ households, the years since 1972 have not improved their economic lot,
 have, in fact, made their economic situation worse.
 
 
+** Caveats
+
+I have been lazy.  When I say a year (1972, say), above, I mean the
+report the Census Bureau issued in that year which, in fact, reports
+on data collected on the previous year (1971, say).
 
 ** Acknowledgements
 

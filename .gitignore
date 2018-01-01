@@ -12,3 +12,10 @@ ipums/cps_00006.csv.gz
 
 replot.pdf
 replot.png
+
+create.ecdf.common
+create.ecdf2
+ecdf.pdf
+ecdf.png
+ecdf2.pdf
+ecdf2.png
