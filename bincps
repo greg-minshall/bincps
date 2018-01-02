@@ -289,7 +289,9 @@ bincps <- function(ifile,      # input file
   if (is.element("HHINCOME", colnames(dset))) {
     income99 <- "HHINCOME99"
     ## now, convert all income to 1999 dollars
-    dset <- cbind(dset, HHINCOME99=dset$HHINCOME*dset$CPI99)
+    dset <- cbind(dset,
+                  HHINCOME99=dset$HHINCOME*dset$CPI99, # normalize to 1999 dollars
+                  NRESP=1)              # number of responses
   } else if (is.element("HHBRACKET99", colnames(dset))) {
     income99 <- "HHBRACKET99"
     ## what is input binsize?  to figure this out, we look at the
@@ -297,7 +299,6 @@ bincps <- function(ifile,      # input file
     x <- dset$HHBRACKET99                   # brackets
     y <- unique(c(x[2:length(x)], NA) - x) # list of unique deltas + NA
     ibsize <- min(abs(y), na.rm=TRUE)   # take min, ignoring NA
-    print(ibsize)
     if (is.na(ibsize)) {
       getout(sprintf("unable to compute input binsize of input file \"%s\"\n",
                      ifile), 1)
@@ -388,7 +389,8 @@ bincps1 <- function(dset,                # inherits other locals from
                                     HHBRACKET99=bracket,
                                     CPI99=cpi99,
                                     MONTH=month,
-                                    WTSUPP=sum(yset[sh,]$WTSUPP)))
+                                    WTSUPP=sum(yset[sh,]$WTSUPP),
+                                    NRESP=sum(yset[sh,]$NRESP)))
         }
       }
     }
