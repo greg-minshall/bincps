@@ -1376,7 +1376,7 @@ the following code is common to all our visualizations
 
   ## different utilities need different combinations of (a common set
   ## of) parameters
-  buildparser <- function(name, need) {
+  doparser <- function(name, need, args) {
     require(argparser, quietly=TRUE)
 
     p <- arg_parser(name)
@@ -1451,7 +1451,29 @@ the following code is common to all our visualizations
       stop("programming error: unknown \"need\" values to buildparser()")
     }
 
-    p
+    if (is.null(args)) {
+      argv <- parse_args(p)
+    } else {
+      argv <- parse_args(p, args)
+    }
+
+    if (!is.null(argv$years)) {
+      argv$years <- doyears(argv$years)
+    }
+
+    if (!is.null(argv$tiles)) {
+      argv$tiles <- dotiles(argv$tiles)
+    }
+
+    if (!is.null(argv$graphics)) {
+      dograph(graphics=argv$graphics,
+              gfile=argv$gfile,
+              height=argv$height,
+              width=argv$width,
+              gopts=argv$gopts)
+    }
+
+    looking.dset(argv)
   }
 
   doyears <- function(stryears) {
@@ -1509,7 +1531,7 @@ the following code is common to all our visualizations
 
   }
 
-  undograph <- function(graphics, gopts) {
+  endgraph <- function(graphics, gopts) {
     "after processing, close the graphics device"
     if (grepl("^x11$", graphics, ignore.case=TRUE)) {
       require(grid, quietly=TRUE)
@@ -1543,32 +1565,17 @@ the following code is common to all our visualizations
   }
 
   main <- function(args=NULL) {
-    p <- buildparser(name="looking",
+    dset <- doparser(name="looking",
                      need=c("ifile",
                        "maxhh", "supp", "bracket",
                        "binsize",
                        "graphics", "gfile", "gopts",
                        "height", "width",
                        "years"
-                       ))
-
-    if (is.null(args)) {
-      argv <- parse_args(p)
-    } else {
-      argv <- parse_args(p, args)
-    }
-
-    argv$years <- doyears(argv$years)
-
-    dset <- looking.dset(argv)
-
-    dograph(graphics=argv$graphics,
-            gfile=argv$gfile,
-            height=argv$height,
-            width=argv$width,
-            gopts=argv$gopts)
-    ggp.ecdf(dset, years=argv$years)
-    undograph(argv$graphics, argv$gopts)
+                       ),
+                     args)
+    ggp.ecdf(dset, years=attr(dset, "years"))
+    endgraph(attr(dset, "graphics"), attr(dset, "gopts"))
     return(0)
   }
 
@@ -1615,33 +1622,16 @@ the following code is common to all our visualizations
   }
 
   main <- function(args=NULL) {
-    p <- buildparser(name="looking",
+    dset <- doparser(name="looking",
                      need=c("ifile",
                        "maxhh", "supp", "bracket",
                        "binsize",
                        "graphics", "gfile", "gopts",
                        "height", "width",
                        "years", "tiles"
-                       ))
-
-    if (is.null(args)) {
-      argv <- parse_args(p)
-    } else {
-      argv <- parse_args(p, args)
-    }
-
-    argv$tiles <- dotiles(argv$tiles)
-    argv$years <- doyears(argv$years)
-
-    dset <- looking.dset(argv)
-
-    dograph(graphics=argv$graphics,
-            gfile=argv$gfile,
-            height=argv$height,
-            width=argv$width,
-            gopts=argv$gopts)
-    ggp.tiles(dset, years=argv$years, tiles=argv$tiles)
-    undograph(argv$graphics, argv$gopts)
+                       ), args)
+    ggp.tiles(dset, years=attr(dset, "years"), tiles=attr(dset, "tiles"))
+    endgraph(attr(dset, "graphics"), attr(dset, "gopts"))
     return(0)
   }
 
@@ -1697,31 +1687,17 @@ the following code is common to all our visualizations
 
 
   main <- function(args=NULL) {
-    p <- buildparser(name="looking",
+    dset <- doparser(name="looking",
                      need=c("ifile",
                        "maxhh", "supp", "bracket",
                        "binsize",
                        "graphics", "gfile", "gopts",
                        "height", "width",
-                       "years"
-                       ))
+                       "years"),
+                     args)
 
-    if (is.null(args)) {
-      argv <- parse_args(p)
-    } else {
-      argv <- parse_args(p, args)
-    }
-    argv$years <- doyears(argv$years)
-
-    dset <- looking.dset(argv)
-
-    dograph(graphics=argv$graphics,
-            gfile=argv$gfile,
-            height=argv$height,
-            width=argv$width,
-            gopts=argv$gopts)
-    repro.chart(dset, bracket=argv$bracket, supp=argv$supp, years=argv$years)
-    undograph(argv$graphics, argv$gopts)
+    repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"))
+    endgraph(attr(dset, "graphics"), attr(dset, "gopts"))
     return(0)
   }
 
