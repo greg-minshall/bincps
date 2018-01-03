@@ -1541,6 +1541,25 @@ the following code is common to all our visualizations
     }
     dev.off()
   }
+
+  endup <- function(dset) {
+    if (!is.null(attr(dset, "graphics"))) {
+      endgraph(attr(dset, "graphics"), attr(dset, "gopts"))
+    }
+  }
+#+END_SRC
+
+#+name: looking.endbits
+#+BEGIN_SRC R
+options(error=recover)
+options(warn=2)
+
+if (!interactive()) {
+  rval <- main()
+  if (length(warnings()) != 0) {
+    print(warnings())
+  }
+}
 #+END_SRC
 
 #+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :session ss :results none
@@ -1575,7 +1594,7 @@ the following code is common to all our visualizations
                        ),
                      args)
     ggp.ecdf(dset, years=attr(dset, "years"))
-    endgraph(attr(dset, "graphics"), attr(dset, "gopts"))
+    endup(dset)
     return(0)
   }
 
@@ -1631,7 +1650,7 @@ the following code is common to all our visualizations
                        "years", "tiles"
                        ), args)
     ggp.tiles(dset, years=attr(dset, "years"), tiles=attr(dset, "tiles"))
-    endgraph(attr(dset, "graphics"), attr(dset, "gopts"))
+    endup(dset)
     return(0)
   }
 
@@ -1697,18 +1716,9 @@ the following code is common to all our visualizations
                      args)
 
     repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"))
-    endgraph(attr(dset, "graphics"), attr(dset, "gopts"))
+    endup(dset)
     return(0)
   }
 
-  options(error=recover)
-  options(warn=2)
-
-  if (!interactive()) {
-    rval <- main()
-    if (length(warnings()) != 0) {
-      print(warnings())
-    }
-  }
+  <<looking.endbits>>
 #+END_SRC
-
