@@ -1457,6 +1457,10 @@ the following code is common to all our visualizations
       argv <- parse_args(p, args)
     }
 
+    if ((!is.null(argv$ifile)) && is.na(argv$ifile)) {
+      stop(sprintf("%s: missing --ifile argument", name))
+    }
+
     if (!is.null(argv$years)) {
       argv$years <- doyears(argv$years)
     }
