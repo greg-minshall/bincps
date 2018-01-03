@@ -527,6 +527,9 @@ CPSIDP columns in the process.  (additionally, the MONTH column may be NA'd, if 
 than one month in a bin -- unlikely, given that the releases seem to
 be in March of every year.)
 
+run something like this:
+: ./bincps --ifile ipums/cps_00006.csv.gz --ofile foo.csv --rfile goo.csv
+
 #+name: bincps
 #+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
@@ -1315,7 +1318,7 @@ the following code is common to all our visualizations
   looking.dset <- function(argv) {        # command line args
     dset <- read.csv(argv$ifile, header=TRUE)
     dset <- dset[dset$HFLAG == FALSE | is.na(dset$HFLAG),]
-    dset <- dset[dset$YEAR>=argv$fyear,]  # before 1967, NA data
+    dset <- dset[dset$YEAR>=min(argv$years),]  # before 1967, NA data
 
     min <- min(dset[, argv$bracket], na.rm=TRUE)
     max <- max(dset[, argv$bracket], na.rm=TRUE)
@@ -1542,7 +1545,7 @@ the following code is common to all our visualizations
   main <- function(args=NULL) {
     p <- buildparser(name="looking",
                      need=c("ifile",
-                       "maxhh", "supp", "bracket", "fyear",
+                       "maxhh", "supp", "bracket",
                        "binsize",
                        "graphics", "gfile", "gopts",
                        "height", "width",
@@ -1614,7 +1617,7 @@ the following code is common to all our visualizations
   main <- function(args=NULL) {
     p <- buildparser(name="looking",
                      need=c("ifile",
-                       "maxhh", "supp", "bracket", "fyear",
+                       "maxhh", "supp", "bracket",
                        "binsize",
                        "graphics", "gfile", "gopts",
                        "height", "width",
@@ -1654,7 +1657,7 @@ the following code is common to all our visualizations
 #+END_SRC
 
 
-#+BEGIN_SRC R :tangle create.replot :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1663,37 +1666,28 @@ the following code is common to all our visualizations
   repro.chart <- function(dset,
                           bracket="HHBRACKET99",
                           supp="HWTSUPP",
-                          hist=2016,
-                          line=1972,
+                          years=c(1972, 2016),
                           binsize=5000) { # FT used binsize 5000
-    ## get 2015 part of chart
-    yset <- dset[dset$YEAR==hist,]
-    newvals <- rebinvals.binned(min(yset[,bracket], na.rm=TRUE),
-                                max(yset[,bracket], na.rm=TRUE), binsize)
-    dfh <- data.frame(vals=newvals,
-                  nobs=rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
-                    newvals=newvals))
-    dfh <- cbind(dfh, year=as.factor(hist), tobs=sum(dfh$nobs))
+    df <- data.frame()
+    for (year in years) {
+      yset <- dset[dset$YEAR==year,]
+      newvals <- rebinvals.binned(min(yset[,bracket], na.rm=TRUE),
+                                  max(yset[,bracket], na.rm=TRUE), binsize)
+      dfnew <- data.frame(vals=newvals,
+                          nobs=rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
+                            newvals=newvals))
+      dfnew <- cbind(dfnew, year=as.factor(year), tobs=sum(dfnew$nobs))
+      df <- rbind(df, dfnew)
+    }
 
-    ## now, work on 1971
-    yset <- dset[dset$YEAR==line,]
-    newvals <- rebinvals.binned(min(yset[,bracket], na.rm=TRUE),
-                   max(yset[,bracket], na.rm=TRUE), binsize)
-    dfl <- data.frame(vals=newvals,
-                  nobs=rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
-                    newvals=newvals))
-    dfl <- cbind(dfl, year=as.factor(line), tobs=sum(dfl$nobs))
-    df <- rbind(dfh, dfl)
-    base <- ggplot(df, aes(vals, nobs/tobs, colour=year))
-    base <- base + geom_step(data=df[df$year == hist,])
-    base <- base + geom_step(data=df[df$year == line,])
+    base <- ggplot(df, aes(vals, nobs/tobs, colour=year)) + geom_step()
 
     print(base)                           # actually display
 
     ## by the way, the differences between the two curves should sum to
     ## (approx) zero
-    sh <- df$year==hist
-    sl <- df$year==line
+    sh <- df$year==min(years)
+    sl <- df$year==max(years)
     sbzero <- sum(df[sh,"nobs"]/df[sh, "tobs"] - df[sl,"nobs"]/df[sl,"tobs"])
     if (abs(sbzero) > 0.001) {
       stop(sprintf("[approx] integral between curves s/b zero, is %g", sbzero))
@@ -1705,10 +1699,11 @@ the following code is common to all our visualizations
   main <- function(args=NULL) {
     p <- buildparser(name="looking",
                      need=c("ifile",
-                       "maxhh", "supp", "bracket", "fyear",
+                       "maxhh", "supp", "bracket",
                        "binsize",
                        "graphics", "gfile", "gopts",
-                       "height", "width"
+                       "height", "width",
+                       "years"
                        ))
 
     if (is.null(args)) {
@@ -1716,6 +1711,7 @@ the following code is common to all our visualizations
     } else {
       argv <- parse_args(p, args)
     }
+    argv$years <- doyears(argv$years)
 
     dset <- looking.dset(argv)
 
@@ -1724,7 +1720,7 @@ the following code is common to all our visualizations
             height=argv$height,
             width=argv$width,
             gopts=argv$gopts)
-    repro.chart(dset, bracket=argv$bracket, supp=argv$supp)
+    repro.chart(dset, bracket=argv$bracket, supp=argv$supp, years=argv$years)
     undograph(argv$graphics, argv$gopts)
     return(0)
   }
