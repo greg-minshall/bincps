@@ -1345,35 +1345,34 @@ the following code is common to all our visualizations
     dset
   }
 
-  looking.create.ecdfs <- function(dset, total=FALSE) {
+  looking.create.ecdfs <- function(dset, cumcdf="bracket/supp") {
     ## create ECDF
     my.ecdfs <- list()
     for (year in unique(dset$YEAR)) {
       sy <- dset$YEAR==year
       bracket <- dset[sy, attr(dset, "bracket")]
       supp <- dset[sy, attr(dset, "supp")]
-      if (total) {
-        ## want to get CDF of total bracket income over bracket
-        my.ecdfs[[year]] <- ecdf.binned(bracket, supp*bracket)
-      } else {
-        ## else, CDF of people over bracket
-        my.ecdfs[[year]] <- ecdf.binned(bracket, supp)
-      }
+      my.ecdfs[[year]] <-
+        switch(cumcdf,
+               "bracket/supp" = ecdf.binned(bracket, supp),
+               "bracket/bracket*supp" = ecdf.binned(bracket, bracket*supp),
+               "supp/bracket*supp" = ecdf.binned(supp, bracket*supp))
     }
     my.ecdfs
   }
 
-  looking.create.iecdfs <- function(dset, total=FALSE) {
+  looking.create.iecdfs <- function(dset, cumcdf="bracket/supp") {
     ## create inverse (IECDF)
     my.iecdfs <- list()
     for (year in unique(dset$YEAR)) {
       sy <- dset$YEAR==year
-      product <- dset[sy, attr(dset, "bracket")]
-      if (total) {
-        ## want inverse CDF of total national income
-        product <- product * dset[sy, attr(dset, "supp")]
-      }
-      my.iecdfs[[year]] <- iecdf.binned(product, dset[sy, attr(dset, "supp")])
+      bracket <- dset[sy, attr(dset, "bracket")]
+      supp <- dset[sy, attr(dset, "supp")]
+      my.iecdfs[[year]] <-
+        switch(cumcdf,
+               "bracket/supp" = iecdf.binned(bracket, supp),
+               "bracket/bracket*supp" = iecdf.binned(bracket, bracket*supp),
+               "supp/bracket*supp" = iecdf.binned(supp, bracket*supp))
     }
     my.iecdfs
   }
@@ -1461,10 +1460,10 @@ the following code is common to all our visualizations
       p <- add_argument(p, "--values", type="character", default="20000",
                         help="values to check for")
     }
-    if ("totalincome" %in% need) {
-      need <- subset(need, need!="totalincome")
-      p <- add_argument(p, "--totalincome", flag=TRUE,
-                        help="work on total income within each income bracket")
+    if ("cumcdf" %in% need) {
+      need <- subset(need, need!="cumcdf")
+      p <- add_argument(p, "--cumcdf", type="character", default="bracket/supp",
+                        help="cumcdf of what?  \"bracket/supp\", \"supp/supp*bracket\", \"bracket/supp*bracket\"")
     }
     ## detect bad arguments in need
     if (length(need) != 0) {
@@ -1585,12 +1584,27 @@ if (!interactive()) {
 
   ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
   ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
-  ggp.ecdf <- function(dset, years=c(1973, 2015), total) {
-    my.ecdfs <- looking.create.ecdfs(dset, total)
-    if (total) {
-      title <- ggtitle("Cumulative Distribution Function (CDF) showing what percent of total household income is accounted for by each income bracket in the United States (1999 dollars)")
+  ggp.ecdf <- function(dset, years=c(1973, 2015), cumcdf) {
+    my.ecdfs <- looking.create.ecdfs(dset, cumcdf)
+    ds <- switch(cumcdf, list(
+                              list("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)",
+                                   attr(dset, "maxhh"),
+                                   attr(dset, "bracket")),
+                              list("CDF showing what percent of total household income is accounted for by each income bracket in the United States (1999 dollars)",
+                                   attr(dset, "maxhh"),
+                                   attr(dset, "bracket")),
+                              list("CDF showing what percentage of population accounts for how much of total national income",
+                                   sum(dset[,attr(dset, "supp")]),
+                                   "Total population"))
+    title <- ggtitle(ds[[1]])
+      switch(cumcdf,
+             "bracket/supp" = ggtitle("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)"),
+             "bracket/bracket*supp" = ggtitle("CDF showing what percent of total household income is accounted for by each income bracket in the United States (1999 dollars)"),
+             "supp/bracket*supp" = ggtitle("CDF showing what percentage of population accounts for how much of total national income"))
+    if (cumcdf != "supp/bracket*supp") {
+      ulx <- attr(dset, "maxhh")
     } else {
-      title <- ggtitle("Cumulative Distribution Function (CDF) showing what percent of population is in each household income bracket in the United States (1999 dollars)")
+      ulx <- sum(dset[,attr(dset, "supp")])
     }
     base <- ggplot(data.frame(x=c(0,attr(dset, "maxhh"))), aes(x)) + title +
       xlab(attr(dset, "bracket")) +
@@ -1611,10 +1625,10 @@ if (!interactive()) {
                        "graphics", "gfile", "gopts",
                        "height", "width",
                        "years",
-                       "totalincome"
+                       "cumcdf"
                        ),
                      args)
-    ggp.ecdf(dset, years=attr(dset, "years"), total=attr(dset, "totalincome"))
+    ggp.ecdf(dset, years=attr(dset, "years"), cumcdf=attr(dset, "cumcdf"))
     endup(dset)
     return(0)
   }
@@ -1698,7 +1712,7 @@ if (!interactive()) {
                           supp="HWTSUPP",
                           years=c(1972, 2016),
                           binsize=5000, # FT used binsize 5000
-                          total=FALSE) {  # totalincome?
+                          cumcdf="bracket/supp") {
     df <- data.frame()
     for (year in years) {
       yset <- dset[dset$YEAR==year,]
@@ -1706,7 +1720,7 @@ if (!interactive()) {
                                   max(yset[,bracket], na.rm=TRUE), binsize)
       newnobs <- rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
                               newvals=newvals)
-      if (total) {
+      if (cumcdf != "bracket/supp") {     # XXX
         newnobs <- newnobs*newvals        # total income in each bracket
       }
       dfnew <- data.frame(vals=newvals, nobs=newnobs)
@@ -1737,10 +1751,10 @@ if (!interactive()) {
                        "binsize",
                        "graphics", "gfile", "gopts",
                        "height", "width",
-                       "years", "totalincome"),
+                       "years", "cumcdf"),
                      args)
 
-    repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"), total=attr(dset, "totalincome"))
+    repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"), cumcdf=attr(dset, "cumcdf"))
     endup(dset)
     return(0)
   }
