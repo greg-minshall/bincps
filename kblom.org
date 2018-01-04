@@ -1345,24 +1345,35 @@ the following code is common to all our visualizations
     dset
   }
 
-  looking.create.ecdfs <- function(dset) {
+  looking.create.ecdfs <- function(dset, total=FALSE) {
     ## create ECDF
     my.ecdfs <- list()
     for (year in unique(dset$YEAR)) {
       sy <- dset$YEAR==year
-      my.ecdfs[[year]] <- ecdf.binned(dset[sy, attr(dset, "bracket")],
-                                     dset[sy, attr(dset, "supp")])
+      bracket <- dset[sy, attr(dset, "bracket")]
+      supp <- dset[sy, attr(dset, "supp")]
+      if (total) {
+        ## want to get CDF of total bracket income over bracket
+        my.ecdfs[[year]] <- ecdf.binned(bracket, supp*bracket)
+      } else {
+        ## else, CDF of people over bracket
+        my.ecdfs[[year]] <- ecdf.binned(bracket, supp)
+      }
     }
     my.ecdfs
   }
 
-  looking.create.iecdfs <- function(dset) {
+  looking.create.iecdfs <- function(dset, total=FALSE) {
     ## create inverse (IECDF)
     my.iecdfs <- list()
     for (year in unique(dset$YEAR)) {
       sy <- dset$YEAR==year
-      my.iecdfs[[year]] <- iecdf.binned(dset[sy, attr(dset, "bracket")],
-                                       dset[sy, attr(dset, "supp")])
+      product <- dset[sy, attr(dset, "bracket")]
+      if (total) {
+        ## want inverse CDF of total national income
+        product <- product * dset[sy, attr(dset, "supp")]
+      }
+      my.iecdfs[[year]] <- iecdf.binned(product, dset[sy, attr(dset, "supp")])
     }
     my.iecdfs
   }
@@ -1445,6 +1456,16 @@ the following code is common to all our visualizations
       p <- add_argument(p, "--tiles", type="character",
                         help="percentiles to mark")
     }
+    if ("values" %in% need) {
+      need <- subset(need, need!="values")
+      p <- add_argument(p, "--values", type="character", default="20000",
+                        help="values to check for")
+    }
+    if ("totalincome" %in% need) {
+      need <- subset(need, need!="totalincome")
+      p <- add_argument(p, "--totalincome", flag=TRUE,
+                        help="work on total income within each income bracket")
+    }
     ## detect bad arguments in need
     if (length(need) != 0) {
       print(need)
@@ -1461,12 +1482,12 @@ the following code is common to all our visualizations
       stop(sprintf("%s: missing --ifile argument", name))
     }
 
-    if (!is.null(argv$years)) {
-      argv$years <- doyears(argv$years)
-    }
-
-    if (!is.null(argv$tiles)) {
-      argv$tiles <- dotiles(argv$tiles)
+    ## turn space/comma separated values into numeric vector (for
+    ## certain arguments)
+    for (i in c("years", "tiles", "values")) {
+      if ((!is.null(argv[[i]])) && !is.na(argv[[i]])) {
+        argv[i] <- list(as.numeric(unlist(strsplit(argv[[i]], "[ ,]+"))))
+      }
     }
 
     if (!is.null(argv$graphics)) {
@@ -1478,16 +1499,6 @@ the following code is common to all our visualizations
     }
 
     looking.dset(argv)
-  }
-
-  doyears <- function(stryears) {
-    assert_that(!is.na(stryears), msg="required parameter --years missing")
-    as.numeric(unlist(strsplit(stryears, "[ ,]+")))
-  }
-
-  dotiles <- function(strtiles) {
-    assert_that(!is.na(strtiles), msg="required parameter --tiles missing")
-    as.numeric(unlist(strsplit(strtiles, "[ ,]+")))
   }
 
   dograph <- function(graphics, gfile, height, width, gopts) {
@@ -1574,11 +1585,16 @@ if (!interactive()) {
 
   ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
   ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
-  ggp.ecdf <- function(dset, years=c(1973, 2015)) {
-    my.ecdfs <- looking.create.ecdfs(dset)
-    base <- ggplot(data.frame(x=c(0,attr(dset, "maxhh"))), aes(x)) +
-      ggtitle("Cumulative Distribution Function (CDF) of household incomes in the United States (1999 dollars)") +
-        xlab(attr(dset, "bracket")) + ylab("Cumulative fraction") +
+  ggp.ecdf <- function(dset, years=c(1973, 2015), total) {
+    my.ecdfs <- looking.create.ecdfs(dset, total)
+    if (total) {
+      title <- ggtitle("Cumulative Distribution Function (CDF) showing what percent of total household income is accounted for by each income bracket in the United States (1999 dollars)")
+    } else {
+      title <- ggtitle("Cumulative Distribution Function (CDF) showing what percent of population is in each household income bracket in the United States (1999 dollars)")
+    }
+    base <- ggplot(data.frame(x=c(0,attr(dset, "maxhh"))), aes(x)) + title +
+      xlab(attr(dset, "bracket")) +
+        ylab("Cumulative fraction") +
           scale_colour_discrete(name="Year")
     for (y in years) {
       base <- base + stat_function(fun=my.ecdfs[[y]],
@@ -1594,10 +1610,11 @@ if (!interactive()) {
                        "binsize",
                        "graphics", "gfile", "gopts",
                        "height", "width",
-                       "years"
+                       "years",
+                       "totalincome"
                        ),
                      args)
-    ggp.ecdf(dset, years=attr(dset, "years"))
+    ggp.ecdf(dset, years=attr(dset, "years"), total=attr(dset, "totalincome"))
     endup(dset)
     return(0)
   }
@@ -1680,15 +1697,19 @@ if (!interactive()) {
                           bracket="HHBRACKET99",
                           supp="HWTSUPP",
                           years=c(1972, 2016),
-                          binsize=5000) { # FT used binsize 5000
+                          binsize=5000, # FT used binsize 5000
+                          total=FALSE) {  # totalincome?
     df <- data.frame()
     for (year in years) {
       yset <- dset[dset$YEAR==year,]
       newvals <- rebinvals.binned(min(yset[,bracket], na.rm=TRUE),
                                   max(yset[,bracket], na.rm=TRUE), binsize)
-      dfnew <- data.frame(vals=newvals,
-                          nobs=rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
-                            newvals=newvals))
+      newnobs <- rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
+                              newvals=newvals)
+      if (total) {
+        newnobs <- newnobs*newvals        # total income in each bracket
+      }
+      dfnew <- data.frame(vals=newvals, nobs=newnobs)
       dfnew <- cbind(dfnew, year=as.factor(year), tobs=sum(dfnew$nobs))
       df <- rbind(df, dfnew)
     }
@@ -1710,18 +1731,70 @@ if (!interactive()) {
 
 
   main <- function(args=NULL) {
-    dset <- doparser(name="looking",
+    dset <- doparser(name="create.repro",
                      need=c("ifile",
                        "maxhh", "supp", "bracket",
                        "binsize",
                        "graphics", "gfile", "gopts",
                        "height", "width",
-                       "years"),
+                       "years", "totalincome"),
                      args)
 
-    repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"))
+    repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"), total=attr(dset, "totalincome"))
     endup(dset)
     return(0)
+  }
+
+  <<looking.endbits>>
+#+END_SRC
+
+#+BEGIN_SRC R :tangle value.ecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none
+  <<warning>>
+  <<looking.bits>>
+  <<stats.binned>>
+
+  values.ecdf <- function(dset, years, vals) {
+    df <- data.frame()
+    for (year in years) {
+      yset <- dset[dset$YEAR==year,]
+      ecdf <- ecdf.binned(yset[,attr(dset, "bracket")],
+                          yset[,attr(dset, "supp")])
+      for (val in vals) {
+        df <- rbind(df, data.frame(year=year, value=val, cumpct=ecdf(val)))
+      }
+    }
+    print(df, row.names=FALSE)
+  }
+      
+
+  main <- function(args=NULL) {
+    dset <- doparser(name="value.ecdf",
+                     need=c("ifile",
+                       "maxhh", "supp", "bracket",
+                       "binsize",
+                       "years", "values"),
+                     args)
+    df <- values.ecdf(dset, years=attr(dset, "years"), vals=attr(dset, "values"))
+    endup(dset)
+  }
+
+  <<looking.endbits>>
+#+END_SRC
+
+this bit is just for running interactively, returns the desired dset
+#+BEGIN_SRC R :shebang "#!/usr/bin/env Rscript" :session ss :results none
+  <<warning>>
+  <<looking.bits>>
+  <<stats.binned>>
+  main <- function(args=NULL) {
+    dset <- doparser(name="get.dset",
+                     need=c("ifile",
+                       "maxhh", "supp", "bracket",
+                       "binsize",
+                       "years", "values"),
+                     args)
+    endup(dset)
+    dset
   }
 
   <<looking.endbits>>
