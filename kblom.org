@@ -1596,10 +1596,9 @@ if (!interactive()) {
                    attr(dset, "maxhh"),
                    attr(dset, "bracket")),
                  "supp/bracket*supp" = list("CDF showing what percentage of population accounts for how much of total national income",
-                   max(sapply(X=years,
-                              FUN=function (year) sum(dset[dset$YEAR==year,attr(dset, "supp")]))),
-                   "Total population"))
-    title <- ds[[1]]
+                   1,
+                   "fraction of total population"))
+    title <- ds[[3]]
     ulx <- ds[[2]]
     base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
       ggtitle(ds[[1]]) +
