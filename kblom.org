@@ -1356,7 +1356,7 @@ the following code is common to all our visualizations
         switch(cumcdf,
                "bracket/supp" = ecdf.binned(bracket, supp),
                "bracket/bracket*supp" = ecdf.binned(bracket, bracket*supp),
-               "supp/bracket*supp" = ecdf.binned(supp, bracket*supp))
+               "supp/bracket*supp" = ecdf.binned(cumsum(supp), bracket*supp))
     }
     my.ecdfs
   }
@@ -1372,7 +1372,7 @@ the following code is common to all our visualizations
         switch(cumcdf,
                "bracket/supp" = iecdf.binned(bracket, supp),
                "bracket/bracket*supp" = iecdf.binned(bracket, bracket*supp),
-               "supp/bracket*supp" = iecdf.binned(supp, bracket*supp))
+               "supp/bracket*supp" = iecdf.binned(cumsum(supp), bracket*supp))
     }
     my.iecdfs
   }
@@ -1586,30 +1586,24 @@ if (!interactive()) {
   ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
   ggp.ecdf <- function(dset, years=c(1973, 2015), cumcdf) {
     my.ecdfs <- looking.create.ecdfs(dset, cumcdf)
-    ds <- switch(cumcdf, list(
-                              list("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)",
-                                   attr(dset, "maxhh"),
-                                   attr(dset, "bracket")),
-                              list("CDF showing what percent of total household income is accounted for by each income bracket in the United States (1999 dollars)",
-                                   attr(dset, "maxhh"),
-                                   attr(dset, "bracket")),
-                              list("CDF showing what percentage of population accounts for how much of total national income",
-                                   sum(dset[,attr(dset, "supp")]),
-                                   "Total population"))
-    title <- ggtitle(ds[[1]])
-      switch(cumcdf,
-             "bracket/supp" = ggtitle("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)"),
-             "bracket/bracket*supp" = ggtitle("CDF showing what percent of total household income is accounted for by each income bracket in the United States (1999 dollars)"),
-             "supp/bracket*supp" = ggtitle("CDF showing what percentage of population accounts for how much of total national income"))
-    if (cumcdf != "supp/bracket*supp") {
-      ulx <- attr(dset, "maxhh")
-    } else {
-      ulx <- sum(dset[,attr(dset, "supp")])
-    }
-    base <- ggplot(data.frame(x=c(0,attr(dset, "maxhh"))), aes(x)) + title +
-      xlab(attr(dset, "bracket")) +
-        ylab("Cumulative fraction") +
-          scale_colour_discrete(name="Year")
+    ds <- switch(cumcdf, 
+                 "bracket/supp" = list("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)",
+                   attr(dset, "maxhh"),
+                   attr(dset, "bracket")),
+                 "bracket/bracket*supp" = list("CDF showing what percent of total household income is accounted for by each income bracket in the United States (1999 dollars)",
+                   attr(dset, "maxhh"),
+                   attr(dset, "bracket")),
+                 "supp/bracket*supp" = list("CDF showing what percentage of population accounts for how much of total national income",
+                   max(sapply(X=years,
+                              FUN=function (year) sum(dset[dset$YEAR==year,attr(dset, "supp")]))),
+                   "Total population"))
+    title <- ds[[1]]
+    ulx <- ds[[2]]
+    base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
+      ggtitle(ds[[1]]) +
+        xlab(title) +
+          ylab("Cumulative fraction") +
+            scale_colour_discrete(name="Year")
     for (y in years) {
       base <- base + stat_function(fun=my.ecdfs[[y]],
                                    aes_(colour=as.factor(y)))
