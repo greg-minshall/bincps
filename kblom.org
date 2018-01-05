@@ -1356,7 +1356,9 @@ the following code is common to all our visualizations
         switch(cumcdf,
                "bracket/supp" = ecdf.binned(bracket, supp),
                "bracket/bracket*supp" = ecdf.binned(bracket, bracket*supp),
-               "supp/bracket*supp" = ecdf.binned(cumsum(supp), bracket*supp))
+               ## in the following, we divide by "sum(supp)" to
+               ## normalize across years (for comparability)
+               "supp/bracket*supp" = ecdf.binned(cumsum(supp)/sum(supp), bracket*supp))
     }
     my.ecdfs
   }
