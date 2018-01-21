@@ -1275,7 +1275,7 @@ the so-called "self-description".
 i think in an ideal world, i'd provide a command line switch that
 would determine how to deal with these files.
 ** looking at the data
-
+*** common code
 the following code is common to all our visualizations
 #+name: looking.bits
 #+BEGIN_SRC R :session ss :results none
@@ -1454,7 +1454,7 @@ the following code is common to all our visualizations
     }
     if ("tiles" %in% need) {
       need <- subset(need, need!="tiles")
-      p <- add_argument(p, "--tiles", type="character",
+      p <- add_argument(p, "--tiles", type="character", default="0.1,0.9",
                         help="percentiles to mark")
     }
     if ("values" %in% need) {
@@ -1578,6 +1578,8 @@ if (!interactive()) {
 }
 #+END_SRC
 
+*** create.ecdf
+**** create.ecdf.common (called by shell scripts)
 #+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
@@ -1586,7 +1588,7 @@ if (!interactive()) {
 
   ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
   ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
-  ggp.ecdf <- function(dset, years=c(1973, 2015), cumcdf) {
+  ggp.ecdf <- function(dset, years, cumcdf) {
     my.ecdfs <- looking.create.ecdfs(dset, cumcdf)
     ds <- switch(cumcdf, 
                  "bracket/supp" = list("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)",
@@ -1639,6 +1641,7 @@ if (!interactive()) {
   }
 #+END_SRC
 
+**** create.ecdf, create.ecdf2 (shell scripts which call create.ecdf.common)
 #+BEGIN_SRC sh :tangle create.ecdf :shebang "#!/bin/sh" :results none :eval never
   ./create.ecdf.common $*
 #+END_SRC
@@ -1647,13 +1650,14 @@ if (!interactive()) {
   ./create.ecdf.common $* --maxhh 50000
 #+END_SRC
 
+**** create.tiles
 #+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
 
 
-  ggp.tiles <- function(dset, years=c(1972, 2014), tiles=c(0.1, 0.9)) {
+  ggp.tiles <- function(dset, years, tiles) {
     "plot the tiles for a given set of deciles over a set of years"
     my.iecdfs <- looking.create.iecdfs(dset)
     base <- ggplot() +
@@ -1695,6 +1699,7 @@ if (!interactive()) {
   }
 #+END_SRC
 
+*** create.repro
 
 #+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
@@ -1757,7 +1762,10 @@ if (!interactive()) {
   <<looking.endbits>>
 #+END_SRC
 
-#+BEGIN_SRC R :tangle value.ecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none
+*** values.ecdf
+
+this returns 
+#+BEGIN_SRC R :tangle values.ecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1790,7 +1798,48 @@ if (!interactive()) {
   <<looking.endbits>>
 #+END_SRC
 
+*** values.iecdf
+
+this returns 
+#+BEGIN_SRC R :tangle values.iecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none
+  <<warning>>
+  <<looking.bits>>
+  <<stats.binned>>
+
+  values.iecdf <- function(dset, years, tiles) {
+    df <- data.frame()
+    for (year in years) {
+      yset <- dset[dset$YEAR==year,]
+      iecdf <- iecdf.binned(yset[,attr(dset, "bracket")],
+                            yset[,attr(dset, "supp")])
+      for (tile in tiles) {
+        df <- rbind(df, data.frame(year=year, tile=tile, bracket=iecdf(tile)))
+      }
+    }
+    print(df, row.names=FALSE)
+  }
+
+
+  main <- function(args=NULL) {
+    dset <- doparser(name="value.ecdf",
+                     need=c("ifile",
+                       "maxhh", "supp", "bracket",
+                       "binsize",
+                       "years", "tiles"),
+                     args)
+    df <- values.iecdf(dset, years=attr(dset, "years"), tiles=attr(dset, "tiles"))
+    endup(dset)
+  }
+
+  <<looking.endbits>>
+#+END_SRC
+
+*** interactive, return desired dset
 this bit is just for running interactively, returns the desired dset
+
+run by, e.g.,
+: dset <- main(args=c("--ifile", "ipums/cps_00006.1962-2017-binned.csv"))
+
 #+BEGIN_SRC R :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
