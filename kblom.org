@@ -1549,14 +1549,15 @@ the following code is common to all our visualizations
 
   endgraph <- function(graphics, gopts) {
     "after processing, close the graphics device"
-    if (grepl("^x11$", graphics, ignore.case=TRUE)) {
-      require(grid, quietly=TRUE)
-      cat("click on the graph to end:")
-      grid.locator()
-      cat("\n")
+    if ((!interactive()) && (grepl("^x11$", graphics, ignore.case=TRUE))) {
+        require(grid, quietly=TRUE)
+        cat("click on the graph to end:")
+        grid.locator()
+        cat("\n")
+        dev.off()
     }
-    dev.off()
   }
+
 
   endup <- function(dset) {
     if (!is.null(attr(dset, "graphics"))) {
@@ -1642,6 +1643,7 @@ if (!interactive()) {
 #+END_SRC
 
 **** create.ecdf, create.ecdf2 (shell scripts which call create.ecdf.common)
+
 #+BEGIN_SRC sh :tangle create.ecdf :shebang "#!/bin/sh" :results none :eval never
   ./create.ecdf.common $*
 #+END_SRC
@@ -1785,7 +1787,7 @@ this returns
       
 
   main <- function(args=NULL) {
-    dset <- doparser(name="value.ecdf",
+    dset <- doparser(name="values.ecdf",
                      need=c("ifile",
                        "maxhh", "supp", "bracket",
                        "binsize",
@@ -1821,7 +1823,7 @@ this returns
 
 
   main <- function(args=NULL) {
-    dset <- doparser(name="value.ecdf",
+    dset <- doparser(name="values.iecdf",
                      need=c("ifile",
                        "maxhh", "supp", "bracket",
                        "binsize",
