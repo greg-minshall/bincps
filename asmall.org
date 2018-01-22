@@ -85,21 +85,29 @@ In 1972, 23% of US households made less than $20,000; by 2016, that
 number has increased to 26%. ???
 
 
-** Caveats
-
-I have been lazy.  When I say a year (1972, say), above, I mean the
-report the Census Bureau issued in that year which, in fact, reports
-on data collected on the previous year (1971, say).
-
 ** Appendices
 *** CDF
-*** High income issues
+*** Methodological problems
+
+**** High income issues
 
 not enough data points?  Piketty, Saez, et al.  show number of data
 points per income group (i.e., *not* multiplied by HWTSUPP).  (does
 problem affect lower income groups as well?)
 
-*** Low income issues
+file:histo.hhbracket99-both.IMG
+
+ignoring the hump around 200,000 dollars for the year 1972 (see the
+section [[oddities]]), it is clear that very few respondents have high
+incomes.
+
+while it's not apparent in this graphic, incomes below around 5,000,
+6,000 dollars also have a small number of respondents.  if we just
+look at 1972, we see this:
+
+file:histo.hhbracket99-1972.IMG
+
+**** Low income issues
 
 low income quality of life may be highly influenced by social "safety
 net" (welfare) programs.  so, loss of N% over 40 years may not
@@ -126,7 +134,19 @@ in 2014, .5 of pop made 47000 or less, .9 of pop made 126000 or less
 
 [[file:totalincome.distribution.IMG]]
 
+*** oddities
 
+the IPUMS data set starts in 1962.  but, from 1962 through 1967, it
+contains no actual reported incomes.
+
+from 1968 through 1975, the reported incomes appear to have been
+capped at 50,000 dollars.  it *appears* as if incomes greater than
+50,000 dollars were reported as 50,000 dollars.  (for example, one
+sees a hump at the 1999 equivalent of 50,000 1972 dollars (a bit over
+200,000 1999 dollars) in the figure in [[High income issues]].
+
+from 1976, onwards, we see no evidence of such a cap on reported
+income.
 ** Acknowledgements
 
 First, I would like to acknowledge the great database that [[http://www.ipums.org][IPUMS-CS]]
