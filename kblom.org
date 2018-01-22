@@ -1553,14 +1553,14 @@ the following code is common to all our visualizations
   }
 
   endgraph <- function(graphics, gopts) {
-    "after processing, close the graphics device"
+      "after processing, close the graphics device"
     if (grepl("^x11$", graphics, ignore.case=TRUE)) {
         require(grid, quietly=TRUE)
         cat("click on the graph to end:")
-        grid.locator()
+        try(grid.locator(), silent=TRUE)  # in case window manager closes window
         cat("\n")
     }
-    dev.off()
+    try(dev.off(), silent=TRUE)           # ditto
   }
 
 
@@ -1573,15 +1573,16 @@ the following code is common to all our visualizations
 
 #+name: looking.endbits
 #+BEGIN_SRC R
-options(error=recover)
-options(warn=2)
+  options(warn=2)
 
-if (!interactive()) {
-  rval <- main()
-  if (length(warnings()) != 0) {
-    print(warnings())
+  if (!interactive()) {
+    rval <- main()
+    if (length(warnings()) != 0) {
+      print(warnings())
+    }
+  } else {
+    options(error=recover)
   }
-}
 #+END_SRC
 
 *** create.ecdf
