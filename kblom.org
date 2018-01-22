@@ -1860,7 +1860,79 @@ this returns
   <<looking.endbits>>
 #+END_SRC
 
-*** interactive, return desired dset
+*** totalincome.distribution
+we want to understand how the increase in total income between two
+years has been distributed among the population (as represented by
+percentiles).
+
+to do this, we create an ecdf for each year which relates population
+percentile (supp/sum(supp)) to total income at or below that level.
+
+then, we graph the difference between the two
+
+or, should we create the total income at each percentile, then
+subtract, then create the integral of that?  i'm not sure.
+
+
+#+BEGIN_SRC R :tangle totalincome.distribution :shebang "#!/usr/bin/env Rscript" :session ss :results none
+  <<warning>>
+  <<looking.bits>>
+  <<stats.binned>>
+
+  ggm.totalincome.distribution <- function(dset, years) {
+      if (length(years) != 2) {
+          stop(sprintf("with --delta, exactly two years must be specified; instead %d %s",
+                       length(years),
+                       ifelse(length(years == 1), "was", "were")))
+      }
+      xset <- dset[dset$YEAR %in% years,]
+      xset <- cbind(xset,
+                    totalincome=xset[,attr(dset,"bracket")]*xset[,attr(dset,"supp")],
+                    percentile=0)
+      ## now, compute percentiles within each year
+      for (year in years) {
+          xset[xset$YEAR==year,"percentile"] <-
+              cumsum(xset[xset$YEAR==year,attr(dset,"supp")]) /
+              sum(xset[xset$YEAR==year,attr(dset,"supp")])
+      }
+      maxy <- max(years)
+      miny <- min(years)
+      fymin <- approxfun(xset[xset$YEAR==miny,"percentile"],
+                         cumsum(xset[xset$YEAR==miny,"totalincome"]),
+                         method="constant",
+                         rule=2,  # clamp at ends
+                         f = 0,   # XXX is this the right f for inverse?
+                         ties = "ordered")
+      fymax <- approxfun(xset[xset$YEAR==maxy,"percentile"],
+                         cumsum(xset[xset$YEAR==maxy,"totalincome"]),
+                         method="constant",
+                         rule=2,  # clamp at ends
+                         f = 0,   # XXX is this the right f for inverse?
+                         ties = "ordered")
+      base <- ggplot(data.frame(x=c(0,1)), aes(x)) +
+          ggtitle("how increase in total income was shared across the population") +
+          ylab("Amount of gain (or loss)")
+      base <- base + stat_function(fun=function(x) { fymax(x)-fymin(x) })
+      print(base)
+  }
+
+  main <- function(args=NULL) {
+      dset <- doparser(name="totalincome",
+                       need=c("ifile",
+                              "maxhh", "supp", "bracket",
+                              "binsize",
+                              "graphics", "gfile", "gopts",
+                              "height", "width",
+                              "years"),
+                       args)
+      ggm.totalincome.distribution(dset, years=attr(dset, "years"))
+      endup(dset)
+      return(0)
+  }
+
+  <<looking.endbits>>
+#+END_SRC
+*** for interactive use, return desired dset
 this bit is just for running interactively, returns the desired dset
 
 run by, e.g.,
@@ -1870,7 +1942,7 @@ run by, e.g.,
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
-  main <- function(args=NULL) {
+  getdset <- function(args=NULL) {
     dset <- doparser(name="get.dset",
                      need=c("ifile",
                        "maxhh", "supp", "bracket",
