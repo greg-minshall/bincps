@@ -1586,6 +1586,7 @@ if (!interactive()) {
 
 *** create.ecdf
 **** create.ecdf.common (called by shell scripts)
+
 #+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
@@ -1604,8 +1605,8 @@ if (!interactive()) {
                    attr(dset, "maxhh"),
                    attr(dset, "bracket")),
                  "supp/bracket*supp" = list("CDF showing what percentage of population accounts for how much of total national income",
-                   1,
-                   "fraction of total population"),
+                 1,
+                 "fraction of total population"),
                  stop(sprintf("unknown \"--cumcdf\" argument \"%s\"", cumcdf)))
     title <- ds[[3]]
     if (delta) {
@@ -1626,7 +1627,6 @@ if (!interactive()) {
         miny <- min(years)
         base <- base + stat_function(fun=function(x) {
             y <- my.ecdfs[[maxy]](x)-my.ecdfs[[miny]](x)
-            cat(sprintf("x=%s, y=%s\n", x, y))
             y
         })
     } else {
