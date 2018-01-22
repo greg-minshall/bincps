@@ -1861,7 +1861,7 @@ this returns
   <<looking.endbits>>
 #+END_SRC
 
-*** totalincome.distribution
+*** create.totalincome.distribution
 we want to understand how the increase in total income between two
 years has been distributed among the population (as represented by
 percentiles).
@@ -1875,7 +1875,7 @@ or, should we create the total income at each percentile, then
 subtract, then create the integral of that?  i'm not sure.
 
 
-#+BEGIN_SRC R :tangle totalincome.distribution :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle create.totalincome.distribution :shebang "#!/usr/bin/env Rscript" :session ss :results none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1933,6 +1933,39 @@ subtract, then create the integral of that?  i'm not sure.
 
   <<looking.endbits>>
 #+END_SRC
+*** histogram of number of data points per bracket
+
+#+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :session ss :results none
+  <<warning>>
+  <<looking.bits>>
+  <<stats.binned>>
+
+  histo.hhbracket99 <- function(dset, years) {
+    dset$YEAR <- as.factor(dset$YEAR)
+    base <- ggplot(dset[dset$YEAR %in% years,],
+                   aes(HHBRACKET99, NRESP, colour=YEAR))
+    base <- base + geom_col()
+    print(base)
+  }
+
+  main <- function(args=NULL) {
+      dset <- doparser(name="totalincome",
+                       need=c("ifile",
+                              "maxhh", "supp", "bracket",
+                              "binsize",
+                              "graphics", "gfile", "gopts",
+                              "height", "width",
+                              "years"),
+                       args)
+      histo.hhbracket99(dset, years=attr(dset, "years"))
+      endup(dset)
+      return(0)
+  }
+
+  <<looking.endbits>>
+
+#+END_SRC
+
 *** for interactive use, return desired dset
 this bit is just for running interactively, returns the desired dset
 
