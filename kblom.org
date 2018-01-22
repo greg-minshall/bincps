@@ -1345,7 +1345,7 @@ the following code is common to all our visualizations
     dset
   }
 
-  looking.create.ecdfs <- function(dset, cumcdf="bracket/supp") {
+  looking.create.ecdfs <- function(dset, cumcdf) {
     ## create ECDF
     my.ecdfs <- list()
     for (year in unique(dset$YEAR)) {
@@ -1363,7 +1363,7 @@ the following code is common to all our visualizations
     my.ecdfs
   }
 
-  looking.create.iecdfs <- function(dset, cumcdf="bracket/supp") {
+  looking.create.iecdfs <- function(dset, cumcdf) {
     ## create inverse (IECDF)
     my.iecdfs <- list()
     for (year in unique(dset$YEAR)) {
@@ -1465,7 +1465,12 @@ the following code is common to all our visualizations
     if ("cumcdf" %in% need) {
       need <- subset(need, need!="cumcdf")
       p <- add_argument(p, "--cumcdf", type="character", default="bracket/supp",
-                        help="cumcdf of what?  \"bracket/supp\", \"supp/supp*bracket\", \"bracket/supp*bracket\"")
+                        help="cumcdf of what?  \"bracket/supp\", \"supp/bracket*supp\", \"bracket/bracket*supp\"")
+    }
+    if ("delta" %in% need) {
+        need <- subset(need, need!="delta")
+        p <- add_argument(p, "--delta", type="boolean", flag=TRUE,
+                          help="if we should look at difference between (exactly) two years")
     }
     ## detect bad arguments in need
     if (length(need) != 0) {
@@ -1549,13 +1554,13 @@ the following code is common to all our visualizations
 
   endgraph <- function(graphics, gopts) {
     "after processing, close the graphics device"
-    if ((!interactive()) && (grepl("^x11$", graphics, ignore.case=TRUE))) {
+    if (grepl("^x11$", graphics, ignore.case=TRUE)) {
         require(grid, quietly=TRUE)
         cat("click on the graph to end:")
         grid.locator()
         cat("\n")
-        dev.off()
     }
+    dev.off()
   }
 
 
@@ -1589,7 +1594,7 @@ if (!interactive()) {
 
   ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
   ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
-  ggp.ecdf <- function(dset, years, cumcdf) {
+  ggp.ecdf <- function(dset, years, cumcdf, delta) {
     my.ecdfs <- looking.create.ecdfs(dset, cumcdf)
     ds <- switch(cumcdf, 
                  "bracket/supp" = list("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)",
@@ -1600,17 +1605,35 @@ if (!interactive()) {
                    attr(dset, "bracket")),
                  "supp/bracket*supp" = list("CDF showing what percentage of population accounts for how much of total national income",
                    1,
-                   "fraction of total population"))
+                   "fraction of total population"),
+                 stop(sprintf("unknown \"--cumcdf\" argument \"%s\"", cumcdf)))
     title <- ds[[3]]
+    if (delta) {
+        title <- sprintf("%s (delta)", title)
+    }
     ulx <- ds[[2]]
     base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
       ggtitle(ds[[1]]) +
         xlab(title) +
-          ylab("Cumulative fraction") +
-            scale_colour_discrete(name="Year")
-    for (y in years) {
-      base <- base + stat_function(fun=my.ecdfs[[y]],
-                                   aes_(colour=as.factor(y)))
+        ylab("Cumulative fraction") +
+        scale_colour_discrete(name="Year")
+    if (delta) {
+        if (length(years) != 2) {
+            stop(sprintf("with --delta, exactly two years must be specified; instead %d were",
+                         length(years)))
+        }
+        maxy <- max(years)
+        miny <- min(years)
+        base <- base + stat_function(fun=function(x) {
+            y <- my.ecdfs[[maxy]](x)-my.ecdfs[[miny]](x)
+            cat(sprintf("x=%s, y=%s\n", x, y))
+            y
+        })
+    } else {
+        for (y in years) {
+            base <- base + stat_function(fun=my.ecdfs[[y]],
+                                         aes_(colour=as.factor(y)))
+        }
     }
     print(base)
   }
@@ -1623,10 +1646,11 @@ if (!interactive()) {
                        "graphics", "gfile", "gopts",
                        "height", "width",
                        "years",
-                       "cumcdf"
+                       "cumcdf", "delta"
                        ),
                      args)
-    ggp.ecdf(dset, years=attr(dset, "years"), cumcdf=attr(dset, "cumcdf"))
+    ggp.ecdf(dset, years=attr(dset, "years"),
+             cumcdf=attr(dset, "cumcdf"), delta=attr(dset, "delta"))
     endup(dset)
     return(0)
   }
