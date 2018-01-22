@@ -8,6 +8,8 @@ create.ecdf
 create.ecdf.common
 create.ecdf2
 create.histo.hhbracket99
+create.histo.hhbracket99-1972
+create.histo.hhbracket99-both
 create.repro
 create.tiles
 create.totalincome.distribution
@@ -21,8 +23,10 @@ ecdf.pdf
 ecdf.png
 ecdf2.pdf
 ecdf2.png
-histo.hhbracket99.pdf
-histo.hhbracket99.png
+histo.hhbracket99-1972.pdf
+histo.hhbracket99-1972.png
+histo.hhbracket99-both.pdf
+histo.hhbracket99-both.png
 totalincome.distribution.pdf
 totalincome.distribution.png
 repro.pdf
