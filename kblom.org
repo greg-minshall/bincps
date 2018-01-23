@@ -1,5 +1,5 @@
-
-** [[https://twitter.com/kltblom][Kristian Blom]]: does recent (40+ years) change in US income distribution matter? :noexport:
+** explorations, code, etc. :noexport:
+[[https://twitter.com/kltblom][Kristian Blom]]: does recent (40+ years) change in US income distribution matter?
 *** misc configuration stuff                                       :noexport:
  #+property: header-args :noweb yes
 
