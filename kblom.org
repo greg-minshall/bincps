@@ -1,1991 +1,1992 @@
-* [[https://twitter.com/kltblom][Kristian Blom]]: does recent (40+ years) change in US income distribution matter?
-** misc configuration stuff :noexport:
-#+property: header-args :noweb yes
 
-#+name: warning
-#+BEGIN_SRC R :exports none :eval never
-  ## WARNING:
-  ##
-  ## this file is generated from the emacs .org file "kblom.org" via
-  ## "tangling".  any modifications to this file will be lost the next
-  ## time the .org file is tangled.  this file is provided for the use
-  ## of users who don't use emacs, or don't use org-mode.
-  ## 
-#+END_SRC
-** introduction
+** [[https://twitter.com/kltblom][Kristian Blom]]: does recent (40+ years) change in US income distribution matter? :noexport:
+*** misc configuration stuff                                       :noexport:
+ #+property: header-args :noweb yes
 
-in a [[https://twitter.com/kltblom/status/932394678241988609][tweet]] from 19 November, 2017, Kristian Blom showed [[file:./DPCIA2AUQAEO0lv.jpg][a histogram]]
-(1971-2015), from Financial Times (based on data from Pew Trust).
-Blom asked, given that the past forty-plus years has seen *everyone*
-do better, should we be worried about the growing inequality?
+ #+name: warning
+ #+BEGIN_SRC R :exports none :eval never
+   ## WARNING:
+   ##
+   ## this file is generated from the emacs .org file "kblom.org" via
+   ## "tangling".  any modifications to this file will be lost the next
+   ## time the .org file is tangled.  this file is provided for the use
+   ## of users who don't use emacs, or don't use org-mode.
+   ## 
+ #+END_SRC
+*** introduction
 
-for me, i felt the need to see the data as a CDF to really understand
-what was going on.  this led to a quest to find appropriate data (for
-the US).
+ in a [[https://twitter.com/kltblom/status/932394678241988609][tweet]] from 19 November, 2017, Kristian Blom showed [[file:./DPCIA2AUQAEO0lv.jpg][a histogram]]
+ (1971-2015), from Financial Times (based on data from Pew Trust).
+ Blom asked, given that the past forty-plus years has seen *everyone*
+ do better, should we be worried about the growing inequality?
 
-** where to find data?
+ for me, i felt the need to see the data as a CDF to really understand
+ what was going on.  this led to a quest to find appropriate data (for
+ the US).
 
-[[https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls][Census Bureau]] has something that breaks down by each fifth and top 5%.
+*** where to find data?
 
-#+BEGIN_SRC R :session ss :var tseries=tseries :eval no-export :exports none
-colnames(tseries) <- c("year", "number", "lowest", "second", "third", "fourth", "llimittop5")
-#+END_SRC
+ [[https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls][Census Bureau]] has something that breaks down by each fifth and top 5%.
 
-#+RESULTS:
-| year       |
-| number     |
-| lowest     |
-| second     |
-| third      |
-| fourth     |
-| llimittop5 |
+ #+BEGIN_SRC R :session ss :var tseries=tseries :eval no-export :exports none
+ colnames(tseries) <- c("year", "number", "lowest", "second", "third", "fourth", "llimittop5")
+ #+END_SRC
 
-however, the FT graph Blom showed has about fifty buckets, whereas the
-Census data seems to have have six.
+ #+RESULTS:
+ | year       |
+ | number     |
+ | lowest     |
+ | second     |
+ | third      |
+ | fourth     |
+ | llimittop5 |
 
-#+name: tseries
-#+BEGIN_SRC sh :eval no-export :exports none
-  xls2csv census/h01ar.xls |
-      awk '/2016 Dollars/ { ok = 1; next} \
-          /^"[12]/ {
-                   if (ok) { 
-                      gsub(/ *\([0-9][0-9]\) */, ""); 
-                      gsub(/"/, ""); 
-                      print;
-                    }}' 2>&1 |
-      tac
-#+END_SRC
+ however, the FT graph Blom showed has about fifty buckets, whereas the
+ Census data seems to have have six.
 
-#+RESULTS: tseries
-| 1967 |  60813 | 18856 | 36768 | 52186 |  74417 | 119419 |
-| 1968 |  62214 | 20098 | 38103 | 54614 |  76737 | 120053 |
-| 1969 |  63401 | 20699 | 39718 | 57441 |  80478 | 126218 |
-| 1970 |  64778 | 20350 | 38985 | 56703 |  80899 | 127880 |
-| 1971 |  66676 | 20088 | 38294 | 56353 |  80353 | 127602 |
-| 1972 |  68251 | 20786 | 40033 | 59167 |  84686 | 136292 |
-| 1973 |  69859 | 21238 | 40839 | 60425 |  87000 | 139832 |
-| 1974 |  71163 | 21340 | 39585 | 58493 |  84892 | 134366 |
-| 1975 |  72867 | 20288 | 38076 | 57536 |  82611 | 130365 |
-| 1976 |  74142 | 20738 | 38636 | 58856 |  84678 | 134287 |
-| 1977 |  76030 | 20694 | 38977 | 59411 |  86616 | 137142 |
-| 1978 |  77330 | 21338 | 40346 | 61046 |  88785 | 142036 |
-| 1979 |  80776 | 21594 | 40103 | 61700 |  89461 | 144557 |
-| 1980 |  82368 | 20745 | 38905 | 59645 |  87332 | 140543 |
-| 1981 |  83527 | 20340 | 38023 | 58809 |  86946 | 139925 |
-| 1982 |  83918 | 20080 | 38191 | 58352 |  87015 | 143636 |
-| 1983 |  85290 | 20516 | 38149 | 58550 |  88485 | 145579 |
-| 1984 |  86789 | 20909 | 39134 | 60292 |  91077 | 150768 |
-| 1985 |  88458 | 21154 | 39801 | 61657 |  92731 | 153220 |
-| 1986 |  89479 | 21430 | 40990 | 63616 |  96164 | 161255 |
-| 1987 |  91124 | 21835 | 41447 | 64697 |  97780 | 163619 |
-| 1988 |  92830 | 22210 | 41953 | 65380 |  98722 | 167109 |
-| 1989 |  93347 | 22614 | 43000 | 66089 | 100414 | 171533 |
-| 1990 |  94312 | 22271 | 42159 | 64498 |  98359 | 168813 |
-| 1991 |  95669 | 21646 | 41260 | 63729 |  97578 | 165727 |
-| 1992 |  96426 | 21136 | 40494 | 63575 |  97304 | 166101 |
-| 1993 |  97107 | 21217 | 40380 | 63473 |  98663 | 171210 |
-| 1994 |  98990 | 21518 | 40389 | 64269 | 100717 | 176013 |
-| 1995 |  99627 | 22536 | 42121 | 65734 | 101921 | 176848 |
-| 1996 | 101018 | 22513 | 42318 | 67084 | 103684 | 182230 |
-| 1997 | 102528 | 22979 | 43571 | 68640 | 106690 | 188834 |
-| 1998 | 103874 | 23727 | 44768 | 71163 | 110418 | 194628 |
-| 1999 | 106434 | 24702 | 46014 | 72630 | 114216 | 204698 |
-| 2000 | 108209 | 24985 | 46009 | 72742 | 114000 | 202470 |
-| 2001 | 109297 | 24361 | 45162 | 71849 | 113195 | 204021 |
-| 2002 | 111278 | 23911 | 44545 | 70950 | 112127 | 200192 |
-| 2003 | 112000 | 23468 | 44369 | 71059 | 113358 | 201120 |
-| 2004 | 113343 | 23489 | 44059 | 70177 | 111818 | 199682 |
-| 2005 | 114384 | 23570 | 44244 | 70864 | 112705 | 204014 |
-| 2006 | 116011 | 23850 | 44967 | 71425 | 115508 | 207146 |
-| 2007 | 116783 | 23489 | 45262 | 71770 | 115758 | 204892 |
-| 2008 | 117181 | 23089 | 43476 | 69924 | 111744 | 200658 |
-| 2009 | 117538 | 22880 | 43124 | 69134 | 111865 | 201359 |
-| 2010 | 119927 | 22017 | 41832 | 67702 | 110116 | 198686 |
-| 2011 | 121084 | 21617 | 41096 | 66609 | 108375 | 198438 |
-| 2012 | 122459 | 21533 | 41568 | 67511 | 108818 | 199827 |
-| 2013 | 122952 | 21535 | 41408 | 67492 | 109129 | 201957 |
-| 2013 | 123931 | 21638 | 42282 | 69242 | 113582 | 211362 |
-| 2014 | 124587 | 21728 | 41754 | 69153 | 113811 | 209419 |
-| 2015 | 125819 | 23088 | 44061 | 72911 | 118480 | 217172 |
-| 2016 | 126224 | 24002 | 45600 | 74869 | 121018 | 225251 |
+ #+name: tseries
+ #+BEGIN_SRC sh :eval no-export :exports none
+   xls2csv census/h01ar.xls |
+       awk '/2016 Dollars/ { ok = 1; next} \
+           /^"[12]/ {
+                    if (ok) { 
+                       gsub(/ *\([0-9][0-9]\) */, ""); 
+                       gsub(/"/, ""); 
+                       print;
+                     }}' 2>&1 |
+       tac
+ #+END_SRC
 
-a [[https://fas.org/sgp/crs/misc/RS20811.pdf][report]] from the Congressional Research Service gives nice numbers
-for 2012.  this probably comes from (the 2012-version of) [[https://www.census.gov/data/tables/time-series/demo/income-poverty/cps-hinc/hinc-06.html][hinc-06]],
-from the Census Bureau.  sadly, hinc-06.xls seems to go back only a
-few years.
+ #+RESULTS: tseries
+ | 1967 |  60813 | 18856 | 36768 | 52186 |  74417 | 119419 |
+ | 1968 |  62214 | 20098 | 38103 | 54614 |  76737 | 120053 |
+ | 1969 |  63401 | 20699 | 39718 | 57441 |  80478 | 126218 |
+ | 1970 |  64778 | 20350 | 38985 | 56703 |  80899 | 127880 |
+ | 1971 |  66676 | 20088 | 38294 | 56353 |  80353 | 127602 |
+ | 1972 |  68251 | 20786 | 40033 | 59167 |  84686 | 136292 |
+ | 1973 |  69859 | 21238 | 40839 | 60425 |  87000 | 139832 |
+ | 1974 |  71163 | 21340 | 39585 | 58493 |  84892 | 134366 |
+ | 1975 |  72867 | 20288 | 38076 | 57536 |  82611 | 130365 |
+ | 1976 |  74142 | 20738 | 38636 | 58856 |  84678 | 134287 |
+ | 1977 |  76030 | 20694 | 38977 | 59411 |  86616 | 137142 |
+ | 1978 |  77330 | 21338 | 40346 | 61046 |  88785 | 142036 |
+ | 1979 |  80776 | 21594 | 40103 | 61700 |  89461 | 144557 |
+ | 1980 |  82368 | 20745 | 38905 | 59645 |  87332 | 140543 |
+ | 1981 |  83527 | 20340 | 38023 | 58809 |  86946 | 139925 |
+ | 1982 |  83918 | 20080 | 38191 | 58352 |  87015 | 143636 |
+ | 1983 |  85290 | 20516 | 38149 | 58550 |  88485 | 145579 |
+ | 1984 |  86789 | 20909 | 39134 | 60292 |  91077 | 150768 |
+ | 1985 |  88458 | 21154 | 39801 | 61657 |  92731 | 153220 |
+ | 1986 |  89479 | 21430 | 40990 | 63616 |  96164 | 161255 |
+ | 1987 |  91124 | 21835 | 41447 | 64697 |  97780 | 163619 |
+ | 1988 |  92830 | 22210 | 41953 | 65380 |  98722 | 167109 |
+ | 1989 |  93347 | 22614 | 43000 | 66089 | 100414 | 171533 |
+ | 1990 |  94312 | 22271 | 42159 | 64498 |  98359 | 168813 |
+ | 1991 |  95669 | 21646 | 41260 | 63729 |  97578 | 165727 |
+ | 1992 |  96426 | 21136 | 40494 | 63575 |  97304 | 166101 |
+ | 1993 |  97107 | 21217 | 40380 | 63473 |  98663 | 171210 |
+ | 1994 |  98990 | 21518 | 40389 | 64269 | 100717 | 176013 |
+ | 1995 |  99627 | 22536 | 42121 | 65734 | 101921 | 176848 |
+ | 1996 | 101018 | 22513 | 42318 | 67084 | 103684 | 182230 |
+ | 1997 | 102528 | 22979 | 43571 | 68640 | 106690 | 188834 |
+ | 1998 | 103874 | 23727 | 44768 | 71163 | 110418 | 194628 |
+ | 1999 | 106434 | 24702 | 46014 | 72630 | 114216 | 204698 |
+ | 2000 | 108209 | 24985 | 46009 | 72742 | 114000 | 202470 |
+ | 2001 | 109297 | 24361 | 45162 | 71849 | 113195 | 204021 |
+ | 2002 | 111278 | 23911 | 44545 | 70950 | 112127 | 200192 |
+ | 2003 | 112000 | 23468 | 44369 | 71059 | 113358 | 201120 |
+ | 2004 | 113343 | 23489 | 44059 | 70177 | 111818 | 199682 |
+ | 2005 | 114384 | 23570 | 44244 | 70864 | 112705 | 204014 |
+ | 2006 | 116011 | 23850 | 44967 | 71425 | 115508 | 207146 |
+ | 2007 | 116783 | 23489 | 45262 | 71770 | 115758 | 204892 |
+ | 2008 | 117181 | 23089 | 43476 | 69924 | 111744 | 200658 |
+ | 2009 | 117538 | 22880 | 43124 | 69134 | 111865 | 201359 |
+ | 2010 | 119927 | 22017 | 41832 | 67702 | 110116 | 198686 |
+ | 2011 | 121084 | 21617 | 41096 | 66609 | 108375 | 198438 |
+ | 2012 | 122459 | 21533 | 41568 | 67511 | 108818 | 199827 |
+ | 2013 | 122952 | 21535 | 41408 | 67492 | 109129 | 201957 |
+ | 2013 | 123931 | 21638 | 42282 | 69242 | 113582 | 211362 |
+ | 2014 | 124587 | 21728 | 41754 | 69153 | 113811 | 209419 |
+ | 2015 | 125819 | 23088 | 44061 | 72911 | 118480 | 217172 |
+ | 2016 | 126224 | 24002 | 45600 | 74869 | 121018 | 225251 |
 
-hinc-06.xls: 2017 2016 2015 2014 2013
-hinc-06_000.xls: 2012
-new06_000.txt: 2003
+ a [[https://fas.org/sgp/crs/misc/RS20811.pdf][report]] from the Congressional Research Service gives nice numbers
+ for 2012.  this probably comes from (the 2012-version of) [[https://www.census.gov/data/tables/time-series/demo/income-poverty/cps-hinc/hinc-06.html][hinc-06]],
+ from the Census Bureau.  sadly, hinc-06.xls seems to go back only a
+ few years.
 
-([[https://www.census.gov/popclock/][US, world population clock]])
+ hinc-06.xls: 2017 2016 2015 2014 2013
+ hinc-06_000.xls: 2012
+ new06_000.txt: 2003
 
-[[https://usa.ipums.org/usa/][ipums.org]] is a data service which uses [[http://www.nber.org/data/current-population-survey-data.html][NBER data]].  the ipums data is
-unaggregated.  about 2MB for a file (1995).  and, of course, many
-variables i don't understand.  plus, in nominal dollars.  but, the
-fact that it is unaggregated means that one can put in real dollars
-*before* binning.  (though, when looking at a CDF, one can convert
-each year's bin's into real dollars after the fact without affecting
-things.)
+ ([[https://www.census.gov/popclock/][US, world population clock]])
 
-[[http://www.pressure.to/works/hbai_in_r/][households below average income]] analysis in R.  for UK data, however.
+ [[https://usa.ipums.org/usa/][ipums.org]] is a data service which uses [[http://www.nber.org/data/current-population-survey-data.html][NBER data]].  the ipums data is
+ unaggregated.  about 2MB for a file (1995).  and, of course, many
+ variables i don't understand.  plus, in nominal dollars.  but, the
+ fact that it is unaggregated means that one can put in real dollars
+ *before* binning.  (though, when looking at a CDF, one can convert
+ each year's bin's into real dollars after the fact without affecting
+ things.)
 
-[[https://www.kdnuggets.com/2014/06/data-visualization-census-data-with-r.html][data-visualization-census-data-with-r]].  old, broken links, etc.
+ [[http://www.pressure.to/works/hbai_in_r/][households below average income]] analysis in R.  for UK data, however.
 
-[[https://www.r-bloggers.com/how-to-make-maps-with-census-data-in-r/][how-to-make-maps-with-census-data-in-r]] is newer.
+ [[https://www.kdnuggets.com/2014/06/data-visualization-census-data-with-r.html][data-visualization-census-data-with-r]].  old, broken links, etc.
 
-[[http://users.stat.umn.edu/~almquist/software.html][Zach Almquist]] has 10-year census data;  [[https://www.jstatsoft.org/article/view/v037i06][paper]].
+ [[https://www.r-bloggers.com/how-to-make-maps-with-census-data-in-r/][how-to-make-maps-with-census-data-in-r]] is newer.
 
-[[https://www.bls.gov/cps/][BLS]] CPS page.  however, "All self-employed persons are excluded,
-regardless of whether their businesses are incorporated."
+ [[http://users.stat.umn.edu/~almquist/software.html][Zach Almquist]] has 10-year census data;  [[https://www.jstatsoft.org/article/view/v037i06][paper]].
 
-the [[https://statisticalatlas.com/United-States/Household-Income][Statistical Atlas]] has nice graphics (though maybe not time
-series).  from American Community (?) Survey.
+ [[https://www.bls.gov/cps/][BLS]] CPS page.  however, "All self-employed persons are excluded,
+ regardless of whether their businesses are incorporated."
 
-the [[https://www.cbo.gov/publication/51361][CBO]] has data (under "Data and Supplemental Information"), but
-mostly quintile-level.
+ the [[https://statisticalatlas.com/United-States/Household-Income][Statistical Atlas]] has nice graphics (though maybe not time
+ series).  from American Community (?) Survey.
 
-a very nice [[https://www.cbpp.org/][Center on Budget and Policy Priorities]] paper, [[https://www.cbpp.org/research/poverty-and-inequality/a-guide-to-statistics-on-historical-trends-in-income-inequality]["A Guide to
-Statistics on Historical Trends in Income Inequality"]], points at "most
-recent" [[http://eml.berkeley.edu/~saez/TabFig2015prel.xls][Piketty/Saez estimates]].
+ the [[https://www.cbo.gov/publication/51361][CBO]] has data (under "Data and Supplemental Information"), but
+ mostly quintile-level.
 
-[[http://www.gapminder.org/data/][gapminder]] is another source of data in the world (not just US).
+ a very nice [[https://www.cbpp.org/][Center on Budget and Policy Priorities]] paper, [[https://www.cbpp.org/research/poverty-and-inequality/a-guide-to-statistics-on-historical-trends-in-income-inequality]["A Guide to
+ Statistics on Historical Trends in Income Inequality"]], points at "most
+ recent" [[http://eml.berkeley.edu/~saez/TabFig2015prel.xls][Piketty/Saez estimates]].
 
-** looking at the ipums data
+ [[http://www.gapminder.org/data/][gapminder]] is another source of data in the world (not just US).
 
-the ipums data seems the easiest to use.
+*** looking at the ipums data
 
-[[https://cps.ipums.org/cps-action/downloads/extract_files/cps_00002.xml][IPUMS columns]]:
-- YEAR
-- [[https://cps.ipums.org/cps-action/variables/SERIAL][SERIAL]]: household serial number
-- [[https://cps.ipums.org/cps-action/variables/HWTSUPP#codes_section][HWTSUPP]]: household weight, Supplement
-- [[https://cps.ipums.org/cps-action/variables/CPSID#codes_section][CPSID]]: CPS household record
-- [[https://cps.ipums.org/cps-action/variables/ASECFLAG][ASECFLAG]]: flag for ASEC
-- [[https://cps.ipums.org/cps-action/variables/HHINCOME][HHINCOME]]: total household income
-- [[https://cps.ipums.org/cps-action/variables/MONTH][MONTH]]: the calendar month of the CPS interview
-- [[https://cps.ipums.org/cps-action/variables/PERNUM][PERNUM]]: person number in sample unit
-- [[https://cps.ipums.org/cps-action/variables/CPSIDP][CPSIDP]]: CPSID, person record
-- [[https://cps.ipums.org/cps-action/variables/WTSUPP#description_section][WTSUPP]]: supplement weight
+ the ipums data seems the easiest to use.
 
-to format one file:
-#+BEGIN_SRC sh :results output :eval no-export :exports none
-  ((zcat ipums/cps_00001.csv.gz | head -1 | sed 'sx"xxg' | sed s'x,x xg');
-   (zcat ipums/cps_00001.csv.gz | tail -n+1 | sed s'x,x xg' | sort -n -k6)) |
-      column -t
-#+END_SRC
+ [[https://cps.ipums.org/cps-action/downloads/extract_files/cps_00002.xml][IPUMS columns]]:
+ - YEAR
+ - [[https://cps.ipums.org/cps-action/variables/SERIAL][SERIAL]]: household serial number
+ - [[https://cps.ipums.org/cps-action/variables/HWTSUPP#codes_section][HWTSUPP]]: household weight, Supplement
+ - [[https://cps.ipums.org/cps-action/variables/CPSID#codes_section][CPSID]]: CPS household record
+ - [[https://cps.ipums.org/cps-action/variables/ASECFLAG][ASECFLAG]]: flag for ASEC
+ - [[https://cps.ipums.org/cps-action/variables/HHINCOME][HHINCOME]]: total household income
+ - [[https://cps.ipums.org/cps-action/variables/MONTH][MONTH]]: the calendar month of the CPS interview
+ - [[https://cps.ipums.org/cps-action/variables/PERNUM][PERNUM]]: person number in sample unit
+ - [[https://cps.ipums.org/cps-action/variables/CPSIDP][CPSIDP]]: CPSID, person record
+ - [[https://cps.ipums.org/cps-action/variables/WTSUPP#description_section][WTSUPP]]: supplement weight
 
-#+RESULTS:
+ to format one file:
+ #+BEGIN_SRC sh :results output :eval no-export :exports none
+   ((zcat ipums/cps_00001.csv.gz | head -1 | sed 'sx"xxg' | sed s'x,x xg');
+    (zcat ipums/cps_00001.csv.gz | tail -n+1 | sed s'x,x xg' | sort -n -k6)) |
+       column -t
+ #+END_SRC
 
-this would have been "tangled" (saved) as "realize".
-#+BEGIN_SRC awk :shebang "#!/usr/bin/awk -f" :eval no-export :exports none
-  BEGIN {
-      FS = ",";
-      OFS = ",";
-  }
+ #+RESULTS:
 
-  FNR == 1 {
-      fileno++;
-      if (fileno == 2) {
-          print $0 OFS "\"RHHINCOME1999\"";
-      }
-      next;
-  }
+ this would have been "tangled" (saved) as "realize".
+ #+BEGIN_SRC awk :shebang "#!/usr/bin/awk -f" :eval no-export :exports none
+   BEGIN {
+       FS = ",";
+       OFS = ",";
+   }
 
-  fileno == 1 {
-      realities[$1] = $2;
-  }
+   FNR == 1 {
+       fileno++;
+       if (fileno == 2) {
+           print $0 OFS "\"RHHINCOME1999\"";
+       }
+       next;
+   }
 
-  fileno == 2 {
-      if ($7 == "") {
-          $7 = 0;                 # make later stage processing easier
-      }
-      print $0 OFS realities[$1]*$7;
-  }
-#+END_SRC
+   fileno == 1 {
+       realities[$1] = $2;
+   }
 
-#+BEGIN_SRC sh :shebang "#!/usr/bin/env bash" :results none :eval no-export :exports none
-./realize <(zcat ipums/cps_00004.csv.gz) <(zcat ipums/cps_00002.csv.gz)
-#+END_SRC
+   fileno == 2 {
+       if ($7 == "") {
+           $7 = 0;                 # make later stage processing easier
+       }
+       print $0 OFS realities[$1]*$7;
+   }
+ #+END_SRC
 
-i'll probably have to recode all this as an R script.  how to read a
-gzipped file?  [[http://grokbase.com/t/r/r-help/016v155pth/r-read-data-in-from-gzipped-file][one set of thoughts]].
-: x <- gzfile("./ipums/cps_00006.csv.gz", open="r")
-: y <- read.csv(x, header=TRUE)
-does the right thing.  in fact, it turns out that read.csv() will
-detect a .gz file and do the right thing.
+ #+BEGIN_SRC sh :shebang "#!/usr/bin/env bash" :results none :eval no-export :exports none
+ ./realize <(zcat ipums/cps_00004.csv.gz) <(zcat ipums/cps_00002.csv.gz)
+ #+END_SRC
 
-getting a file from IPUMS, extract request like this:
-#+BEGIN_QUOTE
+ i'll probably have to recode all this as an R script.  how to read a
+ gzipped file?  [[http://grokbase.com/t/r/r-help/016v155pth/r-read-data-in-from-gzipped-file][one set of thoughts]].
+ : x <- gzfile("./ipums/cps_00006.csv.gz", open="r")
+ : y <- read.csv(x, header=TRUE)
+ does the right thing.  in fact, it turns out that read.csv() will
+ detect a .gz file and do the right thing.
 
-EXTRACT REQUEST (HELP)
+ getting a file from IPUMS, extract request like this:
+ #+BEGIN_QUOTE
 
-SAMPLES:56 (show) [samples have notes] Change
-VARIABLES:12(show) Change
-DATA FORMAT: .csv  Change
-STRUCTURE: Rectangular (person)  Change
-ESTIMATED SIZE:642.4 MB 
+ EXTRACT REQUEST (HELP)
+
+ SAMPLES:56 (show) [samples have notes] Change
+ VARIABLES:12(show) Change
+ DATA FORMAT: .csv  Change
+ STRUCTURE: Rectangular (person)  Change
+ ESTIMATED SIZE:642.4 MB 
  
-OPTIONS
-
-Data quality flags are not available for any of the variables you've
-selected.
-
-Case selection is not available for any of the variables you've
-selected.
-
-Attach data from mother, father, spouse or household head as a new
-variable (for example, education of mother).  Describe your extract
-#+END_QUOTE
-(in fact, the data set, from 1962--2017, was 82MB compressed, 520MB
-uncompressed.)
-
-*** topcodes
-
-ipums [[https://cps.ipums.org/cps-action/variables/HHINCOME#codes_section][HHINCOME]] uses "[[https://cps.ipums.org/cps/inctaxcodes.shtml][topcodes]]" (and bottom codes) to encode
-exceptions.  the popular "99999999" means "Not in universe" (NIU) --
-something about the respondent
-
-#+name: topcodes
-#+BEGIN_SRC sh :eval no-export :exports none
-  zcat ipums/cps_00006.csv.gz | \
-      awk 'BEGIN{FS=","} {print $7}' | \
-      grep '\<9999' | \
-      words -f | \
-      sort -n
-#+END_SRC
-
-#+RESULTS: topcodes
-| -9999997 |  129 |
-|    -9999 |  781 |
-|     9999 |  194 |
-|    99990 |   12 |
-|    99991 |    4 |
-|    99992 |    8 |
-|    99994 |    9 |
-|    99995 |    8 |
-|    99996 |   16 |
-|    99997 |   14 |
-|    99998 |   12 |
-|    99999 |  525 |
-| 99999999 | 2704 |
-
-** deflating
-
-need to change from nominal to real dollars.  [[https://www.dallasfed.org/research/basics/nominal.cfm][Dallas Fed]] has some
-explanation.
-
-on the other hand, conveniently, [[https://cps.ipums.org/cps/cpi99.shtml][IPUMS]] has a variable, [[https://cps.ipums.org/cps-action/variables/CPI99][CPI99]], that can
-be used to convert everything to/from 1999 dollars.
-
-** citing IPUMS
-
-#+BEGIN_QUOTE
-Publications and research reports based on the IPUMS-CPS database must
-cite it appropriately. The citation should include the following:
-
-Sarah Flood, Miriam King, Steven Ruggles, and J. Robert
-Warren. Integrated Public Use Microdata Series, Current Population
-Survey: Version 5.0 [dataset]. Minneapolis, MN: University of
-Minnesota, 2017.  https://doi.org/10.18128/D030.V5.0
-
-For policy briefs or articles in the popular press that use the
-IPUMS-CPS database, we recommend that you cite the use of IPUMS-CPS
-data as follows:
-
-IPUMS-CPS, University of Minnesota, www.ipums.org
-#+END_QUOTE
-
-** stats.binned
-
-we need a summary routine for binned objects.  each bin has a "value"
-as well as a number of elements with that value.  we compute the same
-objects as summary(): Min, 1st Qu., Median, Mean, 3rd Qu., Max
-
-the input is a matrix with 2 columns, the first being the value, the
-second the number of elements with that value.
-
-#+name: stats.binned
-#+BEGIN_SRC R :session ss :tangle stats.binned :results none :eval no-export :exports none
-  <<warning>>
-
-  require(Hmisc, warn.conflicts=FALSE, quietly=TRUE)
-
-  check.binned <- function(fname, vals, nobs) {
-    if (length(vals) == 0) {
-      stop(sprintf("%s: no values", fname))
-    } else if (length(nobs) == 0) {
-      stop(sprintf("%s: no observations", fname))
-    } else if (length(vals) != length(nobs)) {
-      stop(sprintf("%s: length(values) [%d] != length(number of observations) [%d]",
-                   fname, length(vals), length(nobs)))
-    } else if (!is.numeric(vals[!is.na(vals)])) {
-      stop(sprintf("%s: values must be numeric", fname))
-    } else if (!is.numeric(nobs[!is.na(nobs)])) {
-      stop(sprintf("%s: number of observations must be numeric", fname))
-    }
-  }
-
-  ## so, in ecdf():
-
-  ## - vals are the unique values of x
-
-  ## - match(x, vals) are, for each value of x, the index of that value
-  ##   of x in vals.  length(match(x, vals)) == length(x).
-
-  ## - tabulate(match(x, vals)) returns, for each *index* in vals (i.e.,
-  ##   in 1:length(vals)), the number of *times* that index appears in
-  ##   match(x, vals), i.e., how often each value in x appears in x.
-  ##   sort of a pdf of x.  length(tabulate(match(x, vals))) ==
-  ##   max(match(x, vals)) == [because of sorting, indexing] length(vals)
-
-  ##   (note that all these are ordered by index in vals, which, because
-  ##   of sort, are ordered by value of x)
-
-  ## - cumsum(tabulate(match(x, vals)) produces a CDF, from 1:n of, for
-  ##   each unique value in x, how often that value occurs in x.
-
-  ## - so, finally, cumsum(tabulate(match(x, vals)))/n produces a CDF
-  ##   with the standard values, i.e., in [0,1).
-
-  ## - then approxfun(vals, cumsum(tabulate(match(x, vals)))/n, ...)
-  ##   produces a function that, when called for a given value in vals
-  ##   (the unique values in x), returns the corresponding value of the
-  ##   CDF in [0,1).
-
-  ecdf.binned.common <- function(x, nobs, inverse, from) {
-    "like ecdf, but for binned values; cribbed from ecdf.  this works for forward function (ecdf.binned) and for inverse function (iecdf.binned)"
-    check.binned(from, x, nobs)
-    wet <- wtd.Ecdf(x=x, weights=nobs)     # get table
-    if (!inverse) {
-      X <- wet$x
-      yleft <- 0
-      yright <- 1
-      Y <- wet$ecdf
-    } else {
-      X <- wet$ecdf
-      Y <- wet$x
-      yleft <- X[1]
-      yright <- X[length(X)]
-    }
-    rval <- approxfun(X, Y,
-                      method="constant",
-                      yleft = yleft, yright = yright,
-                      f = 0,              # XXX is this the right f for inverse?
-                      ties = "ordered")
-    # class(rval) <- c("ecdf", "stepfun", class(rval))
-    assign("nobs", sum(nobs), envir = environment(rval))
-    attr(rval, "call") <- sys.call()
-    rval
-  }
-
-  ecdf.binned <- function(x, nobs) {
-    "like ecdf, but for binned values; cribbed from ecdf"
-    ecdf.binned.common(x, nobs, inverse = FALSE, "ecdf.binned")
-  }
-
-  iecdf.binned <- function(x, nobs) {
-    "this is the inverse function from ecdf.binned
-   (allowing you to get order statistics easily);
-  probably \"slight\" overkill for that usage"
-    ecdf.binned.common(x, nobs, inverse = TRUE, "iecdf.binned")
-  }
-
-  summary.binned <- function(vals, nobs) {
-    if ((length(vals[!is.na(vals)]) == 0) ||
-        (length(nobs[!is.na(nobs)]) == 0)) { # "||"? i'm not sure
-      return(c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, "Max."=NA))
-    }
-    check.binned("summary.binned", vals, nobs)
-
-    result <- wtd.quantile(x=vals, weights=nobs,
-                           probs=c(0, .25, .5, 0, .75, 1))
-    names(result) <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
-    result["Mean"] <- wtd.mean(x=vals, weights=nobs)
-    return(result)
-  }
-
-  rebin.binned <- function(vals, nobs, newvals, ordered=FALSE) {
-    "given a set of values, with its set of observations counts,
-  produce a new set of bins, with a new set of observation counts.
-  the old values vals must fit \"integrally\" into the new vals.
-  returns the new observation counts."
-    ## only care about actual observed outcomes (and, this makes it
-    ## easier to have newvals technically smaller than max(vals), in
-    ## case where max(vals) is not actually an observed value.
-    vals <- vals[nobs!=0]
-    nobs <- nobs[nobs!=0]
-    if (!ordered) {
-      path <- order(vals)
-      newvals <- newvals[order(newvals)]
-    } else {
-      path <- 1:length(vals)
-    }
-    if (length(vals) != length(nobs)) {
-      stop(sprintf("rebin.binned: length(vals) [%d] != length(nobs) [%d]",
-                    length(vals), length(nobs)))
-    }
-    if (vals[length(vals)] > newvals[length(newvals)]) {
-      stop(sprintf("rebin.binned: largest current observed bin (%d) greater than largest new bin (%d)",
-                   vals[length(vals)], newvals[length(newvals)]))
-    }
-    j <- 1                              # index into newvals
-    rval <- integer()                   # initialize return value
-    count <- 0                          # intialize count (rval element)
-    for (i in path) {
-      if (vals[i] > newvals[j]) {         # we're in a new bucket
-        rval <- c(rval, count)            # so, finish out the previous bucket
-        toskip <- sum(vals[i] > newvals[j:length(newvals)])
-        count <- 0                        # reinitialize count
-        rval <- c(rval, rep(0, toskip-1)) # we may have quite a way to go
-        j <- j+toskip                     # fast forward
-      }
-      count <- count + nobs[i]
-    }
-    rval <- c(rval, count)                # get last count
-    ## fill out rval
-    rval <- c(rval, rep(0, length(newvals)-length(rval)))
-    rval                                  # return value
-  }
-
-  rebinvals.binned <- function(limita, limitb=NA, binsize) {
-    "return the set of new values for a given new BINSIZE.  
-    can specify MIN and MAX, or just pass the set of observations
-    and the new min, max, will be computed."
-    min <- min(c(limita, limitb), na.rm=TRUE)
-    max <- max(c(limita, limitb), na.rm=TRUE)
-    lo <- (floor(min/binsize)+1)*binsize
-    hi <- (floor(max/binsize)+1)*binsize
-    return(seq(lo, hi, binsize))
-  }
-
-  test.rebin.binned <- function() {
-    "some unit tests"
-    ## basic functionality works?
-    if (!identical(rebin.binned(c(1:20), seq(1,20), seq(2,20,by=2)),
-                   seq(3, 39, 4))) {
-      stop("test.rebin.binned: verification failed")
-    }
-
-    ## what if old bin had something too big, but unobserved?
-    if (!identical(rebin.binned(c(1:21), c(seq(1,20),0), seq(2,20,by=2)),
-                   seq(3, 39, 4))) {
-      stop("test.rebin.binned: verification failed")
-    }
-  }
-
-
-  test.rebinvals.binned <- function() {
-    "trivial unit test for rebinvals.binned; built around
-    for (i in c(-6:6, 24:29)) print(rebinvals.binned(i:29, binsize=5))"
-    testpat <- list(
-                    list(-6, c(-5, 0, 5, 10, 15, 20, 25, 30)),
-                    list(-5, c(0, 5, 10, 15, 20, 25, 30)),
-                    list(-4, c(0, 5, 10, 15, 20, 25, 30)),
-                    list(-3, c(0, 5, 10, 15, 20, 25, 30)),
-                    list(-2, c(0, 5, 10, 15, 20, 25, 30)),
-                    list(-1, c(0, 5, 10, 15, 20, 25, 30)),
-                    list(0, c(5, 10, 15, 20, 25, 30)),
-                    list(1, c(5, 10, 15, 20, 25, 30)),
-                    list(2, c(5, 10, 15, 20, 25, 30)),
-                    list(3, c(5, 10, 15, 20, 25, 30)),
-                    list(4, c(5, 10, 15, 20, 25, 30)),
-                    list(5, c(10, 15, 20, 25, 30)),
-                    list(6, c(10, 15, 20, 25, 30)),
-                    list(24, c(25, 30)),
-                    list(25, c(30)),
-                    list(26, c(30)),
-                    list(27, c(30)),
-                    list(28, c(30)),
-                    list(29, c(30)))
-    for (x in testpat) {
-      i <- x[[1]]
-      z <- x[[2]]
-      zz <- rebinvals.binned(i:29, binsize=5)
-      if (!identical(z, zz)) {
-        print(z); print(zz);
-      }
-    }
-  }
-#+END_SRC
-
-** bincps
-   :PROPERTIES:
-   :ORDERED:  t
-   :END:
-
-in our file, the HHINCOME column is replaced by a (computed)
-HHINCOME1999: the reported HHINCOME in 1999 dollars.  this is so bins
-are comparable between years.  we use IPUMS' CPI99 column for this
-purpose.
-
-then, what we want is create a file which is a "binned" version of the
-full-detail file which, instead of the detail file's HHINCOME column,
-will have a HHBRACKET99, which will include all data with HHINCOME99
-in the same "bracket" ("bin"), of $1,000, say.  this involves "rolling
-up" the [H]WTSUPP columns by year, dropping the SERIAL, CPSID, PERNUM,
-CPSIDP columns in the process.  (additionally, the MONTH column may be NA'd, if there is more
-than one month in a bin -- unlikely, given that the releases seem to
-be in March of every year.)
-
-run something like this:
-: ./bincps --ifile ipums/cps_00006.csv.gz --ofile foo.csv --rfile goo.csv
-
-#+name: bincps
-#+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
-  <<warning>>
-  <<stats.binned>>
-
-  getout <- function(message, code) {
-    if (interactive()) {
-      stop(message)
-    } else {
-      cat(message)
-      quit(save="no", status=code)
-    }
-  }
-
-
-  bincps <- function(ifile,      # input file
-                     ofile="",   # output csv file ("" ==>
-                                          # compute from ifile)
-                     ofsep="-",  # separator (when ofile or rfile blank)
-                     rfile="",   # output report file (see ofile)
-                     fyear=-Inf, # first year to include
-                     lyear=Inf,  # last year to include
-                     min99=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
-                     max99=Inf,  # maximum HH{INCOME,BRACKET}99 (in USD)
-                     ## things < min99, > max99 are included in the
-                     ## smallest and largest bins; NA are not included
-                     binsize=1000,    # size of bins
-                     trimends=TRUE,   # don't output out of range income
-                     infminmax=FALSE, # label too small -Inf, too large Inf?
-                     verbose=1        # how verbose to be
-                     ) {
-    if (verbose > 0) {
-      cat(sprintf("about to read.csv %s\n", date()))
-    }
-    dset <<- read.csv(ifile, header=TRUE)
-    if (verbose > 0) {
-      cat(sprintf("done with read.csv %s\n", date()))
-    }
-    if (nrow(dset) == 0) {
-      getout(sprintf("no data in dataset \"%s\"\n", ifile), 1)
-    }
-
-    ## get rid of records outside our years of interest (fyear, lyear)
-    if ((fyear != -Inf) || (lyear != Inf)) {
-      dset <- dset[dset$YEAR >= fyear & dset$YEAR <= lyear,]
-    }
-
-    if (nrow(dset) == 0) {
-      getout(sprintf("no data in dataset \"%s\" for years between %g and %g\n",
-                     ifile, fyear, lyear), 1)
-    }
-
-    ## now, make min99, max99 multiples of binsize
-    if (!is.infinite(min99)) {
-      min99 <- (min99%/%binsize)*binsize
-    }
-    if (!is.infinite(max99)) {
-      max99 <- (((max99-1)%/%binsize)*binsize)+binsize
-    }
-
-    ## now, check if output files are okay
-    orlabel <- sprintf("%d%s%d", min(dset$YEAR), ofsep, max(dset$YEAR))
-    ofto <- ofsep
-    if (min99 != -Inf) {
-      orlabel <- sprintf("%s%s%d", orlabel, ofsep, min99);
-      ofto <- sprintf("%sto%s", ofsep, ofsep)
-    }
-    if (max99 != Inf) {
-      orlabel <- sprintf("%s%sto%s%d", orlabel, ofsep, ofsep, max99);
-      ofto <- ofsep
-    }
-    orlabel <- sprintf("%s%sbinned", orlabel, ofto)
-    rrlabel <- sprintf("%s%sreport", orlabel, ofsep)
-    ofile <- dealwithoutputfilename(ifile, ofile, "output", orlabel)
-    rfile <- dealwithoutputfilename(ifile, rfile, "report", rrlabel)
-
-    ## we may be running on "raw" (via ipums) census data, or we may be
-    ## looking at output of a previous run (already binned).  which is it?
-    if (is.element("HHINCOME", colnames(dset))) {
-      income99 <- "HHINCOME99"
-      ## now, convert all income to 1999 dollars
-      dset <- cbind(dset,
-                    HHINCOME99=dset$HHINCOME*dset$CPI99, # normalize to 1999 dollars
-                    NRESP=1)              # number of responses
-    } else if (is.element("HHBRACKET99", colnames(dset))) {
-      income99 <- "HHBRACKET99"
-      ## what is input binsize?  to figure this out, we look at the
-      ## smallest difference between successive HHBRACKET99's
-      x <- dset$HHBRACKET99                   # brackets
-      y <- unique(c(x[2:length(x)], NA) - x) # list of unique deltas + NA
-      ibsize <- min(abs(y), na.rm=TRUE)   # take min, ignoring NA
-      if (is.na(ibsize)) {
-        getout(sprintf("unable to compute input binsize of input file \"%s\"\n",
-                       ifile), 1)
-      }
-      ## now, is the input binsize a divisor of the desired output binsize?
-      if ((ibsize%%binsize) != 0) {
-        getout(sprintf("the input file appears to have a binsize of %d, but the desired binsize %d is not a multiple of this\n",
-                       ibsize, binsize), 1)
-      }
-    } else {
-      getout("bincps: input has neither HHINCOME (raw) or HHBRACKET99 (output of previous run\n", 1)
-    }
-
-    rval <- bincps1(dset=dset,
-                    min99=min99,
-                    max99=max99,
-                    binsize=binsize,
-                    trimends=trimends,
-                    infminmax=infminmax,
-                    verbose=verbose,
-                    income99=income99)
-
-    bset <- rval$bset
-    rset <- rbind(rval$rsetun, rval$rsethwt, rval$rsetwt)
-    write.csv(rval$bset, ofile, row.names=FALSE, quote=FALSE);
-    if (nrow(rset) != 0) {                # anything to report?
-      ## if so, first sort it, then write it out
-      rset <- rset[order(rset$YEAR, rset$"Max."),]
-      write.csv(rset, rfile, row.names=FALSE, quote=FALSE)
-    }
-  }
-
-  bincps1 <- function(dset,                # inherits other locals from
-                      min99=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
-                      max99=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
-                      ## things < min99, > max99 are included in the
-                      ## smallest and largest bins; NA are not included
-                      binsize=1000,        # size of bins
-                      trimends=TRUE,
-                      infminmax=FALSE,     # should min/max bins be
-                                           # labelled "[-]Inf"?  if this
-                                           # is FALSE, < min99 will go
-                                           # just below the lowest bin,
-                                           # and >= max99 will go just
-                                           # above the highest bin
-                      verbose=1,
-                      income99
-                      ) {
-    ## get *all* the bins...
-    dset <- cbind(dset, BRACKET=(floor(dset[,income99]/binsize)*binsize)+binsize)
-
-    ## this is in lieu of a macro facility in R (or in lieu of <<noweb>>
-    ## working in org-mode when running code via C-c C-c).  this routine
-    ## is called to enter rows into the output table (and, can access --
-    ## read and write -- our variables from the calling routine)
-    ahroutine <- function(filter, bracket) {
-      if (verbose > 1) {
-        cat(sprintf("ahroutine, year %d, nrow filter %d, bracket %g, nrow bset %d\n",
-                      year, nrow(yset[filter,]), bracket, nrow(bset)))
-      }
-      for (asecflag in unique(yset[filter,]$ASECFLAG)) {
-        if (!is.na(asecflag)) {
-          sa <- filter & yset$ASECFLAG == asecflag
-        } else {
-              sa <- filter & is.na(yset$ASECFLAG)
-        }
-        for (hflag in unique(yset[sa,]$HFLAG)) {
-          if (!is.na(hflag)) {
-            sh <- sa & yset$HFLAG == hflag
-          } else {
-            sh <- sa & is.na(yset$HFLAG)
-          }
-          if (nrow(yset[sh,]) != 0) {
-            ## *finally* -- do something!
-            month <- unique(yset[sh,]$MONTH)
-            if (length(month) > 1) {
-              month <- NA
-            }
-            cpi99 <- unique(yset[sh,]$CPI99)
-            if (length(cpi99) > 1) {
-              cpi99 <- NA
-            }
-            bset <<- rbind(bset,
-                           data.frame(YEAR=year,
-                                      HWTSUPP=sum(yset[sh,]$HWTSUPP),
-                                      ASECFLAG=asecflag,
-                                      HFLAG=hflag,
-                                      HHBRACKET99=bracket,
-                                      CPI99=cpi99,
-                                      MONTH=month,
-                                      WTSUPP=sum(yset[sh,]$WTSUPP),
-                                      NRESP=sum(yset[sh,]$NRESP)))
-          }
-        }
-      }
-    }
-
-    mysummary <- function(vals, nobs=NULL) {
-      "like summary, but try for a format consistent across numbers, NA, ..."
-      if (is.null(nobs)) {
-        nobs <- rep(1, length(vals))
-      }
-      summary <- summary.binned(vals, nobs);
-      if("NA's" %in% names(summary)) {
-        summary <- summary[-which(names(summary) == "NA's")]
-      }
-      ## make names consistent (else rbind() complains)
-      names(summary) <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
-      return(summary)
-    }
-
-    ## deal with execptional data, i.e., data that is either
-    ## NA-contaminated, or data that is outside the min99/max99 bounds
-    rsetting <- function(filter, comment) {
-      commentun <- sprintf("(unweighted) %s", comment)
-      commenthwt <- sprintf("(hwtsupp-weighted) %s", comment)
-      commentwt <- sprintf("(wtsupp-weighted) %s", comment)
-      rsetun <<- rbind(rsetun,
-                       data.frame(t(c(YEAR=year,
-                                      HWTSUPP=sum(yset[filter,]$HWTSUPP),
-                                      WTSUPP=sum(yset[filter,]$WTSUPP),
-                                      mysummary(yset[filter,income99]),
-                                      COMMENT=commentun))))
-      rsethwt <<- rbind(rsethwt,
-                       data.frame(t(c(YEAR=year,
-                                      HWTSUPP=sum(yset[filter,]$HWTSUPP),
-                                      WTSUPP=sum(yset[filter,]$WTSUPP),
-                                      mysummary(yset[filter,income99],
-                                                yset[filter,]$HWTSUPP),
-                                      COMMENT=commenthwt))))
-      rsetwt <<- rbind(rsetwt,
-                       data.frame(t(c(YEAR=year,
-                                      HWTSUPP=sum(yset[filter,]$HWTSUPP),
-                                      WTSUPP=sum(yset[filter,]$WTSUPP),
-                                      mysummary(yset[filter,income99],
-                                                yset[filter,]$WTSUPP),
-                                      COMMENT=commentwt))))
-    }
-
-    ## the binned data goes here
-    bset <- data.frame()
-    ## three data frames for exception reporting.  the first is
-    ## unweighted "income99" (HHINCOME99 or HHBRACKET99, as the case may
-    ## be); the second weighted by HWTSUPP; and the third by WTSUPP.
-    rsetun <- data.frame()
-    rsethwt <- data.frame()
-    rsetwt <- data.frame()
-    for (year in sort(unique(dset$YEAR))) {
-      yset <- dset[dset$YEAR == year,]
-      sy <- TRUE                          # initially, take all in this year
-      if (verbose > 0) {
-        cat(sprintf("%s %s\n", year, date()))
-      }
-
-      ## get rid of out of universe, etc., codes
-      ## https://cps.ipums.org/cps/inctaxcodes.shtml
-      if ("HHINCOME" %in% colnames(yset)) {
-        stopbit <- yset[,"HHINCOME"] %in% c(-9999997, -9999, 9999, 99990, 99991, 99992, 99994, 99995, 99996, 99997, 99998, 99999, 99999999)
-        stop <- sy & stopbit
-        if (nrow(yset[stop,]) != 0) {
-          rsetting(stop, "topcodes (Census Bureau/IPUMS coded as invalid)")
-          sy <- sy & !stopbit             # get rid of these
-        }
-      }
-
-      snabit <- is.na(yset[,income99])
-      sna <- sy & snabit
-      if (nrow(yset[sna,]) != 0) {
-        ahroutine(sna, NA)                # enter (these) row(s)
-        rsetting(sna, "income not provided")
-        sy <- sy & !snabit                # now, kill them
-      }
-
-      ## describe and enter the too small incomes
-      slowbit <- yset[,income99] < min99
-      slow <- sy & slowbit
-      if (nrow(yset[slow,]) != 0) {
-        if (!trimends) {                  # should we describe these?
-          ## enter (these) row(s)
-          if (!infminmax) {
-            ahroutine(slow, min99)
-          } else {
-            ahroutine(slow, -Inf)
-          }
-        }
-        rsetting(slow, sprintf("less than %d", min99))
-        sy <- sy & !slowbit               # now, kill them
-      }
-
-      ## now, describe too high incomes (and then enter them below)
-      shighbit <- yset[,income99] >= max99
-      shigh <- sy & shighbit
-      if (nrow(yset[shigh,]) != 0) {
-        rsetting(shigh, sprintf("greater than or equal to %d", max99))
-        sy <- sy & !shighbit              # now, kill them
-      }
-
-      ## we don't describe *other* bins since they are of limited bracket;
-      ## the "negative" and "greater than max" bins are not of an a
-      ## priori known limit.
-
-      ## now, add all the bins (if there are any!)
-      uy <- unique(yset[sy,]$BRACKET)
-      if (!is.null(uy)) {
-        for (bin in sort(uy)) {
-          sb <- sy & yset$BRACKET == bin
-          ahroutine(sb, bin)
-        }
-      }
-
-      ## now, add too high
-      if (nrow(yset[shigh,]) != 0) {
-        if (!trimends) {
-          ## enter (these) row(s)
-          if (!infminmax) {
-            ahroutine(shigh, max99+binsize)
-          } else {
-            ahroutine(shigh, Inf)
-          }
-        }
-      }
-    }
-    return(list(bset=bset, rsetun=rsetun, rsethwt=rsethwt, rsetwt=rsetwt))
-  }
-
-  ## if necessary, cons up an appropriate FNAME.  then, checks that
-  ## FNAME doesn't already exist and that it is (potentially) writeable.
-
-  ## NB: as a side effect of testing writeability, on a successful
-  ## return, FNAME *will* exist (but, be empty).
-  dealwithoutputfilename <- function(ifile, fname, use, lastbits) {
-    require(assertthat, quietly=TRUE)     # XXX still needed?
-
-    if (is.na(fname)) {                    # compute filename
-      x <- strsplit(ifile, ".", fixed=TRUE)[[1]]
-      if (x[length(x)] == "gz") {
-        length(x) = length(x)-1           # get rid of .gz (we don't compress)
-      }
-      x[length(x)] <- sprintf("%s.%s", lastbits, x[length(x)]);
-      fname <- paste(x, collapse=".")
-    }
-
-    ## test if already exists (a no-no)
-    if (file.exists(fname)) {
-      getout(sprintf("%s file \"%s\" exists, won't overwrite\n", use, fname), 2)
-    }
-
-    ## test if writeable (better be!)
-    failed <- FALSE;
-    x <- tryCatch(file(fname, "w"), 
-                  error=function(e) failed <<- TRUE);
-    if (failed) {
-      getout(sprintf("%s file \"%s\" is not writeable\n", use, fname), 2)
-    }
-    close(x)
-
-    return(fname)
-  }
-
-  main <- function(args=NULL) {
-    require(argparser, quietly=TRUE)
-
-    p <- arg_parser("bincps")
-    p <- add_argument(p, "--ifile", type="character", default=NA,
-                      help="input data (.csv or .csv.gz) file")
-    p <- add_argument(p, "--ofile", type="character", default=NA,
-
-                      help="output data file; if not specified, an automatically generated name will be used")
-    p <- add_argument(p, "--rfile", type="character", default=NA,
-                      help="output exception report file; if not specified, an automatically generated name will be used")
-    p <- add_argument(p, "--ofsep", type="character", default="-",
-                      help="separator used when automatically generating ofile, rfile names")
-    p <- add_argument(p, "--fyear", type="integer", default=-Inf,
-                      help="first year to process; if not specified, the first year in the input file will be used")
-    p <- add_argument(p, "--lyear", type="integer", default=Inf,
-                      help="last year to process; if not specified, the last year in the input file will be used")
-    p <- add_argument(p, "--binsize", type="integer", default=1000,
-                      help="output bin size")
-    p <- add_argument(p, "--min99", type="integer", default=-Inf, short="-m",
-                      help="don't bin dollar amounts below this value")
-    p <- add_argument(p, "--max99", type="integer", default=Inf, short="-M",
-                      help="don't bin dollar amounts above this value")
-    p <- add_argument(p, "--verbose", type="integer", default=0,
-                      help="informational/debugging output quantity")
-    p <- add_argument(p, "--trimends", flag=TRUE, default=TRUE,
-                      help="should < MIN99 and > MAX99 be left out of output?")
-    p <- add_argument(p, "--infminmax", flag=TRUE, default=FALSE,
-                      help="should bins for values below min99 (resp. above max99) appear as \"-Inf\" (resp. \"Inf\"); if not, they will be assigned bins just below min99 (resp. just above max99)")
-
-    if (is.null(args)) {
-      argv <- parse_args(p)
-    } else {
-      argv <- parse_args(p, args)
-    }
-
-    bincps(ifile=argv$ifile,
-           ofile=argv$ofile,
-           rfile=argv$rfile,
-           ofsep=argv$ofsep,
-           fyear=argv$fyear,
-           lyear=argv$lyear,
-           binsize=argv$binsize,
-           min99=argv$min99,
-           max99=argv$max99,
-           verbose=argv$verbose,
-           trimends=argv$trimends,
-           infminmax=argv$infminmax);
-  }
-
-  runargs <- function(ifile,      # input file
-                      ofile=NA,   # output csv file ("" ==>
-                                          # compute from ifile)
+ OPTIONS
+
+ Data quality flags are not available for any of the variables you've
+ selected.
+
+ Case selection is not available for any of the variables you've
+ selected.
+
+ Attach data from mother, father, spouse or household head as a new
+ variable (for example, education of mother).  Describe your extract
+ #+END_QUOTE
+ (in fact, the data set, from 1962--2017, was 82MB compressed, 520MB
+ uncompressed.)
+
+**** topcodes
+
+ ipums [[https://cps.ipums.org/cps-action/variables/HHINCOME#codes_section][HHINCOME]] uses "[[https://cps.ipums.org/cps/inctaxcodes.shtml][topcodes]]" (and bottom codes) to encode
+ exceptions.  the popular "99999999" means "Not in universe" (NIU) --
+ something about the respondent
+
+ #+name: topcodes
+ #+BEGIN_SRC sh :eval no-export :exports none
+   zcat ipums/cps_00006.csv.gz | \
+       awk 'BEGIN{FS=","} {print $7}' | \
+       grep '\<9999' | \
+       words -f | \
+       sort -n
+ #+END_SRC
+
+ #+RESULTS: topcodes
+ | -9999997 |  129 |
+ |    -9999 |  781 |
+ |     9999 |  194 |
+ |    99990 |   12 |
+ |    99991 |    4 |
+ |    99992 |    8 |
+ |    99994 |    9 |
+ |    99995 |    8 |
+ |    99996 |   16 |
+ |    99997 |   14 |
+ |    99998 |   12 |
+ |    99999 |  525 |
+ | 99999999 | 2704 |
+
+*** deflating
+
+ need to change from nominal to real dollars.  [[https://www.dallasfed.org/research/basics/nominal.cfm][Dallas Fed]] has some
+ explanation.
+
+ on the other hand, conveniently, [[https://cps.ipums.org/cps/cpi99.shtml][IPUMS]] has a variable, [[https://cps.ipums.org/cps-action/variables/CPI99][CPI99]], that can
+ be used to convert everything to/from 1999 dollars.
+
+*** citing IPUMS
+
+ #+BEGIN_QUOTE
+ Publications and research reports based on the IPUMS-CPS database must
+ cite it appropriately. The citation should include the following:
+
+ Sarah Flood, Miriam King, Steven Ruggles, and J. Robert
+ Warren. Integrated Public Use Microdata Series, Current Population
+ Survey: Version 5.0 [dataset]. Minneapolis, MN: University of
+ Minnesota, 2017.  https://doi.org/10.18128/D030.V5.0
+
+ For policy briefs or articles in the popular press that use the
+ IPUMS-CPS database, we recommend that you cite the use of IPUMS-CPS
+ data as follows:
+
+ IPUMS-CPS, University of Minnesota, www.ipums.org
+ #+END_QUOTE
+
+*** stats.binned
+
+ we need a summary routine for binned objects.  each bin has a "value"
+ as well as a number of elements with that value.  we compute the same
+ objects as summary(): Min, 1st Qu., Median, Mean, 3rd Qu., Max
+
+ the input is a matrix with 2 columns, the first being the value, the
+ second the number of elements with that value.
+
+ #+name: stats.binned
+ #+BEGIN_SRC R :session ss :tangle stats.binned :results none :eval no-export :exports none
+   <<warning>>
+
+   require(Hmisc, warn.conflicts=FALSE, quietly=TRUE)
+
+   check.binned <- function(fname, vals, nobs) {
+     if (length(vals) == 0) {
+       stop(sprintf("%s: no values", fname))
+     } else if (length(nobs) == 0) {
+       stop(sprintf("%s: no observations", fname))
+     } else if (length(vals) != length(nobs)) {
+       stop(sprintf("%s: length(values) [%d] != length(number of observations) [%d]",
+                    fname, length(vals), length(nobs)))
+     } else if (!is.numeric(vals[!is.na(vals)])) {
+       stop(sprintf("%s: values must be numeric", fname))
+     } else if (!is.numeric(nobs[!is.na(nobs)])) {
+       stop(sprintf("%s: number of observations must be numeric", fname))
+     }
+   }
+
+   ## so, in ecdf():
+
+   ## - vals are the unique values of x
+
+   ## - match(x, vals) are, for each value of x, the index of that value
+   ##   of x in vals.  length(match(x, vals)) == length(x).
+
+   ## - tabulate(match(x, vals)) returns, for each *index* in vals (i.e.,
+   ##   in 1:length(vals)), the number of *times* that index appears in
+   ##   match(x, vals), i.e., how often each value in x appears in x.
+   ##   sort of a pdf of x.  length(tabulate(match(x, vals))) ==
+   ##   max(match(x, vals)) == [because of sorting, indexing] length(vals)
+
+   ##   (note that all these are ordered by index in vals, which, because
+   ##   of sort, are ordered by value of x)
+
+   ## - cumsum(tabulate(match(x, vals)) produces a CDF, from 1:n of, for
+   ##   each unique value in x, how often that value occurs in x.
+
+   ## - so, finally, cumsum(tabulate(match(x, vals)))/n produces a CDF
+   ##   with the standard values, i.e., in [0,1).
+
+   ## - then approxfun(vals, cumsum(tabulate(match(x, vals)))/n, ...)
+   ##   produces a function that, when called for a given value in vals
+   ##   (the unique values in x), returns the corresponding value of the
+   ##   CDF in [0,1).
+
+   ecdf.binned.common <- function(x, nobs, inverse, from) {
+     "like ecdf, but for binned values; cribbed from ecdf.  this works for forward function (ecdf.binned) and for inverse function (iecdf.binned)"
+     check.binned(from, x, nobs)
+     wet <- wtd.Ecdf(x=x, weights=nobs)     # get table
+     if (!inverse) {
+       X <- wet$x
+       yleft <- 0
+       yright <- 1
+       Y <- wet$ecdf
+     } else {
+       X <- wet$ecdf
+       Y <- wet$x
+       yleft <- X[1]
+       yright <- X[length(X)]
+     }
+     rval <- approxfun(X, Y,
+                       method="constant",
+                       yleft = yleft, yright = yright,
+                       f = 0,              # XXX is this the right f for inverse?
+                       ties = "ordered")
+     # class(rval) <- c("ecdf", "stepfun", class(rval))
+     assign("nobs", sum(nobs), envir = environment(rval))
+     attr(rval, "call") <- sys.call()
+     rval
+   }
+
+   ecdf.binned <- function(x, nobs) {
+     "like ecdf, but for binned values; cribbed from ecdf"
+     ecdf.binned.common(x, nobs, inverse = FALSE, "ecdf.binned")
+   }
+
+   iecdf.binned <- function(x, nobs) {
+     "this is the inverse function from ecdf.binned
+    (allowing you to get order statistics easily);
+   probably \"slight\" overkill for that usage"
+     ecdf.binned.common(x, nobs, inverse = TRUE, "iecdf.binned")
+   }
+
+   summary.binned <- function(vals, nobs) {
+     if ((length(vals[!is.na(vals)]) == 0) ||
+         (length(nobs[!is.na(nobs)]) == 0)) { # "||"? i'm not sure
+       return(c(Min=NA, "1st Qu."=NA, Median=NA, Mean=NA, "3rd Qu."=NA, "Max."=NA))
+     }
+     check.binned("summary.binned", vals, nobs)
+
+     result <- wtd.quantile(x=vals, weights=nobs,
+                            probs=c(0, .25, .5, 0, .75, 1))
+     names(result) <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
+     result["Mean"] <- wtd.mean(x=vals, weights=nobs)
+     return(result)
+   }
+
+   rebin.binned <- function(vals, nobs, newvals, ordered=FALSE) {
+     "given a set of values, with its set of observations counts,
+   produce a new set of bins, with a new set of observation counts.
+   the old values vals must fit \"integrally\" into the new vals.
+   returns the new observation counts."
+     ## only care about actual observed outcomes (and, this makes it
+     ## easier to have newvals technically smaller than max(vals), in
+     ## case where max(vals) is not actually an observed value.
+     vals <- vals[nobs!=0]
+     nobs <- nobs[nobs!=0]
+     if (!ordered) {
+       path <- order(vals)
+       newvals <- newvals[order(newvals)]
+     } else {
+       path <- 1:length(vals)
+     }
+     if (length(vals) != length(nobs)) {
+       stop(sprintf("rebin.binned: length(vals) [%d] != length(nobs) [%d]",
+                     length(vals), length(nobs)))
+     }
+     if (vals[length(vals)] > newvals[length(newvals)]) {
+       stop(sprintf("rebin.binned: largest current observed bin (%d) greater than largest new bin (%d)",
+                    vals[length(vals)], newvals[length(newvals)]))
+     }
+     j <- 1                              # index into newvals
+     rval <- integer()                   # initialize return value
+     count <- 0                          # intialize count (rval element)
+     for (i in path) {
+       if (vals[i] > newvals[j]) {         # we're in a new bucket
+         rval <- c(rval, count)            # so, finish out the previous bucket
+         toskip <- sum(vals[i] > newvals[j:length(newvals)])
+         count <- 0                        # reinitialize count
+         rval <- c(rval, rep(0, toskip-1)) # we may have quite a way to go
+         j <- j+toskip                     # fast forward
+       }
+       count <- count + nobs[i]
+     }
+     rval <- c(rval, count)                # get last count
+     ## fill out rval
+     rval <- c(rval, rep(0, length(newvals)-length(rval)))
+     rval                                  # return value
+   }
+
+   rebinvals.binned <- function(limita, limitb=NA, binsize) {
+     "return the set of new values for a given new BINSIZE.  
+     can specify MIN and MAX, or just pass the set of observations
+     and the new min, max, will be computed."
+     min <- min(c(limita, limitb), na.rm=TRUE)
+     max <- max(c(limita, limitb), na.rm=TRUE)
+     lo <- (floor(min/binsize)+1)*binsize
+     hi <- (floor(max/binsize)+1)*binsize
+     return(seq(lo, hi, binsize))
+   }
+
+   test.rebin.binned <- function() {
+     "some unit tests"
+     ## basic functionality works?
+     if (!identical(rebin.binned(c(1:20), seq(1,20), seq(2,20,by=2)),
+                    seq(3, 39, 4))) {
+       stop("test.rebin.binned: verification failed")
+     }
+
+     ## what if old bin had something too big, but unobserved?
+     if (!identical(rebin.binned(c(1:21), c(seq(1,20),0), seq(2,20,by=2)),
+                    seq(3, 39, 4))) {
+       stop("test.rebin.binned: verification failed")
+     }
+   }
+
+
+   test.rebinvals.binned <- function() {
+     "trivial unit test for rebinvals.binned; built around
+     for (i in c(-6:6, 24:29)) print(rebinvals.binned(i:29, binsize=5))"
+     testpat <- list(
+                     list(-6, c(-5, 0, 5, 10, 15, 20, 25, 30)),
+                     list(-5, c(0, 5, 10, 15, 20, 25, 30)),
+                     list(-4, c(0, 5, 10, 15, 20, 25, 30)),
+                     list(-3, c(0, 5, 10, 15, 20, 25, 30)),
+                     list(-2, c(0, 5, 10, 15, 20, 25, 30)),
+                     list(-1, c(0, 5, 10, 15, 20, 25, 30)),
+                     list(0, c(5, 10, 15, 20, 25, 30)),
+                     list(1, c(5, 10, 15, 20, 25, 30)),
+                     list(2, c(5, 10, 15, 20, 25, 30)),
+                     list(3, c(5, 10, 15, 20, 25, 30)),
+                     list(4, c(5, 10, 15, 20, 25, 30)),
+                     list(5, c(10, 15, 20, 25, 30)),
+                     list(6, c(10, 15, 20, 25, 30)),
+                     list(24, c(25, 30)),
+                     list(25, c(30)),
+                     list(26, c(30)),
+                     list(27, c(30)),
+                     list(28, c(30)),
+                     list(29, c(30)))
+     for (x in testpat) {
+       i <- x[[1]]
+       z <- x[[2]]
+       zz <- rebinvals.binned(i:29, binsize=5)
+       if (!identical(z, zz)) {
+         print(z); print(zz);
+       }
+     }
+   }
+ #+END_SRC
+
+*** bincps
+    :PROPERTIES:
+    :ORDERED:  t
+    :END:
+
+ in our file, the HHINCOME column is replaced by a (computed)
+ HHINCOME1999: the reported HHINCOME in 1999 dollars.  this is so bins
+ are comparable between years.  we use IPUMS' CPI99 column for this
+ purpose.
+
+ then, what we want is create a file which is a "binned" version of the
+ full-detail file which, instead of the detail file's HHINCOME column,
+ will have a HHBRACKET99, which will include all data with HHINCOME99
+ in the same "bracket" ("bin"), of $1,000, say.  this involves "rolling
+ up" the [H]WTSUPP columns by year, dropping the SERIAL, CPSID, PERNUM,
+ CPSIDP columns in the process.  (additionally, the MONTH column may be NA'd, if there is more
+ than one month in a bin -- unlikely, given that the releases seem to
+ be in March of every year.)
+
+ run something like this:
+ : ./bincps --ifile ipums/cps_00006.csv.gz --ofile foo.csv --rfile goo.csv
+
+ #+name: bincps
+ #+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+   <<warning>>
+   <<stats.binned>>
+
+   getout <- function(message, code) {
+     if (interactive()) {
+       stop(message)
+     } else {
+       cat(message)
+       quit(save="no", status=code)
+     }
+   }
+
+
+   bincps <- function(ifile,      # input file
+                      ofile="",   # output csv file ("" ==>
+                                           # compute from ifile)
                       ofsep="-",  # separator (when ofile or rfile blank)
-                      rfile=NA,   # output report file (see ofile)
+                      rfile="",   # output report file (see ofile)
                       fyear=-Inf, # first year to include
                       lyear=Inf,  # last year to include
                       min99=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
-                      max99=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
+                      max99=Inf,  # maximum HH{INCOME,BRACKET}99 (in USD)
                       ## things < min99, > max99 are included in the
                       ## smallest and largest bins; NA are not included
-                      binsize=1000,        # size of bins
-                      infminmax=FALSE,     # label too small -Inf, too large Inf?
-                      verbose=1            # how verbose to be
+                      binsize=1000,    # size of bins
+                      trimends=TRUE,   # don't output out of range income
+                      infminmax=FALSE, # label too small -Inf, too large Inf?
+                      verbose=1        # how verbose to be
                       ) {
-    cmdline <- c("--ifile", ifile,
-                 "--verbose", verbose)
+     if (verbose > 0) {
+       cat(sprintf("about to read.csv %s\n", date()))
+     }
+     dset <<- read.csv(ifile, header=TRUE)
+     if (verbose > 0) {
+       cat(sprintf("done with read.csv %s\n", date()))
+     }
+     if (nrow(dset) == 0) {
+       getout(sprintf("no data in dataset \"%s\"\n", ifile), 1)
+     }
 
-    main(cmdline)
-  }
+     ## get rid of records outside our years of interest (fyear, lyear)
+     if ((fyear != -Inf) || (lyear != Inf)) {
+       dset <- dset[dset$YEAR >= fyear & dset$YEAR <= lyear,]
+     }
 
-  options(error=recover)
-  options(warn=2)
-  # debug(bincps1)
+     if (nrow(dset) == 0) {
+       getout(sprintf("no data in dataset \"%s\" for years between %g and %g\n",
+                      ifile, fyear, lyear), 1)
+     }
+
+     ## now, make min99, max99 multiples of binsize
+     if (!is.infinite(min99)) {
+       min99 <- (min99%/%binsize)*binsize
+     }
+     if (!is.infinite(max99)) {
+       max99 <- (((max99-1)%/%binsize)*binsize)+binsize
+     }
+
+     ## now, check if output files are okay
+     orlabel <- sprintf("%d%s%d", min(dset$YEAR), ofsep, max(dset$YEAR))
+     ofto <- ofsep
+     if (min99 != -Inf) {
+       orlabel <- sprintf("%s%s%d", orlabel, ofsep, min99);
+       ofto <- sprintf("%sto%s", ofsep, ofsep)
+     }
+     if (max99 != Inf) {
+       orlabel <- sprintf("%s%sto%s%d", orlabel, ofsep, ofsep, max99);
+       ofto <- ofsep
+     }
+     orlabel <- sprintf("%s%sbinned", orlabel, ofto)
+     rrlabel <- sprintf("%s%sreport", orlabel, ofsep)
+     ofile <- dealwithoutputfilename(ifile, ofile, "output", orlabel)
+     rfile <- dealwithoutputfilename(ifile, rfile, "report", rrlabel)
+
+     ## we may be running on "raw" (via ipums) census data, or we may be
+     ## looking at output of a previous run (already binned).  which is it?
+     if (is.element("HHINCOME", colnames(dset))) {
+       income99 <- "HHINCOME99"
+       ## now, convert all income to 1999 dollars
+       dset <- cbind(dset,
+                     HHINCOME99=dset$HHINCOME*dset$CPI99, # normalize to 1999 dollars
+                     NRESP=1)              # number of responses
+     } else if (is.element("HHBRACKET99", colnames(dset))) {
+       income99 <- "HHBRACKET99"
+       ## what is input binsize?  to figure this out, we look at the
+       ## smallest difference between successive HHBRACKET99's
+       x <- dset$HHBRACKET99                   # brackets
+       y <- unique(c(x[2:length(x)], NA) - x) # list of unique deltas + NA
+       ibsize <- min(abs(y), na.rm=TRUE)   # take min, ignoring NA
+       if (is.na(ibsize)) {
+         getout(sprintf("unable to compute input binsize of input file \"%s\"\n",
+                        ifile), 1)
+       }
+       ## now, is the input binsize a divisor of the desired output binsize?
+       if ((ibsize%%binsize) != 0) {
+         getout(sprintf("the input file appears to have a binsize of %d, but the desired binsize %d is not a multiple of this\n",
+                        ibsize, binsize), 1)
+       }
+     } else {
+       getout("bincps: input has neither HHINCOME (raw) or HHBRACKET99 (output of previous run\n", 1)
+     }
+
+     rval <- bincps1(dset=dset,
+                     min99=min99,
+                     max99=max99,
+                     binsize=binsize,
+                     trimends=trimends,
+                     infminmax=infminmax,
+                     verbose=verbose,
+                     income99=income99)
+
+     bset <- rval$bset
+     rset <- rbind(rval$rsetun, rval$rsethwt, rval$rsetwt)
+     write.csv(rval$bset, ofile, row.names=FALSE, quote=FALSE);
+     if (nrow(rset) != 0) {                # anything to report?
+       ## if so, first sort it, then write it out
+       rset <- rset[order(rset$YEAR, rset$"Max."),]
+       write.csv(rset, rfile, row.names=FALSE, quote=FALSE)
+     }
+   }
+
+   bincps1 <- function(dset,                # inherits other locals from
+                       min99=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
+                       max99=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
+                       ## things < min99, > max99 are included in the
+                       ## smallest and largest bins; NA are not included
+                       binsize=1000,        # size of bins
+                       trimends=TRUE,
+                       infminmax=FALSE,     # should min/max bins be
+                                            # labelled "[-]Inf"?  if this
+                                            # is FALSE, < min99 will go
+                                            # just below the lowest bin,
+                                            # and >= max99 will go just
+                                            # above the highest bin
+                       verbose=1,
+                       income99
+                       ) {
+     ## get *all* the bins...
+     dset <- cbind(dset, BRACKET=(floor(dset[,income99]/binsize)*binsize)+binsize)
+
+     ## this is in lieu of a macro facility in R (or in lieu of <<noweb>>
+     ## working in org-mode when running code via C-c C-c).  this routine
+     ## is called to enter rows into the output table (and, can access --
+     ## read and write -- our variables from the calling routine)
+     ahroutine <- function(filter, bracket) {
+       if (verbose > 1) {
+         cat(sprintf("ahroutine, year %d, nrow filter %d, bracket %g, nrow bset %d\n",
+                       year, nrow(yset[filter,]), bracket, nrow(bset)))
+       }
+       for (asecflag in unique(yset[filter,]$ASECFLAG)) {
+         if (!is.na(asecflag)) {
+           sa <- filter & yset$ASECFLAG == asecflag
+         } else {
+               sa <- filter & is.na(yset$ASECFLAG)
+         }
+         for (hflag in unique(yset[sa,]$HFLAG)) {
+           if (!is.na(hflag)) {
+             sh <- sa & yset$HFLAG == hflag
+           } else {
+             sh <- sa & is.na(yset$HFLAG)
+           }
+           if (nrow(yset[sh,]) != 0) {
+             ## *finally* -- do something!
+             month <- unique(yset[sh,]$MONTH)
+             if (length(month) > 1) {
+               month <- NA
+             }
+             cpi99 <- unique(yset[sh,]$CPI99)
+             if (length(cpi99) > 1) {
+               cpi99 <- NA
+             }
+             bset <<- rbind(bset,
+                            data.frame(YEAR=year,
+                                       HWTSUPP=sum(yset[sh,]$HWTSUPP),
+                                       ASECFLAG=asecflag,
+                                       HFLAG=hflag,
+                                       HHBRACKET99=bracket,
+                                       CPI99=cpi99,
+                                       MONTH=month,
+                                       WTSUPP=sum(yset[sh,]$WTSUPP),
+                                       NRESP=sum(yset[sh,]$NRESP)))
+           }
+         }
+       }
+     }
+
+     mysummary <- function(vals, nobs=NULL) {
+       "like summary, but try for a format consistent across numbers, NA, ..."
+       if (is.null(nobs)) {
+         nobs <- rep(1, length(vals))
+       }
+       summary <- summary.binned(vals, nobs);
+       if("NA's" %in% names(summary)) {
+         summary <- summary[-which(names(summary) == "NA's")]
+       }
+       ## make names consistent (else rbind() complains)
+       names(summary) <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
+       return(summary)
+     }
+
+     ## deal with execptional data, i.e., data that is either
+     ## NA-contaminated, or data that is outside the min99/max99 bounds
+     rsetting <- function(filter, comment) {
+       commentun <- sprintf("(unweighted) %s", comment)
+       commenthwt <- sprintf("(hwtsupp-weighted) %s", comment)
+       commentwt <- sprintf("(wtsupp-weighted) %s", comment)
+       rsetun <<- rbind(rsetun,
+                        data.frame(t(c(YEAR=year,
+                                       HWTSUPP=sum(yset[filter,]$HWTSUPP),
+                                       WTSUPP=sum(yset[filter,]$WTSUPP),
+                                       mysummary(yset[filter,income99]),
+                                       COMMENT=commentun))))
+       rsethwt <<- rbind(rsethwt,
+                        data.frame(t(c(YEAR=year,
+                                       HWTSUPP=sum(yset[filter,]$HWTSUPP),
+                                       WTSUPP=sum(yset[filter,]$WTSUPP),
+                                       mysummary(yset[filter,income99],
+                                                 yset[filter,]$HWTSUPP),
+                                       COMMENT=commenthwt))))
+       rsetwt <<- rbind(rsetwt,
+                        data.frame(t(c(YEAR=year,
+                                       HWTSUPP=sum(yset[filter,]$HWTSUPP),
+                                       WTSUPP=sum(yset[filter,]$WTSUPP),
+                                       mysummary(yset[filter,income99],
+                                                 yset[filter,]$WTSUPP),
+                                       COMMENT=commentwt))))
+     }
+
+     ## the binned data goes here
+     bset <- data.frame()
+     ## three data frames for exception reporting.  the first is
+     ## unweighted "income99" (HHINCOME99 or HHBRACKET99, as the case may
+     ## be); the second weighted by HWTSUPP; and the third by WTSUPP.
+     rsetun <- data.frame()
+     rsethwt <- data.frame()
+     rsetwt <- data.frame()
+     for (year in sort(unique(dset$YEAR))) {
+       yset <- dset[dset$YEAR == year,]
+       sy <- TRUE                          # initially, take all in this year
+       if (verbose > 0) {
+         cat(sprintf("%s %s\n", year, date()))
+       }
+
+       ## get rid of out of universe, etc., codes
+       ## https://cps.ipums.org/cps/inctaxcodes.shtml
+       if ("HHINCOME" %in% colnames(yset)) {
+         stopbit <- yset[,"HHINCOME"] %in% c(-9999997, -9999, 9999, 99990, 99991, 99992, 99994, 99995, 99996, 99997, 99998, 99999, 99999999)
+         stop <- sy & stopbit
+         if (nrow(yset[stop,]) != 0) {
+           rsetting(stop, "topcodes (Census Bureau/IPUMS coded as invalid)")
+           sy <- sy & !stopbit             # get rid of these
+         }
+       }
+
+       snabit <- is.na(yset[,income99])
+       sna <- sy & snabit
+       if (nrow(yset[sna,]) != 0) {
+         ahroutine(sna, NA)                # enter (these) row(s)
+         rsetting(sna, "income not provided")
+         sy <- sy & !snabit                # now, kill them
+       }
+
+       ## describe and enter the too small incomes
+       slowbit <- yset[,income99] < min99
+       slow <- sy & slowbit
+       if (nrow(yset[slow,]) != 0) {
+         if (!trimends) {                  # should we describe these?
+           ## enter (these) row(s)
+           if (!infminmax) {
+             ahroutine(slow, min99)
+           } else {
+             ahroutine(slow, -Inf)
+           }
+         }
+         rsetting(slow, sprintf("less than %d", min99))
+         sy <- sy & !slowbit               # now, kill them
+       }
+
+       ## now, describe too high incomes (and then enter them below)
+       shighbit <- yset[,income99] >= max99
+       shigh <- sy & shighbit
+       if (nrow(yset[shigh,]) != 0) {
+         rsetting(shigh, sprintf("greater than or equal to %d", max99))
+         sy <- sy & !shighbit              # now, kill them
+       }
+
+       ## we don't describe *other* bins since they are of limited bracket;
+       ## the "negative" and "greater than max" bins are not of an a
+       ## priori known limit.
+
+       ## now, add all the bins (if there are any!)
+       uy <- unique(yset[sy,]$BRACKET)
+       if (!is.null(uy)) {
+         for (bin in sort(uy)) {
+           sb <- sy & yset$BRACKET == bin
+           ahroutine(sb, bin)
+         }
+       }
+
+       ## now, add too high
+       if (nrow(yset[shigh,]) != 0) {
+         if (!trimends) {
+           ## enter (these) row(s)
+           if (!infminmax) {
+             ahroutine(shigh, max99+binsize)
+           } else {
+             ahroutine(shigh, Inf)
+           }
+         }
+       }
+     }
+     return(list(bset=bset, rsetun=rsetun, rsethwt=rsethwt, rsetwt=rsetwt))
+   }
+
+   ## if necessary, cons up an appropriate FNAME.  then, checks that
+   ## FNAME doesn't already exist and that it is (potentially) writeable.
+
+   ## NB: as a side effect of testing writeability, on a successful
+   ## return, FNAME *will* exist (but, be empty).
+   dealwithoutputfilename <- function(ifile, fname, use, lastbits) {
+     require(assertthat, quietly=TRUE)     # XXX still needed?
+
+     if (is.na(fname)) {                    # compute filename
+       x <- strsplit(ifile, ".", fixed=TRUE)[[1]]
+       if (x[length(x)] == "gz") {
+         length(x) = length(x)-1           # get rid of .gz (we don't compress)
+       }
+       x[length(x)] <- sprintf("%s.%s", lastbits, x[length(x)]);
+       fname <- paste(x, collapse=".")
+     }
+
+     ## test if already exists (a no-no)
+     if (file.exists(fname)) {
+       getout(sprintf("%s file \"%s\" exists, won't overwrite\n", use, fname), 2)
+     }
+
+     ## test if writeable (better be!)
+     failed <- FALSE;
+     x <- tryCatch(file(fname, "w"), 
+                   error=function(e) failed <<- TRUE);
+     if (failed) {
+       getout(sprintf("%s file \"%s\" is not writeable\n", use, fname), 2)
+     }
+     close(x)
+
+     return(fname)
+   }
+
+   main <- function(args=NULL) {
+     require(argparser, quietly=TRUE)
+
+     p <- arg_parser("bincps")
+     p <- add_argument(p, "--ifile", type="character", default=NA,
+                       help="input data (.csv or .csv.gz) file")
+     p <- add_argument(p, "--ofile", type="character", default=NA,
+
+                       help="output data file; if not specified, an automatically generated name will be used")
+     p <- add_argument(p, "--rfile", type="character", default=NA,
+                       help="output exception report file; if not specified, an automatically generated name will be used")
+     p <- add_argument(p, "--ofsep", type="character", default="-",
+                       help="separator used when automatically generating ofile, rfile names")
+     p <- add_argument(p, "--fyear", type="integer", default=-Inf,
+                       help="first year to process; if not specified, the first year in the input file will be used")
+     p <- add_argument(p, "--lyear", type="integer", default=Inf,
+                       help="last year to process; if not specified, the last year in the input file will be used")
+     p <- add_argument(p, "--binsize", type="integer", default=1000,
+                       help="output bin size")
+     p <- add_argument(p, "--min99", type="integer", default=-Inf, short="-m",
+                       help="don't bin dollar amounts below this value")
+     p <- add_argument(p, "--max99", type="integer", default=Inf, short="-M",
+                       help="don't bin dollar amounts above this value")
+     p <- add_argument(p, "--verbose", type="integer", default=0,
+                       help="informational/debugging output quantity")
+     p <- add_argument(p, "--trimends", flag=TRUE, default=TRUE,
+                       help="should < MIN99 and > MAX99 be left out of output?")
+     p <- add_argument(p, "--infminmax", flag=TRUE, default=FALSE,
+                       help="should bins for values below min99 (resp. above max99) appear as \"-Inf\" (resp. \"Inf\"); if not, they will be assigned bins just below min99 (resp. just above max99)")
+
+     if (is.null(args)) {
+       argv <- parse_args(p)
+     } else {
+       argv <- parse_args(p, args)
+     }
+
+     bincps(ifile=argv$ifile,
+            ofile=argv$ofile,
+            rfile=argv$rfile,
+            ofsep=argv$ofsep,
+            fyear=argv$fyear,
+            lyear=argv$lyear,
+            binsize=argv$binsize,
+            min99=argv$min99,
+            max99=argv$max99,
+            verbose=argv$verbose,
+            trimends=argv$trimends,
+            infminmax=argv$infminmax);
+   }
+
+   runargs <- function(ifile,      # input file
+                       ofile=NA,   # output csv file ("" ==>
+                                           # compute from ifile)
+                       ofsep="-",  # separator (when ofile or rfile blank)
+                       rfile=NA,   # output report file (see ofile)
+                       fyear=-Inf, # first year to include
+                       lyear=Inf,  # last year to include
+                       min99=-Inf, # minimum HH{INCOME,BRACKET}99 (in USD)
+                       max99=Inf, # maximum HH{INCOME,BRACKET}99 (in USD)
+                       ## things < min99, > max99 are included in the
+                       ## smallest and largest bins; NA are not included
+                       binsize=1000,        # size of bins
+                       infminmax=FALSE,     # label too small -Inf, too large Inf?
+                       verbose=1            # how verbose to be
+                       ) {
+     cmdline <- c("--ifile", ifile,
+                  "--verbose", verbose)
+
+     main(cmdline)
+   }
+
+   options(error=recover)
+   options(warn=2)
+   # debug(bincps1)
 
 
 
-  if (!interactive()) {
-    main()
-    print(warnings())
-  }
-#+END_SRC
+   if (!interactive()) {
+     main()
+     print(warnings())
+   }
+ #+END_SRC
 
-** performance tuning
+*** performance tuning
 
-the original version of this code processed each (non-trivial) year in
-about 5 minutes on my system.  this turned out to be due to my habit,
-motivated by trying to save main store usage, of not creating
-subsetted copies of the massive dataset 'dset', but rather just using
-"filters".  code such as:
-:       sna <- sy & snabit
-and then accessing 'dset' via the filter
-: if (nrow(yset[sna,]) != 0)
+ the original version of this code processed each (non-trivial) year in
+ about 5 minutes on my system.  this turned out to be due to my habit,
+ motivated by trying to save main store usage, of not creating
+ subsetted copies of the massive dataset 'dset', but rather just using
+ "filters".  code such as:
+ :       sna <- sy & snabit
+ and then accessing 'dset' via the filter
+ : if (nrow(yset[sna,]) != 0)
 
-so, i modified the code to create a new dataset, 'yset', for each
-year, then use filters to access inside that dataset while processing
-that year's data.  this got the time to process a year's worth of data
-to fall to 5-20 seconds.
+ so, i modified the code to create a new dataset, 'yset', for each
+ year, then use filters to access inside that dataset while processing
+ that year's data.  this got the time to process a year's worth of data
+ to fall to 5-20 seconds.
 
-i became curious to know how these numbers related to the number of
-observations in each year.  here we use awk(1) to count how many
-observations are used in each year.
+ i became curious to know how these numbers related to the number of
+ observations in each year.  here we use awk(1) to count how many
+ observations are used in each year.
 
-#+name: yearpeople
-#+BEGIN_SRC sh :cache yes :eval no-export :exports none
-  zcat ipums/cps_00006.csv.gz |
-      awk 'BEGIN { FS="," } /^[12]/ { print $1}' |
-      words -f                    # words returns each word seen, along
-                                  # with the number of times that word
-                                  # was seen (the "-f", "frequency",
-                                  # flag)
-#+END_SRC
+ #+name: yearpeople
+ #+BEGIN_SRC sh :cache yes :eval no-export :exports none
+   zcat ipums/cps_00006.csv.gz |
+       awk 'BEGIN { FS="," } /^[12]/ { print $1}' |
+       words -f                    # words returns each word seen, along
+                                   # with the number of times that word
+                                   # was seen (the "-f", "frequency",
+                                   # flag)
+ #+END_SRC
 
-#+RESULTS[ea0344ff23fa76aad213c3cc0bd2cc671e5f2113]: yearpeople
-| 1962 |  71741 |
-| 1963 |  55882 |
-| 1964 |  54543 |
-| 1965 |  54502 |
-| 1966 | 110055 |
-| 1967 |  68676 |
-| 1968 | 150913 |
-| 1969 | 151848 |
-| 1970 | 145023 |
-| 1971 | 146822 |
-| 1972 | 140432 |
-| 1973 | 136221 |
-| 1974 | 133282 |
-| 1975 | 130124 |
-| 1976 | 135351 |
-| 1977 | 160799 |
-| 1978 | 155706 |
-| 1979 | 154593 |
-| 1980 | 181488 |
-| 1981 | 181358 |
-| 1982 | 162703 |
-| 1983 | 162635 |
-| 1984 | 161167 |
-| 1985 | 161362 |
-| 1986 | 157661 |
-| 1987 | 155468 |
-| 1988 | 155980 |
-| 1989 | 144687 |
-| 1990 | 158079 |
-| 1991 | 158477 |
-| 1992 | 155796 |
-| 1993 | 155197 |
-| 1994 | 150943 |
-| 1995 | 149642 |
-| 1996 | 130476 |
-| 1997 | 131854 |
-| 1998 | 131617 |
-| 1999 | 132324 |
-| 2000 | 133710 |
-| 2001 | 218269 |
-| 2002 | 217219 |
-| 2003 | 216424 |
-| 2004 | 213241 |
-| 2005 | 210648 |
-| 2006 | 208562 |
-| 2007 | 206639 |
-| 2008 | 206404 |
-| 2009 | 207921 |
-| 2010 | 209802 |
-| 2011 | 204983 |
-| 2012 | 201398 |
-| 2013 | 202634 |
-| 2014 | 199556 |
-| 2015 | 199024 |
-| 2016 | 185487 |
-| 2017 | 185914 |
+ #+RESULTS[ea0344ff23fa76aad213c3cc0bd2cc671e5f2113]: yearpeople
+ | 1962 |  71741 |
+ | 1963 |  55882 |
+ | 1964 |  54543 |
+ | 1965 |  54502 |
+ | 1966 | 110055 |
+ | 1967 |  68676 |
+ | 1968 | 150913 |
+ | 1969 | 151848 |
+ | 1970 | 145023 |
+ | 1971 | 146822 |
+ | 1972 | 140432 |
+ | 1973 | 136221 |
+ | 1974 | 133282 |
+ | 1975 | 130124 |
+ | 1976 | 135351 |
+ | 1977 | 160799 |
+ | 1978 | 155706 |
+ | 1979 | 154593 |
+ | 1980 | 181488 |
+ | 1981 | 181358 |
+ | 1982 | 162703 |
+ | 1983 | 162635 |
+ | 1984 | 161167 |
+ | 1985 | 161362 |
+ | 1986 | 157661 |
+ | 1987 | 155468 |
+ | 1988 | 155980 |
+ | 1989 | 144687 |
+ | 1990 | 158079 |
+ | 1991 | 158477 |
+ | 1992 | 155796 |
+ | 1993 | 155197 |
+ | 1994 | 150943 |
+ | 1995 | 149642 |
+ | 1996 | 130476 |
+ | 1997 | 131854 |
+ | 1998 | 131617 |
+ | 1999 | 132324 |
+ | 2000 | 133710 |
+ | 2001 | 218269 |
+ | 2002 | 217219 |
+ | 2003 | 216424 |
+ | 2004 | 213241 |
+ | 2005 | 210648 |
+ | 2006 | 208562 |
+ | 2007 | 206639 |
+ | 2008 | 206404 |
+ | 2009 | 207921 |
+ | 2010 | 209802 |
+ | 2011 | 204983 |
+ | 2012 | 201398 |
+ | 2013 | 202634 |
+ | 2014 | 199556 |
+ | 2015 | 199024 |
+ | 2016 | 185487 |
+ | 2017 | 185914 |
 
   
 
-this is from a run
-: bincps1(ifile=ifile, dset, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999);
+ this is from a run
+ : bincps1(ifile=ifile, dset, ofile=ofile, rfile=rfile, ofsep=ofsep, fyear=fyear, lyear=lyear, min1999=min1999, max1999=max1999);
 
-#+name: yeartimes
-| 1962 | Thu Nov 30 17:46:18 2017 |
-| 1963 | Thu Nov 30 17:46:18 2017 |
-| 1964 | Thu Nov 30 17:46:19 2017 |
-| 1965 | Thu Nov 30 17:46:19 2017 |
-| 1966 | Thu Nov 30 17:46:19 2017 |
-| 1967 | Thu Nov 30 17:46:20 2017 |
-| 1968 | Thu Nov 30 17:46:21 2017 |
-| 1969 | Thu Nov 30 17:46:26 2017 |
-| 1970 | Thu Nov 30 17:46:31 2017 |
-| 1971 | Thu Nov 30 17:46:36 2017 |
-| 1972 | Thu Nov 30 17:46:41 2017 |
-| 1973 | Thu Nov 30 17:46:45 2017 |
-| 1974 | Thu Nov 30 17:46:49 2017 |
-| 1975 | Thu Nov 30 17:46:53 2017 |
-| 1976 | Thu Nov 30 17:46:57 2017 |
-| 1977 | Thu Nov 30 17:47:02 2017 |
-| 1978 | Thu Nov 30 17:47:09 2017 |
-| 1979 | Thu Nov 30 17:47:15 2017 |
-| 1980 | Thu Nov 30 17:47:22 2017 |
-| 1981 | Thu Nov 30 17:47:29 2017 |
-| 1982 | Thu Nov 30 17:47:35 2017 |
-| 1983 | Thu Nov 30 17:47:42 2017 |
-| 1984 | Thu Nov 30 17:47:48 2017 |
-| 1985 | Thu Nov 30 17:47:54 2017 |
-| 1986 | Thu Nov 30 17:48:02 2017 |
-| 1987 | Thu Nov 30 17:48:09 2017 |
-| 1988 | Thu Nov 30 17:48:15 2017 |
-| 1989 | Thu Nov 30 17:48:22 2017 |
-| 1990 | Thu Nov 30 17:48:29 2017 |
-| 1991 | Thu Nov 30 17:48:36 2017 |
-| 1992 | Thu Nov 30 17:48:43 2017 |
-| 1993 | Thu Nov 30 17:48:49 2017 |
-| 1994 | Thu Nov 30 17:48:56 2017 |
-| 1995 | Thu Nov 30 17:49:02 2017 |
-| 1996 | Thu Nov 30 17:49:09 2017 |
-| 1997 | Thu Nov 30 17:49:17 2017 |
-| 1998 | Thu Nov 30 17:49:24 2017 |
-| 1999 | Thu Nov 30 17:49:32 2017 |
-| 2000 | Thu Nov 30 17:49:41 2017 |
-| 2001 | Thu Nov 30 17:49:48 2017 |
-| 2002 | Thu Nov 30 17:50:02 2017 |
-| 2003 | Thu Nov 30 17:50:16 2017 |
-| 2004 | Thu Nov 30 17:50:31 2017 |
-| 2005 | Thu Nov 30 17:50:46 2017 |
-| 2006 | Thu Nov 30 17:51:00 2017 |
-| 2007 | Thu Nov 30 17:51:15 2017 |
-| 2008 | Thu Nov 30 17:51:30 2017 |
-| 2009 | Thu Nov 30 17:51:43 2017 |
-| 2010 | Thu Nov 30 17:51:56 2017 |
-| 2011 | Thu Nov 30 17:52:10 2017 |
-| 2012 | Thu Nov 30 17:52:24 2017 |
-| 2013 | Thu Nov 30 17:52:39 2017 |
-| 2014 | Thu Nov 30 17:52:54 2017 |
-| 2015 | Thu Nov 30 17:53:16 2017 |
-| 2016 | Thu Nov 30 17:53:31 2017 |
-| 2017 | Thu Nov 30 17:53:46 2017 |
+ #+name: yeartimes
+ | 1962 | Thu Nov 30 17:46:18 2017 |
+ | 1963 | Thu Nov 30 17:46:18 2017 |
+ | 1964 | Thu Nov 30 17:46:19 2017 |
+ | 1965 | Thu Nov 30 17:46:19 2017 |
+ | 1966 | Thu Nov 30 17:46:19 2017 |
+ | 1967 | Thu Nov 30 17:46:20 2017 |
+ | 1968 | Thu Nov 30 17:46:21 2017 |
+ | 1969 | Thu Nov 30 17:46:26 2017 |
+ | 1970 | Thu Nov 30 17:46:31 2017 |
+ | 1971 | Thu Nov 30 17:46:36 2017 |
+ | 1972 | Thu Nov 30 17:46:41 2017 |
+ | 1973 | Thu Nov 30 17:46:45 2017 |
+ | 1974 | Thu Nov 30 17:46:49 2017 |
+ | 1975 | Thu Nov 30 17:46:53 2017 |
+ | 1976 | Thu Nov 30 17:46:57 2017 |
+ | 1977 | Thu Nov 30 17:47:02 2017 |
+ | 1978 | Thu Nov 30 17:47:09 2017 |
+ | 1979 | Thu Nov 30 17:47:15 2017 |
+ | 1980 | Thu Nov 30 17:47:22 2017 |
+ | 1981 | Thu Nov 30 17:47:29 2017 |
+ | 1982 | Thu Nov 30 17:47:35 2017 |
+ | 1983 | Thu Nov 30 17:47:42 2017 |
+ | 1984 | Thu Nov 30 17:47:48 2017 |
+ | 1985 | Thu Nov 30 17:47:54 2017 |
+ | 1986 | Thu Nov 30 17:48:02 2017 |
+ | 1987 | Thu Nov 30 17:48:09 2017 |
+ | 1988 | Thu Nov 30 17:48:15 2017 |
+ | 1989 | Thu Nov 30 17:48:22 2017 |
+ | 1990 | Thu Nov 30 17:48:29 2017 |
+ | 1991 | Thu Nov 30 17:48:36 2017 |
+ | 1992 | Thu Nov 30 17:48:43 2017 |
+ | 1993 | Thu Nov 30 17:48:49 2017 |
+ | 1994 | Thu Nov 30 17:48:56 2017 |
+ | 1995 | Thu Nov 30 17:49:02 2017 |
+ | 1996 | Thu Nov 30 17:49:09 2017 |
+ | 1997 | Thu Nov 30 17:49:17 2017 |
+ | 1998 | Thu Nov 30 17:49:24 2017 |
+ | 1999 | Thu Nov 30 17:49:32 2017 |
+ | 2000 | Thu Nov 30 17:49:41 2017 |
+ | 2001 | Thu Nov 30 17:49:48 2017 |
+ | 2002 | Thu Nov 30 17:50:02 2017 |
+ | 2003 | Thu Nov 30 17:50:16 2017 |
+ | 2004 | Thu Nov 30 17:50:31 2017 |
+ | 2005 | Thu Nov 30 17:50:46 2017 |
+ | 2006 | Thu Nov 30 17:51:00 2017 |
+ | 2007 | Thu Nov 30 17:51:15 2017 |
+ | 2008 | Thu Nov 30 17:51:30 2017 |
+ | 2009 | Thu Nov 30 17:51:43 2017 |
+ | 2010 | Thu Nov 30 17:51:56 2017 |
+ | 2011 | Thu Nov 30 17:52:10 2017 |
+ | 2012 | Thu Nov 30 17:52:24 2017 |
+ | 2013 | Thu Nov 30 17:52:39 2017 |
+ | 2014 | Thu Nov 30 17:52:54 2017 |
+ | 2015 | Thu Nov 30 17:53:16 2017 |
+ | 2016 | Thu Nov 30 17:53:31 2017 |
+ | 2017 | Thu Nov 30 17:53:46 2017 |
 
-then, we use some R code to put the preceding two outputs together and
-compute the number of seconds per person.
+ then, we use some R code to put the preceding two outputs together and
+ compute the number of seconds per person.
 
-#+name: peoplepersecond
-#+BEGIN_SRC R :session ss :var yeartimes=yeartimes :var yearpeople=yearpeople :eval no-export :exports none
-  rownames(yearpeople) <- yearpeople[,1]
-  colnames(yearpeople) <- c("pyear", "people")
-  rownames(yeartimes) <- yeartimes[,1]
-  colnames(yeartimes) <- c("tyear", "stime")
-  years <- cbind(yearpeople, yeartimes)
-  years <- cbind(years, time=as.POSIXct(years$stime, format="%a %b %d %H:%M:%S %Y"))
-  deltas <- years[1:nrow(years)-1,]$people /
-    max(1, lag(as.ts(years$time))-as.ts(years$time))
-  years <- cbind(years, delta=c(deltas, NA))
-  cbind(year=years$tyear, perperson=years$delta)
-#+END_SRC
+ #+name: peoplepersecond
+ #+BEGIN_SRC R :session ss :var yeartimes=yeartimes :var yearpeople=yearpeople :eval no-export :exports none
+   rownames(yearpeople) <- yearpeople[,1]
+   colnames(yearpeople) <- c("pyear", "people")
+   rownames(yeartimes) <- yeartimes[,1]
+   colnames(yeartimes) <- c("tyear", "stime")
+   years <- cbind(yearpeople, yeartimes)
+   years <- cbind(years, time=as.POSIXct(years$stime, format="%a %b %d %H:%M:%S %Y"))
+   deltas <- years[1:nrow(years)-1,]$people /
+     max(1, lag(as.ts(years$time))-as.ts(years$time))
+   years <- cbind(years, delta=c(deltas, NA))
+   cbind(year=years$tyear, perperson=years$delta)
+ #+END_SRC
 
-so, the number of people processed per second is:
+ so, the number of people processed per second is:
 
-#+RESULTS: peoplepersecond
-| 1962 | 3260.95454545455 |
-| 1963 | 2540.09090909091 |
-| 1964 | 2479.22727272727 |
-| 1965 | 2477.36363636364 |
-| 1966 |           5002.5 |
-| 1967 | 3121.63636363636 |
-| 1968 | 6859.68181818182 |
-| 1969 | 6902.18181818182 |
-| 1970 | 6591.95454545455 |
-| 1971 | 6673.72727272727 |
-| 1972 | 6383.27272727273 |
-| 1973 | 6191.86363636364 |
-| 1974 | 6058.27272727273 |
-| 1975 | 5914.72727272727 |
-| 1976 | 6152.31818181818 |
-| 1977 | 7309.04545454545 |
-| 1978 | 7077.54545454545 |
-| 1979 | 7026.95454545455 |
-| 1980 | 8249.45454545455 |
-| 1981 | 8243.54545454545 |
-| 1982 | 7395.59090909091 |
-| 1983 |           7392.5 |
-| 1984 | 7325.77272727273 |
-| 1985 | 7334.63636363636 |
-| 1986 | 7166.40909090909 |
-| 1987 | 7066.72727272727 |
-| 1988 |             7090 |
-| 1989 | 6576.68181818182 |
-| 1990 | 7185.40909090909 |
-| 1991 |           7203.5 |
-| 1992 | 7081.63636363636 |
-| 1993 | 7054.40909090909 |
-| 1994 | 6861.04545454545 |
-| 1995 | 6801.90909090909 |
-| 1996 | 5930.72727272727 |
-| 1997 | 5993.36363636364 |
-| 1998 | 5982.59090909091 |
-| 1999 | 6014.72727272727 |
-| 2000 | 6077.72727272727 |
-| 2001 | 9921.31818181818 |
-| 2002 | 9873.59090909091 |
-| 2003 | 9837.45454545455 |
-| 2004 | 9692.77272727273 |
-| 2005 | 9574.90909090909 |
-| 2006 | 9480.09090909091 |
-| 2007 | 9392.68181818182 |
-| 2008 |             9382 |
-| 2009 | 9450.95454545455 |
-| 2010 | 9536.45454545455 |
-| 2011 | 9317.40909090909 |
-| 2012 | 9154.45454545455 |
-| 2013 | 9210.63636363636 |
-| 2014 | 9070.72727272727 |
-| 2015 | 9046.54545454545 |
-| 2016 | 8431.22727272727 |
-| 2017 |              nil |
+ #+RESULTS: peoplepersecond
+ | 1962 | 3260.95454545455 |
+ | 1963 | 2540.09090909091 |
+ | 1964 | 2479.22727272727 |
+ | 1965 | 2477.36363636364 |
+ | 1966 |           5002.5 |
+ | 1967 | 3121.63636363636 |
+ | 1968 | 6859.68181818182 |
+ | 1969 | 6902.18181818182 |
+ | 1970 | 6591.95454545455 |
+ | 1971 | 6673.72727272727 |
+ | 1972 | 6383.27272727273 |
+ | 1973 | 6191.86363636364 |
+ | 1974 | 6058.27272727273 |
+ | 1975 | 5914.72727272727 |
+ | 1976 | 6152.31818181818 |
+ | 1977 | 7309.04545454545 |
+ | 1978 | 7077.54545454545 |
+ | 1979 | 7026.95454545455 |
+ | 1980 | 8249.45454545455 |
+ | 1981 | 8243.54545454545 |
+ | 1982 | 7395.59090909091 |
+ | 1983 |           7392.5 |
+ | 1984 | 7325.77272727273 |
+ | 1985 | 7334.63636363636 |
+ | 1986 | 7166.40909090909 |
+ | 1987 | 7066.72727272727 |
+ | 1988 |             7090 |
+ | 1989 | 6576.68181818182 |
+ | 1990 | 7185.40909090909 |
+ | 1991 |           7203.5 |
+ | 1992 | 7081.63636363636 |
+ | 1993 | 7054.40909090909 |
+ | 1994 | 6861.04545454545 |
+ | 1995 | 6801.90909090909 |
+ | 1996 | 5930.72727272727 |
+ | 1997 | 5993.36363636364 |
+ | 1998 | 5982.59090909091 |
+ | 1999 | 6014.72727272727 |
+ | 2000 | 6077.72727272727 |
+ | 2001 | 9921.31818181818 |
+ | 2002 | 9873.59090909091 |
+ | 2003 | 9837.45454545455 |
+ | 2004 | 9692.77272727273 |
+ | 2005 | 9574.90909090909 |
+ | 2006 | 9480.09090909091 |
+ | 2007 | 9392.68181818182 |
+ | 2008 |             9382 |
+ | 2009 | 9450.95454545455 |
+ | 2010 | 9536.45454545455 |
+ | 2011 | 9317.40909090909 |
+ | 2012 | 9154.45454545455 |
+ | 2013 | 9210.63636363636 |
+ | 2014 | 9070.72727272727 |
+ | 2015 | 9046.54545454545 |
+ | 2016 | 8431.22727272727 |
+ | 2017 |              nil |
 
-** most occurring incomes
+*** most occurring incomes
 
-question:
-#+BEGIN_EXAMPLE
-length(unique(dset$HHINCOME1999))
-[1] 55297
-> length(dset$HHINCOME1999)
-[1] 345582
-#+END_EXAMPLE
-so, what are the most occurring incomes?
+ question:
+ #+BEGIN_EXAMPLE
+ length(unique(dset$HHINCOME1999))
+ [1] 55297
+ > length(dset$HHINCOME1999)
+ [1] 345582
+ #+END_EXAMPLE
+ so, what are the most occurring incomes?
 
-#+BEGIN_EXAMPLE
-> x <- dset$HHINCOME
-> z <- tabulate(x)
-> zz <- sort.int(z, index.return=TRUE, decreasing=TRUE)
-> zz$ix[1:30]
- [1]  50000  10000  12000  30000  15000  40000  20000  25000  60000  11000
-[11]   9000   8000  35000   6000  45000  13000  18000   7000  14000   5000
-[21]  24000  70000  55000  75000  17000  80000  36000  16000 100000  32000
-> zz$ix[1:300]
+ #+BEGIN_EXAMPLE
+ > x <- dset$HHINCOME
+ > z <- tabulate(x)
+ > zz <- sort.int(z, index.return=TRUE, decreasing=TRUE)
+ > zz$ix[1:30]
   [1]  50000  10000  12000  30000  15000  40000  20000  25000  60000  11000
  [11]   9000   8000  35000   6000  45000  13000  18000   7000  14000   5000
  [21]  24000  70000  55000  75000  17000  80000  36000  16000 100000  32000
- [31]   7500  28000  65000  22000  19000  42000  23000  90000  38000  48000
- [41]  10500  27000   6500  12500  34000  21000   4000  62000  85000   3000
- [51]  26000  52000  58000   9500   8500  33000   7800  47000  37000   8400
- [61]   4800  31000 120000 110000   9600  10200  10400  11500  14500  29000
- [71]   7200  49000  10100  44000  39000  72000   5500  46000  95000  43000
- [81]  54000  57000  10800  15600  78000  13200  11200  41000  56000  63000
- [91]  53000 150000   3600   2000  51000   5200   9200 130000  10700   4500
-[101]  73000  66000   9100  68000  59000   9800  88000  76000  77000 105000
-[111]  11300  61000   6600   8200  64000  98000  10300  13500   6200  12300
-[121]  14400  12200  69000  97000   2400  12100  74000   1500  11700  84000
-[131]   9300  17500  81000  16500  94000   9700  92000  11800  71000  83000
-[141] 115000  15500  67000  82000  11100  18200  86000   8700 140000  15400
-[151]  12600  14700   6800  14200   8300   8800  12400   8100   1200  12700
-[161]   7400  79000  96000   8600  15200   8900 125000  10600  11600  12800
-[171]   1800   3500   6400   7900   8520  18500  14300  20800  89000   5600
-[181] 160000  11400  91000  19200  10900   4200  17100  87000 102000  14100
-[191]  99000   9400  14800  15100  13300   7600   7100  13259  13800 103000
-[201] 108000   6900  15300  16100  93000 113000   5700   6300  16300   5800
-[211]   6700   7700 106000   2600   5100   9659   3900   7300  17200   2500
-[221]  13100  16400  19500 135000   4900  16800   1000  13900   8652  25200
-[231] 112000  17400  17600 118000  13400  26500   3200  13700  14600  16600
-[241]  31200  20400 128000   2700  20500      1  15659   4680   9900  33600
-[251] 104000  18100  13600 107000  14900  15800  11900 109000 145000   6100
-[261]  15900  21600  26800 114000   5400  12900  21400   3300   4300  22800
-[271] 117000 155000   5900  18900  20600  22200 170000  18600  22500   4700
-[281]  21200 101000  19400  16700   3400  18800  20100  20200   4600  14459
-[291] 116000 165000   8640  16200  25500  30200  31500  34500 111000    600
-> zz$x[1:30]
- [1] 1821 1553 1270 1193 1176 1163 1070 1026  913  854  827  826  825  767  761
-[16]  758  746  745  717  694  668  598  595  593  576  555  540  538  523  508
-#+END_EXAMPLE
+ > zz$ix[1:300]
+   [1]  50000  10000  12000  30000  15000  40000  20000  25000  60000  11000
+  [11]   9000   8000  35000   6000  45000  13000  18000   7000  14000   5000
+  [21]  24000  70000  55000  75000  17000  80000  36000  16000 100000  32000
+  [31]   7500  28000  65000  22000  19000  42000  23000  90000  38000  48000
+  [41]  10500  27000   6500  12500  34000  21000   4000  62000  85000   3000
+  [51]  26000  52000  58000   9500   8500  33000   7800  47000  37000   8400
+  [61]   4800  31000 120000 110000   9600  10200  10400  11500  14500  29000
+  [71]   7200  49000  10100  44000  39000  72000   5500  46000  95000  43000
+  [81]  54000  57000  10800  15600  78000  13200  11200  41000  56000  63000
+  [91]  53000 150000   3600   2000  51000   5200   9200 130000  10700   4500
+ [101]  73000  66000   9100  68000  59000   9800  88000  76000  77000 105000
+ [111]  11300  61000   6600   8200  64000  98000  10300  13500   6200  12300
+ [121]  14400  12200  69000  97000   2400  12100  74000   1500  11700  84000
+ [131]   9300  17500  81000  16500  94000   9700  92000  11800  71000  83000
+ [141] 115000  15500  67000  82000  11100  18200  86000   8700 140000  15400
+ [151]  12600  14700   6800  14200   8300   8800  12400   8100   1200  12700
+ [161]   7400  79000  96000   8600  15200   8900 125000  10600  11600  12800
+ [171]   1800   3500   6400   7900   8520  18500  14300  20800  89000   5600
+ [181] 160000  11400  91000  19200  10900   4200  17100  87000 102000  14100
+ [191]  99000   9400  14800  15100  13300   7600   7100  13259  13800 103000
+ [201] 108000   6900  15300  16100  93000 113000   5700   6300  16300   5800
+ [211]   6700   7700 106000   2600   5100   9659   3900   7300  17200   2500
+ [221]  13100  16400  19500 135000   4900  16800   1000  13900   8652  25200
+ [231] 112000  17400  17600 118000  13400  26500   3200  13700  14600  16600
+ [241]  31200  20400 128000   2700  20500      1  15659   4680   9900  33600
+ [251] 104000  18100  13600 107000  14900  15800  11900 109000 145000   6100
+ [261]  15900  21600  26800 114000   5400  12900  21400   3300   4300  22800
+ [271] 117000 155000   5900  18900  20600  22200 170000  18600  22500   4700
+ [281]  21200 101000  19400  16700   3400  18800  20100  20200   4600  14459
+ [291] 116000 165000   8640  16200  25500  30200  31500  34500 111000    600
+ > zz$x[1:30]
+  [1] 1821 1553 1270 1193 1176 1163 1070 1026  913  854  827  826  825  767  761
+ [16]  758  746  745  717  694  668  598  595  593  576  555  540  538  523  508
+ #+END_EXAMPLE
 
-** how to deal with exception reports?
+*** how to deal with exception reports?
 
-one issue the light of which i've yet to see: should the "exception"
-reports (of incomes less than less than MIN99, greater than or equal
-to MAX99) be inserted as comments in the output .csv file, or output
-to a separate file (rfile, in bincps), or printed on the console?
+ one issue the light of which i've yet to see: should the "exception"
+ reports (of incomes less than less than MIN99, greater than or equal
+ to MAX99) be inserted as comments in the output .csv file, or output
+ to a separate file (rfile, in bincps), or printed on the console?
 
-the argument for including such reports in the .csv file is that, in
-this case, the .csv file becomes more self-describing.  (there's a bit
-of self-description in the file name, and more could be put there,
-though after a while that becomes very awkward.)  self-describing data
-sets are a "GOOD THING" (and, even semi-self-describing data sets are,
-at least, a "good thing").
+ the argument for including such reports in the .csv file is that, in
+ this case, the .csv file becomes more self-describing.  (there's a bit
+ of self-description in the file name, and more could be put there,
+ though after a while that becomes very awkward.)  self-describing data
+ sets are a "GOOD THING" (and, even semi-self-describing data sets are,
+ at least, a "good thing").
 
-the argument against including such reports in the .csv file is that
-then a pure "read.csv(ifile)" won't work, as read.csv assumes one
-doesn't use comments in .csv files (defaults to comment.char="").
-while one can document (even in a comment in the .csv file itself!)
-that the .csv file contains comments and that in, e.g., R, one needs
-to call read.csv(..., comment.char="#"); however, a certain percentage
-of potential users will get lost before finding that message and will
-give up.  likely those same users -- plus, probably, a much broader
-class of users -- won't think of looking inside the .csv file, so
-won't see the comments describing the file, so won't be helped by
-the so-called "self-description".
+ the argument against including such reports in the .csv file is that
+ then a pure "read.csv(ifile)" won't work, as read.csv assumes one
+ doesn't use comments in .csv files (defaults to comment.char="").
+ while one can document (even in a comment in the .csv file itself!)
+ that the .csv file contains comments and that in, e.g., R, one needs
+ to call read.csv(..., comment.char="#"); however, a certain percentage
+ of potential users will get lost before finding that message and will
+ give up.  likely those same users -- plus, probably, a much broader
+ class of users -- won't think of looking inside the .csv file, so
+ won't see the comments describing the file, so won't be helped by
+ the so-called "self-description".
 
-i think in an ideal world, i'd provide a command line switch that
-would determine how to deal with these files.
-** looking at the data
-*** common code
-the following code is common to all our visualizations
-#+name: looking.bits
-#+BEGIN_SRC R :session ss :results none :eval no-export :exports none
-  <<warning>>
-  require(ggplot2, quietly=TRUE)
-  require(assertthat, quietly=TRUE)
+ i think in an ideal world, i'd provide a command line switch that
+ would determine how to deal with these files.
+*** looking at the data
+**** common code
+ the following code is common to all our visualizations
+ #+name: looking.bits
+ #+BEGIN_SRC R :session ss :results none :eval no-export :exports none
+   <<warning>>
+   require(ggplot2, quietly=TRUE)
+   require(assertthat, quietly=TRUE)
 
-  looking.tidyup <- function(nvals, nobs, maxval) {
-    "take the input dataset, cap it"
-    ## now, clamp upper end at maxval (200,000, say)
-    ## first, propagate counts of the higher incomes to end of chart
-    highest <- max(nvals[nvals <= maxval], na.rm=TRUE)
-    if (!is.numeric(highest)) {
-      stop(sprintf("looking.tidyup: all values greater than maxval (%g)", maxval))
-    }
-    nobs[nvals==highest] <- nobs[nvals==highest] + sum(nobs[nvals>highest])
-    ## now, delete the higher values
-    slowenough <- nvals <= maxval
-    nobs <- nobs[slowenough]
-    nvals <- nvals[slowenough]
-    ## what about too low?  assume 0
-    lowest <- min(nvals[nvals >= 0], na.rm=TRUE)
-    if (!is.numeric(lowest)) {
-      stop(sprintf("looking.tidyup: all values less than maxval (%g) also less than zero",
-                   maxval))
-    }
-    ## count them, and get rid of them
-    nobs[nvals == lowest] <- nobs[nvals==lowest] + sum(nobs[nvals<0])
-    shighenough <- nvals >= 0
-    nobs <- nobs[shighenough]
-    nvals <- nvals[shighenough]
-    ## get rid of never-observed values, if any (efficiency)
-    sn0 <- nobs != 0
-    nvals <- nvals[sn0]
-    nobs <- nobs[sn0]
-    ## data frame it
-    df <- data.frame(vals=nvals, nobs=nobs)
-  }
+   looking.tidyup <- function(nvals, nobs, maxval) {
+     "take the input dataset, cap it"
+     ## now, clamp upper end at maxval (200,000, say)
+     ## first, propagate counts of the higher incomes to end of chart
+     highest <- max(nvals[nvals <= maxval], na.rm=TRUE)
+     if (!is.numeric(highest)) {
+       stop(sprintf("looking.tidyup: all values greater than maxval (%g)", maxval))
+     }
+     nobs[nvals==highest] <- nobs[nvals==highest] + sum(nobs[nvals>highest])
+     ## now, delete the higher values
+     slowenough <- nvals <= maxval
+     nobs <- nobs[slowenough]
+     nvals <- nvals[slowenough]
+     ## what about too low?  assume 0
+     lowest <- min(nvals[nvals >= 0], na.rm=TRUE)
+     if (!is.numeric(lowest)) {
+       stop(sprintf("looking.tidyup: all values less than maxval (%g) also less than zero",
+                    maxval))
+     }
+     ## count them, and get rid of them
+     nobs[nvals == lowest] <- nobs[nvals==lowest] + sum(nobs[nvals<0])
+     shighenough <- nvals >= 0
+     nobs <- nobs[shighenough]
+     nvals <- nvals[shighenough]
+     ## get rid of never-observed values, if any (efficiency)
+     sn0 <- nobs != 0
+     nvals <- nvals[sn0]
+     nobs <- nobs[sn0]
+     ## data frame it
+     df <- data.frame(vals=nvals, nobs=nobs)
+   }
 
-  looking.dset <- function(argv) {        # command line args
-    dset <- read.csv(argv$ifile, header=TRUE)
-    dset <- dset[dset$HFLAG == FALSE | is.na(dset$HFLAG),]
-    dset <- dset[dset$YEAR>=min(argv$years),]  # before 1967, NA data
+   looking.dset <- function(argv) {        # command line args
+     dset <- read.csv(argv$ifile, header=TRUE)
+     dset <- dset[dset$HFLAG == FALSE | is.na(dset$HFLAG),]
+     dset <- dset[dset$YEAR>=min(argv$years),]  # before 1967, NA data
 
-    min <- min(dset[, argv$bracket], na.rm=TRUE)
-    max <- max(dset[, argv$bracket], na.rm=TRUE)
+     min <- min(dset[, argv$bracket], na.rm=TRUE)
+     max <- max(dset[, argv$bracket], na.rm=TRUE)
 
-    for (year in unique(dset$YEAR)) {
-      sy <- dset$YEAR==year
-      yset <- dset[dset$YEAR==year,]
-      tidy <- looking.tidyup(dset[sy,argv$bracket], dset[sy,argv$supp], argv$maxhh)
-      ## now, get rid of outliers (looking.tidyup included in 0, maxhh indicies)
-      dset <- dset[-which(sy & (dset[,argv$bracket] < 0 |
-                                dset[,argv$bracket] > argv$maxhh)),]
-      sy <- dset$YEAR==year
-      if (!all(dset[sy,argv$bracket] == tidy$vals)) {
-        stop(sprintf("internal error"))
-      }
-      dset[sy,argv$supp] <- tidy$nobs
-    }
-    ## now, remember parameters in attributes
-    for (a in names(argv)) {
-      if (a != "") {
-        attr(dset, a) <- argv[[a]]
-      }
-    }
-    dset
-  }
+     for (year in unique(dset$YEAR)) {
+       sy <- dset$YEAR==year
+       yset <- dset[dset$YEAR==year,]
+       tidy <- looking.tidyup(dset[sy,argv$bracket], dset[sy,argv$supp], argv$maxhh)
+       ## now, get rid of outliers (looking.tidyup included in 0, maxhh indicies)
+       dset <- dset[-which(sy & (dset[,argv$bracket] < 0 |
+                                 dset[,argv$bracket] > argv$maxhh)),]
+       sy <- dset$YEAR==year
+       if (!all(dset[sy,argv$bracket] == tidy$vals)) {
+         stop(sprintf("internal error"))
+       }
+       dset[sy,argv$supp] <- tidy$nobs
+     }
+     ## now, remember parameters in attributes
+     for (a in names(argv)) {
+       if (a != "") {
+         attr(dset, a) <- argv[[a]]
+       }
+     }
+     dset
+   }
 
-  looking.create.ecdfs <- function(dset, cumcdf) {
-    ## create ECDF
-    my.ecdfs <- list()
-    for (year in unique(dset$YEAR)) {
-      sy <- dset$YEAR==year
-      bracket <- dset[sy, attr(dset, "bracket")]
-      supp <- dset[sy, attr(dset, "supp")]
-      my.ecdfs[[year]] <-
-        switch(cumcdf,
-               "bracket/supp" = ecdf.binned(bracket, supp),
-               "bracket/bracket*supp" = ecdf.binned(bracket, bracket*supp),
-               ## in the following, we divide by "sum(supp)" to
-               ## normalize across years (for comparability)
-               "supp/bracket*supp" = ecdf.binned(cumsum(supp)/sum(supp), bracket*supp))
-    }
-    my.ecdfs
-  }
+   looking.create.ecdfs <- function(dset, cumcdf) {
+     ## create ECDF
+     my.ecdfs <- list()
+     for (year in unique(dset$YEAR)) {
+       sy <- dset$YEAR==year
+       bracket <- dset[sy, attr(dset, "bracket")]
+       supp <- dset[sy, attr(dset, "supp")]
+       my.ecdfs[[year]] <-
+         switch(cumcdf,
+                "bracket/supp" = ecdf.binned(bracket, supp),
+                "bracket/bracket*supp" = ecdf.binned(bracket, bracket*supp),
+                ## in the following, we divide by "sum(supp)" to
+                ## normalize across years (for comparability)
+                "supp/bracket*supp" = ecdf.binned(cumsum(supp)/sum(supp), bracket*supp))
+     }
+     my.ecdfs
+   }
 
-  looking.create.iecdfs <- function(dset, cumcdf) {
-    ## create inverse (IECDF)
-    my.iecdfs <- list()
-    for (year in unique(dset$YEAR)) {
-      sy <- dset$YEAR==year
-      bracket <- dset[sy, attr(dset, "bracket")]
-      supp <- dset[sy, attr(dset, "supp")]
-      my.iecdfs[[year]] <-
-        switch(cumcdf,
-               "bracket/supp" = iecdf.binned(bracket, supp),
-               "bracket/bracket*supp" = iecdf.binned(bracket, bracket*supp),
-               "supp/bracket*supp" = iecdf.binned(cumsum(supp), bracket*supp))
-    }
-    my.iecdfs
-  }
+   looking.create.iecdfs <- function(dset, cumcdf) {
+     ## create inverse (IECDF)
+     my.iecdfs <- list()
+     for (year in unique(dset$YEAR)) {
+       sy <- dset$YEAR==year
+       bracket <- dset[sy, attr(dset, "bracket")]
+       supp <- dset[sy, attr(dset, "supp")]
+       my.iecdfs[[year]] <-
+         switch(cumcdf,
+                "bracket/supp" = iecdf.binned(bracket, supp),
+                "bracket/bracket*supp" = iecdf.binned(bracket, bracket*supp),
+                "supp/bracket*supp" = iecdf.binned(cumsum(supp), bracket*supp))
+     }
+     my.iecdfs
+   }
 
-  pyear <- function(iecdf, y1, y2, tiles) {
-    "what is the annual rate of growth for a given decile between years y1 and y2?"
-    my1 <- min(y1, y2)
-    my2 <- max(y1, y2)
-    (iecdf[[y2]](tiles)/my.iecdfs[[y1]](tiles))^(1/(y2-y1))-1
-  }
+   pyear <- function(iecdf, y1, y2, tiles) {
+     "what is the annual rate of growth for a given decile between years y1 and y2?"
+     my1 <- min(y1, y2)
+     my2 <- max(y1, y2)
+     (iecdf[[y2]](tiles)/my.iecdfs[[y1]](tiles))^(1/(y2-y1))-1
+   }
 
-  ## different utilities need different combinations of (a common set
-  ## of) parameters
-  doparser <- function(name, need, args) {
-    require(argparser, quietly=TRUE)
+   ## different utilities need different combinations of (a common set
+   ## of) parameters
+   doparser <- function(name, need, args) {
+     require(argparser, quietly=TRUE)
 
-    p <- arg_parser(name)
-    if ("ifile" %in% need) {
-      need <- subset(need, need!= "ifile")
-      p <- add_argument(p, "--ifile", type="character", default=NA,
-                        help="name of input file")
-    }
-    if ("maxhh" %in% need) {
-      need <- subset(need, need!="maxhh")
-      p <- add_argument(p, "--maxhh", type="numeric", default=200000,
-                        help="cap on household income (larger values will be counted in last bin")
-    }
-    if ("supp" %in% need) {
-      need <- subset(need, need!="supp")
-      p <- add_argument(p, "--supp", type="character", default="HWTSUPP",
-                        help="column name to use as count")
-    }
-    if ("bracket" %in% need) {
-      need <- subset(need, need!="bracket")
-      p <- add_argument(p, "--bracket", type="character", default="HHBRACKET99",
-                        help="column name to use as income")
-    }
-    if ("binsize" %in% need) {
-      need <- subset(need, need!="binsize")
-      p <- add_argument(p, "--binsize", type="integer", default=1000,
-                        help="size of each bin")
-    }
-    if ("fyear" %in% need) {
-      need <- subset(need, need!="fyear")
-      p <- add_argument(p, "--fyear", type="integer", default=1968,
-                        help="first year of input dataset to process")
-    }
-    if ("graphics" %in% need) {
-      need <- subset(need, need!="graphics")
-      p <- add_argument(p, "--graphics", type="character", default="X11",
-                        help="medium (\"X11\", \"pdf\", \"png\", \"svg\", etc.) to hold output graph")
-    }
-    if ("gfile" %in% need) {
-      need <- subset(need, need!="gfile")
-      p <- add_argument(p, "--gfile", type="character", default=NA,
-                        help="output graphics file name\n\t(UNTESTED: for X11, display name)")
-    }
-    if ("height" %in% need) {
-      need <- subset(need, need!="height")
-      p <- add_argument(p, "--height", type="numeric", default=NA,
-                        help="height of graphic output")
-    }
-    if ("width" %in% need) {
-      need <- subset(need, need!="width")
-      p <- add_argument(p, "--width", type="numeric", default=NA,
-                        help="width of graphic output")
-    }
-    if ("gopts" %in% need) {
-      need <- subset(need, need!="gopts")
-      p <- add_argument(p, "--gopts", type="character", default="",
-                        help="options specific to --graphics type")
-    }
-    if ("years" %in% need) {
-      need <- subset(need, need!="years")
-      p <- add_argument(p, "--years", type="character", default="1972,2016", # XXX
-                        help="years to graph")
-    }
-    if ("tiles" %in% need) {
-      need <- subset(need, need!="tiles")
-      p <- add_argument(p, "--tiles", type="character", default="0.1,0.9",
-                        help="percentiles to mark")
-    }
-    if ("values" %in% need) {
-      need <- subset(need, need!="values")
-      p <- add_argument(p, "--values", type="character", default="20000",
-                        help="values to check for")
-    }
-    if ("cumcdf" %in% need) {
-      need <- subset(need, need!="cumcdf")
-      p <- add_argument(p, "--cumcdf", type="character", default="bracket/supp",
-                        help="cumcdf of what?  \"bracket/supp\", \"supp/bracket*supp\", \"bracket/bracket*supp\"")
-    }
-    if ("delta" %in% need) {
-        need <- subset(need, need!="delta")
-        p <- add_argument(p, "--delta", type="boolean", flag=TRUE,
-                          help="if we should look at difference between (exactly) two years")
-    }
-    ## detect bad arguments in need
-    if (length(need) != 0) {
-      print(need)
-      stop("programming error: unknown \"need\" values to buildparser()")
-    }
+     p <- arg_parser(name)
+     if ("ifile" %in% need) {
+       need <- subset(need, need!= "ifile")
+       p <- add_argument(p, "--ifile", type="character", default=NA,
+                         help="name of input file")
+     }
+     if ("maxhh" %in% need) {
+       need <- subset(need, need!="maxhh")
+       p <- add_argument(p, "--maxhh", type="numeric", default=200000,
+                         help="cap on household income (larger values will be counted in last bin")
+     }
+     if ("supp" %in% need) {
+       need <- subset(need, need!="supp")
+       p <- add_argument(p, "--supp", type="character", default="HWTSUPP",
+                         help="column name to use as count")
+     }
+     if ("bracket" %in% need) {
+       need <- subset(need, need!="bracket")
+       p <- add_argument(p, "--bracket", type="character", default="HHBRACKET99",
+                         help="column name to use as income")
+     }
+     if ("binsize" %in% need) {
+       need <- subset(need, need!="binsize")
+       p <- add_argument(p, "--binsize", type="integer", default=1000,
+                         help="size of each bin")
+     }
+     if ("fyear" %in% need) {
+       need <- subset(need, need!="fyear")
+       p <- add_argument(p, "--fyear", type="integer", default=1968,
+                         help="first year of input dataset to process")
+     }
+     if ("graphics" %in% need) {
+       need <- subset(need, need!="graphics")
+       p <- add_argument(p, "--graphics", type="character", default="X11",
+                         help="medium (\"X11\", \"pdf\", \"png\", \"svg\", etc.) to hold output graph")
+     }
+     if ("gfile" %in% need) {
+       need <- subset(need, need!="gfile")
+       p <- add_argument(p, "--gfile", type="character", default=NA,
+                         help="output graphics file name\n\t(UNTESTED: for X11, display name)")
+     }
+     if ("height" %in% need) {
+       need <- subset(need, need!="height")
+       p <- add_argument(p, "--height", type="numeric", default=NA,
+                         help="height of graphic output")
+     }
+     if ("width" %in% need) {
+       need <- subset(need, need!="width")
+       p <- add_argument(p, "--width", type="numeric", default=NA,
+                         help="width of graphic output")
+     }
+     if ("gopts" %in% need) {
+       need <- subset(need, need!="gopts")
+       p <- add_argument(p, "--gopts", type="character", default="",
+                         help="options specific to --graphics type")
+     }
+     if ("years" %in% need) {
+       need <- subset(need, need!="years")
+       p <- add_argument(p, "--years", type="character", default="1972,2016", # XXX
+                         help="years to graph")
+     }
+     if ("tiles" %in% need) {
+       need <- subset(need, need!="tiles")
+       p <- add_argument(p, "--tiles", type="character", default="0.1,0.9",
+                         help="percentiles to mark")
+     }
+     if ("values" %in% need) {
+       need <- subset(need, need!="values")
+       p <- add_argument(p, "--values", type="character", default="20000",
+                         help="values to check for")
+     }
+     if ("cumcdf" %in% need) {
+       need <- subset(need, need!="cumcdf")
+       p <- add_argument(p, "--cumcdf", type="character", default="bracket/supp",
+                         help="cumcdf of what?  \"bracket/supp\", \"supp/bracket*supp\", \"bracket/bracket*supp\"")
+     }
+     if ("delta" %in% need) {
+         need <- subset(need, need!="delta")
+         p <- add_argument(p, "--delta", type="boolean", flag=TRUE,
+                           help="if we should look at difference between (exactly) two years")
+     }
+     ## detect bad arguments in need
+     if (length(need) != 0) {
+       print(need)
+       stop("programming error: unknown \"need\" values to buildparser()")
+     }
 
-    if (is.null(args)) {
-      argv <- parse_args(p)
-    } else {
-      argv <- parse_args(p, args)
-    }
+     if (is.null(args)) {
+       argv <- parse_args(p)
+     } else {
+       argv <- parse_args(p, args)
+     }
 
-    if ((!is.null(argv$ifile)) && is.na(argv$ifile)) {
-      stop(sprintf("%s: missing --ifile argument", name))
-    }
+     if ((!is.null(argv$ifile)) && is.na(argv$ifile)) {
+       stop(sprintf("%s: missing --ifile argument", name))
+     }
 
-    ## turn space/comma separated values into numeric vector (for
-    ## certain arguments)
-    for (i in c("years", "tiles", "values")) {
-      if ((!is.null(argv[[i]])) && !is.na(argv[[i]])) {
-        argv[i] <- list(as.numeric(unlist(strsplit(argv[[i]], "[ ,]+"))))
-      }
-    }
+     ## turn space/comma separated values into numeric vector (for
+     ## certain arguments)
+     for (i in c("years", "tiles", "values")) {
+       if ((!is.null(argv[[i]])) && !is.na(argv[[i]])) {
+         argv[i] <- list(as.numeric(unlist(strsplit(argv[[i]], "[ ,]+"))))
+       }
+     }
 
-    if (!is.null(argv$graphics)) {
-      dograph(graphics=argv$graphics,
-              gfile=argv$gfile,
-              height=argv$height,
-              width=argv$width,
-              gopts=argv$gopts)
-    }
+     if (!is.null(argv$graphics)) {
+       dograph(graphics=argv$graphics,
+               gfile=argv$gfile,
+               height=argv$height,
+               width=argv$width,
+               gopts=argv$gopts)
+     }
 
-    looking.dset(argv)
-  }
+     looking.dset(argv)
+   }
 
-  dograph <- function(graphics, gfile, height, width, gopts) {
-    "point our graphic output at a particular device (X11, pdf, png, svg)"
-    topts <- function(name, value) {
-      if (is.character(value)) {
-        value <- sprintf("\"%s\"", value)
-      }
-      sub("[ ,]*$", "",
-          gsub("  *", " ",
-               paste(
-                     sprintf("%s=%s", name, value),
-                     gopts, sep=",")))
-    }
-    lgraphics <- tolower(graphics)
-    cmd <- lgraphics                      # default
-    if (!is.na(height)) {
-      gopts <- topts("height", height)
-    }
-    if (!is.na(width)) {
-      gopts <- topts("width", width)
-    }
-    if (lgraphics == "x11") {
-      ## get X11 running: https://stackoverflow.com/a/8168190
-      if (!is.na(gfile)) {
-        gopts <- topts("display", gfile)
-      }
-    } else if (lgraphics == "pdf") {
-      if (!is.na(gfile)) {
-        gopts <- topts("file", gfile)
-      }
-    } else if (lgraphics == "png") {
-      if (!is.na(gfile)) {
-        gopts <- topts("file", gfile)
-      }
-    } else if (lgraphics == "svg") {
-      if (!is.na(gfile)) {
-        gopts <- topts("file", gfile)
-      }
-    } else {
-      stop(sprintf("unknown --graphics option value \"%s\"; known values: \"x11\", \"pdf\", \"png\", \"svg\" (case independent)",
-                   graphics))
-    }
-    eval(parse(text=paste(cmd, "(", gopts, ")", sep="")))
+   dograph <- function(graphics, gfile, height, width, gopts) {
+     "point our graphic output at a particular device (X11, pdf, png, svg)"
+     topts <- function(name, value) {
+       if (is.character(value)) {
+         value <- sprintf("\"%s\"", value)
+       }
+       sub("[ ,]*$", "",
+           gsub("  *", " ",
+                paste(
+                      sprintf("%s=%s", name, value),
+                      gopts, sep=",")))
+     }
+     lgraphics <- tolower(graphics)
+     cmd <- lgraphics                      # default
+     if (!is.na(height)) {
+       gopts <- topts("height", height)
+     }
+     if (!is.na(width)) {
+       gopts <- topts("width", width)
+     }
+     if (lgraphics == "x11") {
+       ## get X11 running: https://stackoverflow.com/a/8168190
+       if (!is.na(gfile)) {
+         gopts <- topts("display", gfile)
+       }
+     } else if (lgraphics == "pdf") {
+       if (!is.na(gfile)) {
+         gopts <- topts("file", gfile)
+       }
+     } else if (lgraphics == "png") {
+       if (!is.na(gfile)) {
+         gopts <- topts("file", gfile)
+       }
+     } else if (lgraphics == "svg") {
+       if (!is.na(gfile)) {
+         gopts <- topts("file", gfile)
+       }
+     } else {
+       stop(sprintf("unknown --graphics option value \"%s\"; known values: \"x11\", \"pdf\", \"png\", \"svg\" (case independent)",
+                    graphics))
+     }
+     eval(parse(text=paste(cmd, "(", gopts, ")", sep="")))
 
-  }
+   }
 
-  endgraph <- function(graphics, gopts) {
-      "after processing, close the graphics device"
-    if (grepl("^x11$", graphics, ignore.case=TRUE)) {
-        require(grid, quietly=TRUE)
-        cat("click on the graph to end:")
-        try(grid.locator(), silent=TRUE)  # in case window manager closes window
-        cat("\n")
-    }
-    try(dev.off(), silent=TRUE)           # ditto
-  }
-
-
-  endup <- function(dset) {
-    if (!is.null(attr(dset, "graphics"))) {
-      endgraph(attr(dset, "graphics"), attr(dset, "gopts"))
-    }
-  }
-#+END_SRC
-
-#+name: looking.endbits
-#+BEGIN_SRC R :eval no-export :exports none
-  options(warn=2)
-
-  if (!interactive()) {
-    rval <- main()
-    if (length(warnings()) != 0) {
-      print(warnings())
-    }
-  } else {
-    options(error=recover)
-  }
-#+END_SRC
-
-*** create.ecdf
-**** create.ecdf.common (called by shell scripts)
-
-#+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
-  <<warning>>
-  <<looking.bits>>
-  <<stats.binned>>
+   endgraph <- function(graphics, gopts) {
+       "after processing, close the graphics device"
+     if (grepl("^x11$", graphics, ignore.case=TRUE)) {
+         require(grid, quietly=TRUE)
+         cat("click on the graph to end:")
+         try(grid.locator(), silent=TRUE)  # in case window manager closes window
+         cat("\n")
+     }
+     try(dev.off(), silent=TRUE)           # ditto
+   }
 
 
-  ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
-  ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
-  ggp.ecdf <- function(dset, years, cumcdf, delta) {
-    my.ecdfs <- looking.create.ecdfs(dset, cumcdf)
-    ds <- switch(cumcdf, 
-                 "bracket/supp" = list("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)",
-                   attr(dset, "maxhh"),
-                   attr(dset, "bracket")),
-                 "bracket/bracket*supp" = list("CDF showing what percent of total household income is accounted for by each income bracket in the United States (1999 dollars)",
-                   attr(dset, "maxhh"),
-                   attr(dset, "bracket")),
-                 "supp/bracket*supp" = list("CDF showing what percentage of population accounts for how much of total national income",
-                 1,
-                 "fraction of total population"),
-                 stop(sprintf("unknown \"--cumcdf\" argument \"%s\"", cumcdf)))
-    title <- ds[[3]]
-    if (delta) {
-        title <- sprintf("%s (delta)", title)
-    }
-    ulx <- ds[[2]]
-    base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
-      ggtitle(ds[[1]]) +
-        xlab(title) +
-        ylab("Cumulative fraction") +
-        scale_colour_discrete(name="Year")
-    if (delta) {
-        if (length(years) != 2) {
-            stop(sprintf("with --delta, exactly two years must be specified; instead %d were",
-                         length(years)))
-        }
-        maxy <- max(years)
-        miny <- min(years)
-        base <- base + stat_function(fun=function(x) {
-            y <- my.ecdfs[[maxy]](x)-my.ecdfs[[miny]](x)
-            y
-        })
-    } else {
-        for (y in years) {
-            base <- base + stat_function(fun=my.ecdfs[[y]],
-                                         aes_(colour=as.factor(y)))
-        }
-    }
-    print(base)
-  }
+   endup <- function(dset) {
+     if (!is.null(attr(dset, "graphics"))) {
+       endgraph(attr(dset, "graphics"), attr(dset, "gopts"))
+     }
+   }
+ #+END_SRC
 
-  main <- function(args=NULL) {
-    dset <- doparser(name="looking",
-                     need=c("ifile",
-                       "maxhh", "supp", "bracket",
-                       "binsize",
-                       "graphics", "gfile", "gopts",
-                       "height", "width",
-                       "years",
-                       "cumcdf", "delta"
-                       ),
-                     args)
-    ggp.ecdf(dset, years=attr(dset, "years"),
-             cumcdf=attr(dset, "cumcdf"), delta=attr(dset, "delta"))
-    endup(dset)
-    return(0)
-  }
+ #+name: looking.endbits
+ #+BEGIN_SRC R :eval no-export :exports none
+   options(warn=2)
 
-  options(error=recover)
-  options(warn=2)
+   if (!interactive()) {
+     rval <- main()
+     if (length(warnings()) != 0) {
+       print(warnings())
+     }
+   } else {
+     options(error=recover)
+   }
+ #+END_SRC
 
-  if (!interactive()) {
-    rval <- main()
-    if (length(warnings()) != 0) {
-      print(warnings())
-    }
-  }
-#+END_SRC
+**** create.ecdf
+***** create.ecdf.common (called by shell scripts)
 
-**** create.ecdf, create.ecdf2 (shell scripts which call create.ecdf.common)
-
-#+BEGIN_SRC sh :tangle create.ecdf :shebang "#!/bin/sh" :results none :eval never :exports none
-  ./create.ecdf.common $*
-#+END_SRC
-
-#+BEGIN_SRC sh :tangle create.ecdf2 :shebang "#!/bin/sh" :results none :eval never :exports none
-  ./create.ecdf.common $* --maxhh 50000
-#+END_SRC
-
-**** create.tiles
-#+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
-  <<warning>>
-  <<looking.bits>>
-  <<stats.binned>>
+ #+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+   <<warning>>
+   <<looking.bits>>
+   <<stats.binned>>
 
 
-  ggp.tiles <- function(dset, years, tiles) {
-    "plot the tiles for a given set of deciles over a set of years"
-    my.iecdfs <- looking.create.iecdfs(dset)
-    base <- ggplot() +
-      ggtitle("Select deciles of household income in the United States (1999 dollars)") +
-        ylab(attr(dset, "bracket"))
-    for (y in years) {
-      df <- data.frame(Year=as.factor(y),
-                       Decile=tiles,
-                       hhbracket99=my.iecdfs[[y]](tiles))
-      base <- base + geom_point(data=df, aes(x=Decile,
-                                  y=hhbracket99,
-                                  colour=Year))
-    }
-    print(base)
-  }
+   ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
+   ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
+   ggp.ecdf <- function(dset, years, cumcdf, delta) {
+     my.ecdfs <- looking.create.ecdfs(dset, cumcdf)
+     ds <- switch(cumcdf, 
+                  "bracket/supp" = list("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)",
+                    attr(dset, "maxhh"),
+                    attr(dset, "bracket")),
+                  "bracket/bracket*supp" = list("CDF showing what percent of total household income is accounted for by each income bracket in the United States (1999 dollars)",
+                    attr(dset, "maxhh"),
+                    attr(dset, "bracket")),
+                  "supp/bracket*supp" = list("CDF showing what percentage of population accounts for how much of total national income",
+                  1,
+                  "fraction of total population"),
+                  stop(sprintf("unknown \"--cumcdf\" argument \"%s\"", cumcdf)))
+     title <- ds[[3]]
+     if (delta) {
+         title <- sprintf("%s (delta)", title)
+     }
+     ulx <- ds[[2]]
+     base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
+       ggtitle(ds[[1]]) +
+         xlab(title) +
+         ylab("Cumulative fraction") +
+         scale_colour_discrete(name="Year")
+     if (delta) {
+         if (length(years) != 2) {
+             stop(sprintf("with --delta, exactly two years must be specified; instead %d were",
+                          length(years)))
+         }
+         maxy <- max(years)
+         miny <- min(years)
+         base <- base + stat_function(fun=function(x) {
+             y <- my.ecdfs[[maxy]](x)-my.ecdfs[[miny]](x)
+             y
+         })
+     } else {
+         for (y in years) {
+             base <- base + stat_function(fun=my.ecdfs[[y]],
+                                          aes_(colour=as.factor(y)))
+         }
+     }
+     print(base)
+   }
 
-  main <- function(args=NULL) {
-    dset <- doparser(name="looking",
-                     need=c("ifile",
-                       "maxhh", "supp", "bracket",
-                       "binsize",
-                       "graphics", "gfile", "gopts",
-                       "height", "width",
-                       "years", "tiles"
-                       ), args)
-    ggp.tiles(dset, years=attr(dset, "years"), tiles=attr(dset, "tiles"))
-    endup(dset)
-    return(0)
-  }
+   main <- function(args=NULL) {
+     dset <- doparser(name="looking",
+                      need=c("ifile",
+                        "maxhh", "supp", "bracket",
+                        "binsize",
+                        "graphics", "gfile", "gopts",
+                        "height", "width",
+                        "years",
+                        "cumcdf", "delta"
+                        ),
+                      args)
+     ggp.ecdf(dset, years=attr(dset, "years"),
+              cumcdf=attr(dset, "cumcdf"), delta=attr(dset, "delta"))
+     endup(dset)
+     return(0)
+   }
 
-  options(error=recover)
-  options(warn=2)
+   options(error=recover)
+   options(warn=2)
 
-  if (!interactive()) {
-    rval <- main()
-    if (length(warnings()) != 0) {
-      print(warnings())
-    }
-  }
-#+END_SRC
+   if (!interactive()) {
+     rval <- main()
+     if (length(warnings()) != 0) {
+       print(warnings())
+     }
+   }
+ #+END_SRC
 
-*** create.repro
+***** create.ecdf, create.ecdf2 (shell scripts which call create.ecdf.common)
 
-#+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
-  <<warning>>
-  <<looking.bits>>
-  <<stats.binned>>
+ #+BEGIN_SRC sh :tangle create.ecdf :shebang "#!/bin/sh" :results none :eval never :exports none
+   ./create.ecdf.common $*
+ #+END_SRC
 
+ #+BEGIN_SRC sh :tangle create.ecdf2 :shebang "#!/bin/sh" :results none :eval never :exports none
+   ./create.ecdf.common $* --maxhh 50000
+ #+END_SRC
 
-  repro.chart <- function(dset,
-                          bracket="HHBRACKET99",
-                          supp="HWTSUPP",
-                          years=c(1972, 2016),
-                          binsize=5000, # FT used binsize 5000
-                          cumcdf="bracket/supp") {
-    df <- data.frame()
-    for (year in years) {
-      yset <- dset[dset$YEAR==year,]
-      newvals <- rebinvals.binned(min(yset[,bracket], na.rm=TRUE),
-                                  max(yset[,bracket], na.rm=TRUE), binsize)
-      newnobs <- rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
-                              newvals=newvals)
-      if (cumcdf != "bracket/supp") {     # XXX
-        newnobs <- newnobs*newvals        # total income in each bracket
-      }
-      dfnew <- data.frame(vals=newvals, nobs=newnobs)
-      dfnew <- cbind(dfnew, year=as.factor(year), tobs=sum(dfnew$nobs))
-      df <- rbind(df, dfnew)
-    }
-
-    base <- ggplot(df, aes(vals, nobs/tobs, colour=year)) + geom_step()
-
-    print(base)                           # actually display
-
-    ## by the way, the differences between the two curves should sum to
-    ## (approx) zero
-    sh <- df$year==min(years)
-    sl <- df$year==max(years)
-    sbzero <- sum(df[sh,"nobs"]/df[sh, "tobs"] - df[sl,"nobs"]/df[sl,"tobs"])
-    if (abs(sbzero) > 0.001) {
-      stop(sprintf("[approx] integral between curves s/b zero, is %g", sbzero))
-    }
-    return(base)
-  }
+***** create.tiles
+ #+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+   <<warning>>
+   <<looking.bits>>
+   <<stats.binned>>
 
 
-  main <- function(args=NULL) {
-    dset <- doparser(name="create.repro",
-                     need=c("ifile",
-                       "maxhh", "supp", "bracket",
-                       "binsize",
-                       "graphics", "gfile", "gopts",
-                       "height", "width",
-                       "years", "cumcdf"),
-                     args)
+   ggp.tiles <- function(dset, years, tiles) {
+     "plot the tiles for a given set of deciles over a set of years"
+     my.iecdfs <- looking.create.iecdfs(dset)
+     base <- ggplot() +
+       ggtitle("Select deciles of household income in the United States (1999 dollars)") +
+         ylab(attr(dset, "bracket"))
+     for (y in years) {
+       df <- data.frame(Year=as.factor(y),
+                        Decile=tiles,
+                        hhbracket99=my.iecdfs[[y]](tiles))
+       base <- base + geom_point(data=df, aes(x=Decile,
+                                   y=hhbracket99,
+                                   colour=Year))
+     }
+     print(base)
+   }
 
-    repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"), cumcdf=attr(dset, "cumcdf"))
-    endup(dset)
-    return(0)
-  }
+   main <- function(args=NULL) {
+     dset <- doparser(name="looking",
+                      need=c("ifile",
+                        "maxhh", "supp", "bracket",
+                        "binsize",
+                        "graphics", "gfile", "gopts",
+                        "height", "width",
+                        "years", "tiles"
+                        ), args)
+     ggp.tiles(dset, years=attr(dset, "years"), tiles=attr(dset, "tiles"))
+     endup(dset)
+     return(0)
+   }
 
-  <<looking.endbits>>
-#+END_SRC
+   options(error=recover)
+   options(warn=2)
 
-*** values.ecdf
+   if (!interactive()) {
+     rval <- main()
+     if (length(warnings()) != 0) {
+       print(warnings())
+     }
+   }
+ #+END_SRC
 
-this returns 
-#+BEGIN_SRC R :tangle values.ecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
-  <<warning>>
-  <<looking.bits>>
-  <<stats.binned>>
+**** create.repro
 
-  values.ecdf <- function(dset, years, vals) {
-    df <- data.frame()
-    for (year in years) {
-      yset <- dset[dset$YEAR==year,]
-      ecdf <- ecdf.binned(yset[,attr(dset, "bracket")],
-                          yset[,attr(dset, "supp")])
-      for (val in vals) {
-        df <- rbind(df, data.frame(year=year, value=val, cumpct=ecdf(val)))
-      }
-    }
-    print(df, row.names=FALSE)
-  }
+ #+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+   <<warning>>
+   <<looking.bits>>
+   <<stats.binned>>
+
+
+   repro.chart <- function(dset,
+                           bracket="HHBRACKET99",
+                           supp="HWTSUPP",
+                           years=c(1972, 2016),
+                           binsize=5000, # FT used binsize 5000
+                           cumcdf="bracket/supp") {
+     df <- data.frame()
+     for (year in years) {
+       yset <- dset[dset$YEAR==year,]
+       newvals <- rebinvals.binned(min(yset[,bracket], na.rm=TRUE),
+                                   max(yset[,bracket], na.rm=TRUE), binsize)
+       newnobs <- rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
+                               newvals=newvals)
+       if (cumcdf != "bracket/supp") {     # XXX
+         newnobs <- newnobs*newvals        # total income in each bracket
+       }
+       dfnew <- data.frame(vals=newvals, nobs=newnobs)
+       dfnew <- cbind(dfnew, year=as.factor(year), tobs=sum(dfnew$nobs))
+       df <- rbind(df, dfnew)
+     }
+
+     base <- ggplot(df, aes(vals, nobs/tobs, colour=year)) + geom_step()
+
+     print(base)                           # actually display
+
+     ## by the way, the differences between the two curves should sum to
+     ## (approx) zero
+     sh <- df$year==min(years)
+     sl <- df$year==max(years)
+     sbzero <- sum(df[sh,"nobs"]/df[sh, "tobs"] - df[sl,"nobs"]/df[sl,"tobs"])
+     if (abs(sbzero) > 0.001) {
+       stop(sprintf("[approx] integral between curves s/b zero, is %g", sbzero))
+     }
+     return(base)
+   }
+
+
+   main <- function(args=NULL) {
+     dset <- doparser(name="create.repro",
+                      need=c("ifile",
+                        "maxhh", "supp", "bracket",
+                        "binsize",
+                        "graphics", "gfile", "gopts",
+                        "height", "width",
+                        "years", "cumcdf"),
+                      args)
+
+     repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"), cumcdf=attr(dset, "cumcdf"))
+     endup(dset)
+     return(0)
+   }
+
+   <<looking.endbits>>
+ #+END_SRC
+
+**** values.ecdf
+
+ this returns 
+ #+BEGIN_SRC R :tangle values.ecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+   <<warning>>
+   <<looking.bits>>
+   <<stats.binned>>
+
+   values.ecdf <- function(dset, years, vals) {
+     df <- data.frame()
+     for (year in years) {
+       yset <- dset[dset$YEAR==year,]
+       ecdf <- ecdf.binned(yset[,attr(dset, "bracket")],
+                           yset[,attr(dset, "supp")])
+       for (val in vals) {
+         df <- rbind(df, data.frame(year=year, value=val, cumpct=ecdf(val)))
+       }
+     }
+     print(df, row.names=FALSE)
+   }
       
 
-  main <- function(args=NULL) {
-    dset <- doparser(name="values.ecdf",
-                     need=c("ifile",
-                       "maxhh", "supp", "bracket",
-                       "binsize",
-                       "years", "values"),
-                     args)
-    df <- values.ecdf(dset, years=attr(dset, "years"), vals=attr(dset, "values"))
-    endup(dset)
-  }
+   main <- function(args=NULL) {
+     dset <- doparser(name="values.ecdf",
+                      need=c("ifile",
+                        "maxhh", "supp", "bracket",
+                        "binsize",
+                        "years", "values"),
+                      args)
+     df <- values.ecdf(dset, years=attr(dset, "years"), vals=attr(dset, "values"))
+     endup(dset)
+   }
 
-  <<looking.endbits>>
-#+END_SRC
+   <<looking.endbits>>
+ #+END_SRC
 
-*** values.iecdf
+**** values.iecdf
 
-this returns 
-#+BEGIN_SRC R :tangle values.iecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
-  <<warning>>
-  <<looking.bits>>
-  <<stats.binned>>
+ this returns 
+ #+BEGIN_SRC R :tangle values.iecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+   <<warning>>
+   <<looking.bits>>
+   <<stats.binned>>
 
-  values.iecdf <- function(dset, years, tiles) {
-    df <- data.frame()
-    for (year in years) {
-      yset <- dset[dset$YEAR==year,]
-      iecdf <- iecdf.binned(yset[,attr(dset, "bracket")],
-                            yset[,attr(dset, "supp")])
-      for (tile in tiles) {
-        df <- rbind(df, data.frame(year=year, tile=tile, bracket=iecdf(tile)))
-      }
-    }
-    print(df, row.names=FALSE)
-  }
-
-
-  main <- function(args=NULL) {
-    dset <- doparser(name="values.iecdf",
-                     need=c("ifile",
-                       "maxhh", "supp", "bracket",
-                       "binsize",
-                       "years", "tiles"),
-                     args)
-    df <- values.iecdf(dset, years=attr(dset, "years"), tiles=attr(dset, "tiles"))
-    endup(dset)
-  }
-
-  <<looking.endbits>>
-#+END_SRC
-
-*** create.totalincome.distribution
-we want to understand how the increase in total income between two
-years has been distributed among the population (as represented by
-percentiles).
-
-to do this, we create an ecdf for each year which relates population
-percentile (supp/sum(supp)) to total income at or below that level.
-
-then, we graph the difference between the two
-
-or, should we create the total income at each percentile, then
-subtract, then create the integral of that?  i'm not sure.
+   values.iecdf <- function(dset, years, tiles) {
+     df <- data.frame()
+     for (year in years) {
+       yset <- dset[dset$YEAR==year,]
+       iecdf <- iecdf.binned(yset[,attr(dset, "bracket")],
+                             yset[,attr(dset, "supp")])
+       for (tile in tiles) {
+         df <- rbind(df, data.frame(year=year, tile=tile, bracket=iecdf(tile)))
+       }
+     }
+     print(df, row.names=FALSE)
+   }
 
 
-#+BEGIN_SRC R :tangle create.totalincome.distribution :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
-  <<warning>>
-  <<looking.bits>>
-  <<stats.binned>>
+   main <- function(args=NULL) {
+     dset <- doparser(name="values.iecdf",
+                      need=c("ifile",
+                        "maxhh", "supp", "bracket",
+                        "binsize",
+                        "years", "tiles"),
+                      args)
+     df <- values.iecdf(dset, years=attr(dset, "years"), tiles=attr(dset, "tiles"))
+     endup(dset)
+   }
 
-  ggm.totalincome.distribution <- function(dset, years) {
-      if (length(years) != 2) {
-          stop(sprintf("with --delta, exactly two years must be specified; instead %d %s",
-                       length(years),
-                       ifelse(length(years == 1), "was", "were")))
-      }
-      xset <- dset[dset$YEAR %in% years,]
-      xset <- cbind(xset,
-                    totalincome=xset[,attr(dset,"bracket")]*xset[,attr(dset,"supp")],
-                    percentile=0)
-      ## now, compute percentiles within each year
-      for (year in years) {
-          xset[xset$YEAR==year,"percentile"] <-
-              cumsum(xset[xset$YEAR==year,attr(dset,"supp")]) /
-              sum(xset[xset$YEAR==year,attr(dset,"supp")])
-      }
-      maxy <- max(years)
-      miny <- min(years)
-      fymin <- approxfun(xset[xset$YEAR==miny,"percentile"],
-                         cumsum(xset[xset$YEAR==miny,"totalincome"]),
-                         method="constant",
-                         rule=2,  # clamp at ends
-                         f = 0,   # XXX is this the right f for inverse?
-                         ties = "ordered")
-      fymax <- approxfun(xset[xset$YEAR==maxy,"percentile"],
-                         cumsum(xset[xset$YEAR==maxy,"totalincome"]),
-                         method="constant",
-                         rule=2,  # clamp at ends
-                         f = 0,   # XXX is this the right f for inverse?
-                         ties = "ordered")
-      base <- ggplot(data.frame(x=c(0,1)), aes(x)) +
-          ggtitle("how increase in total income was shared across the population") +
-          ylab("Amount of gain (or loss)")
-      base <- base + stat_function(fun=function(x) { fymax(x)-fymin(x) })
-      print(base)
-  }
+   <<looking.endbits>>
+ #+END_SRC
 
-  main <- function(args=NULL) {
-      dset <- doparser(name="totalincome",
-                       need=c("ifile",
-                              "maxhh", "supp", "bracket",
-                              "binsize",
-                              "graphics", "gfile", "gopts",
-                              "height", "width",
-                              "years"),
-                       args)
-      ggm.totalincome.distribution(dset, years=attr(dset, "years"))
-      endup(dset)
-      return(0)
-  }
+**** create.totalincome.distribution
+ we want to understand how the increase in total income between two
+ years has been distributed among the population (as represented by
+ percentiles).
 
-  <<looking.endbits>>
-#+END_SRC
-*** histogram of number of data points per bracket
+ to do this, we create an ecdf for each year which relates population
+ percentile (supp/sum(supp)) to total income at or below that level.
 
-#+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
-  <<warning>>
-  <<looking.bits>>
-  <<stats.binned>>
+ then, we graph the difference between the two
 
-  histo.hhbracket99 <- function(dset, years) {
-    dset$YEAR <- as.factor(dset$YEAR)
-    base <- ggplot(dset[dset$YEAR %in% years,],
-                   aes(HHBRACKET99, NRESP, colour=YEAR))
-    base <- base + geom_col()
-    print(base)
-  }
+ or, should we create the total income at each percentile, then
+ subtract, then create the integral of that?  i'm not sure.
 
-  main <- function(args=NULL) {
-      dset <- doparser(name="totalincome",
-                       need=c("ifile",
-                              "maxhh", "supp", "bracket",
-                              "binsize",
-                              "graphics", "gfile", "gopts",
-                              "height", "width",
-                              "years"),
-                       args)
-      histo.hhbracket99(dset, years=attr(dset, "years"))
-      endup(dset)
-      return(0)
-  }
 
-  <<looking.endbits>>
+ #+BEGIN_SRC R :tangle create.totalincome.distribution :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+   <<warning>>
+   <<looking.bits>>
+   <<stats.binned>>
 
-#+END_SRC
+   ggm.totalincome.distribution <- function(dset, years) {
+       if (length(years) != 2) {
+           stop(sprintf("with --delta, exactly two years must be specified; instead %d %s",
+                        length(years),
+                        ifelse(length(years == 1), "was", "were")))
+       }
+       xset <- dset[dset$YEAR %in% years,]
+       xset <- cbind(xset,
+                     totalincome=xset[,attr(dset,"bracket")]*xset[,attr(dset,"supp")],
+                     percentile=0)
+       ## now, compute percentiles within each year
+       for (year in years) {
+           xset[xset$YEAR==year,"percentile"] <-
+               cumsum(xset[xset$YEAR==year,attr(dset,"supp")]) /
+               sum(xset[xset$YEAR==year,attr(dset,"supp")])
+       }
+       maxy <- max(years)
+       miny <- min(years)
+       fymin <- approxfun(xset[xset$YEAR==miny,"percentile"],
+                          cumsum(xset[xset$YEAR==miny,"totalincome"]),
+                          method="constant",
+                          rule=2,  # clamp at ends
+                          f = 0,   # XXX is this the right f for inverse?
+                          ties = "ordered")
+       fymax <- approxfun(xset[xset$YEAR==maxy,"percentile"],
+                          cumsum(xset[xset$YEAR==maxy,"totalincome"]),
+                          method="constant",
+                          rule=2,  # clamp at ends
+                          f = 0,   # XXX is this the right f for inverse?
+                          ties = "ordered")
+       base <- ggplot(data.frame(x=c(0,1)), aes(x)) +
+           ggtitle("how increase in total income was shared across the population") +
+           ylab("Amount of gain (or loss)")
+       base <- base + stat_function(fun=function(x) { fymax(x)-fymin(x) })
+       print(base)
+   }
 
-*** for interactive use, return desired dset
-this bit is just for running interactively, returns the desired dset
+   main <- function(args=NULL) {
+       dset <- doparser(name="totalincome",
+                        need=c("ifile",
+                               "maxhh", "supp", "bracket",
+                               "binsize",
+                               "graphics", "gfile", "gopts",
+                               "height", "width",
+                               "years"),
+                        args)
+       ggm.totalincome.distribution(dset, years=attr(dset, "years"))
+       endup(dset)
+       return(0)
+   }
 
-run by, e.g.,
-: dset <- main(args=c("--ifile", "ipums/cps_00006.1962-2017-binned.csv"))
+   <<looking.endbits>>
+ #+END_SRC
+**** histogram of number of data points per bracket
 
-#+BEGIN_SRC R :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
-  <<warning>>
-  <<looking.bits>>
-  <<stats.binned>>
-  getdset <- function(args=NULL) {
-    dset <- doparser(name="get.dset",
-                     need=c("ifile",
-                       "maxhh", "supp", "bracket",
-                       "binsize",
-                       "years", "values"),
-                     args)
-    endup(dset)
-    dset
-  }
+ #+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+   <<warning>>
+   <<looking.bits>>
+   <<stats.binned>>
 
-  <<looking.endbits>>
-#+END_SRC
+   histo.hhbracket99 <- function(dset, years) {
+     dset$YEAR <- as.factor(dset$YEAR)
+     base <- ggplot(dset[dset$YEAR %in% years,],
+                    aes(HHBRACKET99, NRESP, colour=YEAR))
+     base <- base + geom_col()
+     print(base)
+   }
+
+   main <- function(args=NULL) {
+       dset <- doparser(name="totalincome",
+                        need=c("ifile",
+                               "maxhh", "supp", "bracket",
+                               "binsize",
+                               "graphics", "gfile", "gopts",
+                               "height", "width",
+                               "years"),
+                        args)
+       histo.hhbracket99(dset, years=attr(dset, "years"))
+       endup(dset)
+       return(0)
+   }
+
+   <<looking.endbits>>
+
+ #+END_SRC
+
+**** for interactive use, return desired dset
+ this bit is just for running interactively, returns the desired dset
+
+ run by, e.g.,
+ : dset <- main(args=c("--ifile", "ipums/cps_00006.1962-2017-binned.csv"))
+
+ #+BEGIN_SRC R :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+   <<warning>>
+   <<looking.bits>>
+   <<stats.binned>>
+   getdset <- function(args=NULL) {
+     dset <- doparser(name="get.dset",
+                      need=c("ifile",
+                        "maxhh", "supp", "bracket",
+                        "binsize",
+                        "years", "values"),
+                      args)
+     endup(dset)
+     dset
+   }
+
+   <<looking.endbits>>
+ #+END_SRC
