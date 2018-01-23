@@ -3,7 +3,7 @@
 #+property: header-args :noweb yes
 
 #+name: warning
-#+BEGIN_SRC R :exports none
+#+BEGIN_SRC R :exports none :eval never
   ## WARNING:
   ##
   ## this file is generated from the emacs .org file "kblom.org" via
@@ -27,7 +27,7 @@ the US).
 
 [[https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls][Census Bureau]] has something that breaks down by each fifth and top 5%.
 
-#+BEGIN_SRC R :session ss :var tseries=tseries
+#+BEGIN_SRC R :session ss :var tseries=tseries :eval no-export :exports none
 colnames(tseries) <- c("year", "number", "lowest", "second", "third", "fourth", "llimittop5")
 #+END_SRC
 
@@ -44,7 +44,7 @@ however, the FT graph Blom showed has about fifty buckets, whereas the
 Census data seems to have have six.
 
 #+name: tseries
-#+BEGIN_SRC sh
+#+BEGIN_SRC sh :eval no-export :exports none
   xls2csv census/h01ar.xls |
       awk '/2016 Dollars/ { ok = 1; next} \
           /^"[12]/ {
@@ -168,7 +168,7 @@ the ipums data seems the easiest to use.
 - [[https://cps.ipums.org/cps-action/variables/WTSUPP#description_section][WTSUPP]]: supplement weight
 
 to format one file:
-#+BEGIN_SRC sh :results output
+#+BEGIN_SRC sh :results output :eval no-export :exports none
   ((zcat ipums/cps_00001.csv.gz | head -1 | sed 'sx"xxg' | sed s'x,x xg');
    (zcat ipums/cps_00001.csv.gz | tail -n+1 | sed s'x,x xg' | sort -n -k6)) |
       column -t
@@ -177,7 +177,7 @@ to format one file:
 #+RESULTS:
 
 this would have been "tangled" (saved) as "realize".
-#+BEGIN_SRC awk :shebang "#!/usr/bin/awk -f"
+#+BEGIN_SRC awk :shebang "#!/usr/bin/awk -f" :eval no-export :exports none
   BEGIN {
       FS = ",";
       OFS = ",";
@@ -203,7 +203,7 @@ this would have been "tangled" (saved) as "realize".
   }
 #+END_SRC
 
-#+BEGIN_SRC sh :shebang "#!/usr/bin/env bash" :results none
+#+BEGIN_SRC sh :shebang "#!/usr/bin/env bash" :results none :eval no-export :exports none
 ./realize <(zcat ipums/cps_00004.csv.gz) <(zcat ipums/cps_00002.csv.gz)
 #+END_SRC
 
@@ -246,7 +246,7 @@ exceptions.  the popular "99999999" means "Not in universe" (NIU) --
 something about the respondent
 
 #+name: topcodes
-#+BEGIN_SRC sh
+#+BEGIN_SRC sh :eval no-export :exports none
   zcat ipums/cps_00006.csv.gz | \
       awk 'BEGIN{FS=","} {print $7}' | \
       grep '\<9999' | \
@@ -305,7 +305,7 @@ the input is a matrix with 2 columns, the first being the value, the
 second the number of elements with that value.
 
 #+name: stats.binned
-#+BEGIN_SRC R :session ss :tangle stats.binned :results none
+#+BEGIN_SRC R :session ss :tangle stats.binned :results none :eval no-export :exports none
   <<warning>>
 
   require(Hmisc, warn.conflicts=FALSE, quietly=TRUE)
@@ -531,7 +531,7 @@ run something like this:
 : ./bincps --ifile ipums/cps_00006.csv.gz --ofile foo.csv --rfile goo.csv
 
 #+name: bincps
-#+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
   <<warning>>
   <<stats.binned>>
 
@@ -984,7 +984,7 @@ observations in each year.  here we use awk(1) to count how many
 observations are used in each year.
 
 #+name: yearpeople
-#+BEGIN_SRC sh :cache yes
+#+BEGIN_SRC sh :cache yes :eval no-export :exports none
   zcat ipums/cps_00006.csv.gz |
       awk 'BEGIN { FS="," } /^[12]/ { print $1}' |
       words -f                    # words returns each word seen, along
@@ -1118,7 +1118,7 @@ then, we use some R code to put the preceding two outputs together and
 compute the number of seconds per person.
 
 #+name: peoplepersecond
-#+BEGIN_SRC R :session ss :var yeartimes=yeartimes :var yearpeople=yearpeople
+#+BEGIN_SRC R :session ss :var yeartimes=yeartimes :var yearpeople=yearpeople :eval no-export :exports none
   rownames(yearpeople) <- yearpeople[,1]
   colnames(yearpeople) <- c("pyear", "people")
   rownames(yeartimes) <- yeartimes[,1]
@@ -1278,7 +1278,7 @@ would determine how to deal with these files.
 *** common code
 the following code is common to all our visualizations
 #+name: looking.bits
-#+BEGIN_SRC R :session ss :results none
+#+BEGIN_SRC R :session ss :results none :eval no-export :exports none
   <<warning>>
   require(ggplot2, quietly=TRUE)
   require(assertthat, quietly=TRUE)
@@ -1572,7 +1572,7 @@ the following code is common to all our visualizations
 #+END_SRC
 
 #+name: looking.endbits
-#+BEGIN_SRC R
+#+BEGIN_SRC R :eval no-export :exports none
   options(warn=2)
 
   if (!interactive()) {
@@ -1588,7 +1588,7 @@ the following code is common to all our visualizations
 *** create.ecdf
 **** create.ecdf.common (called by shell scripts)
 
-#+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1669,16 +1669,16 @@ the following code is common to all our visualizations
 
 **** create.ecdf, create.ecdf2 (shell scripts which call create.ecdf.common)
 
-#+BEGIN_SRC sh :tangle create.ecdf :shebang "#!/bin/sh" :results none :eval never
+#+BEGIN_SRC sh :tangle create.ecdf :shebang "#!/bin/sh" :results none :eval never :exports none
   ./create.ecdf.common $*
 #+END_SRC
 
-#+BEGIN_SRC sh :tangle create.ecdf2 :shebang "#!/bin/sh" :results none :eval never
+#+BEGIN_SRC sh :tangle create.ecdf2 :shebang "#!/bin/sh" :results none :eval never :exports none
   ./create.ecdf.common $* --maxhh 50000
 #+END_SRC
 
 **** create.tiles
-#+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1728,7 +1728,7 @@ the following code is common to all our visualizations
 
 *** create.repro
 
-#+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1792,7 +1792,7 @@ the following code is common to all our visualizations
 *** values.ecdf
 
 this returns 
-#+BEGIN_SRC R :tangle values.ecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle values.ecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1828,7 +1828,7 @@ this returns
 *** values.iecdf
 
 this returns 
-#+BEGIN_SRC R :tangle values.iecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle values.iecdf :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1875,7 +1875,7 @@ or, should we create the total income at each percentile, then
 subtract, then create the integral of that?  i'm not sure.
 
 
-#+BEGIN_SRC R :tangle create.totalincome.distribution :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle create.totalincome.distribution :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1935,7 +1935,7 @@ subtract, then create the integral of that?  i'm not sure.
 #+END_SRC
 *** histogram of number of data points per bracket
 
-#+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1972,7 +1972,7 @@ this bit is just for running interactively, returns the desired dset
 run by, e.g.,
 : dset <- main(args=c("--ifile", "ipums/cps_00006.1962-2017-binned.csv"))
 
-#+BEGIN_SRC R :shebang "#!/usr/bin/env Rscript" :session ss :results none
+#+BEGIN_SRC R :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
