@@ -89,7 +89,7 @@ number has increased to 26%. ???
 *** CDF
 *** Methodological problems
 
-**** High income issues
+**** TODO High income issues
 
 not enough data points?  Piketty, Saez, et al.  show number of data
 points per income group (i.e., *not* multiplied by HWTSUPP).  (does
@@ -113,7 +113,13 @@ low income quality of life may be highly influenced by social "safety
 net" (welfare) programs.  so, loss of N% over 40 years may not
 translate to an N% lower quality of life.
 
-*** Most reported incomes
+*** TODO Most reported incomes
+
+The IPUMS data, the Census American Community Survey data, is based on
+self-reporting.  While the Census Bureau will try to obtain valid
+responses, citizens will likely, at the very least, estimate their
+annual income, rather than give a precise answer.  What are the
+incomes that people tend to report?
 
 *** Who gets what percent of the national income?
 
