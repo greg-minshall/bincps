@@ -1,6 +1,43 @@
 * [[https://twitter.com/kltblom][Kristian Blom]]: does recent (40+ years) change in US income distribution matter?
-** misc configuration stuff :noexport:
+** misc configuration, etc., stuff                                 :noexport:
 #+property: header-args :noweb yes
+
+
+XXX can't use without "x" in front, or crash... [[https://stackoverflow.com/q/18162477][xcall_XXX()]] to get
+(more-or-less) inline:
+#+name: test
+#+BEGIN_SRC sh :exports none :results output
+echo 4
+#+END_SRC
+
+this
+#+call: test() :results output raw
+is a test
+
+here call_test()[:results org] is another test
+
+** image suffix                                                    :noexport:
+
+the following takes (what should be links ending in) strings that end
+in ".IMG" and changes them to end in either ".pdf" or ".png",
+depending on whether the current export is to latex or html.
+
+this is definitely a sledge hammer approach.  there are other
+techniques that seem promising, in particular using org-mode's
+'#+BIND' keyword with org-export-filter-link-functions, but i was
+unable to make that work.
+
+this code runs as org-mode starts to export, and changes everything
+under the sun.
+#+BEGIN_SRC emacs-lisp :exports results :results none
+  (defun get-image-names (backend)
+    (let ((rment (if (equal backend 'html) ".png" ".pdf"))
+          (case-fold-search nil))
+      (while (re-search-forward "[.]IMG\\>" nil t)
+        (replace-match rment t))))
+  (add-hook 'org-export-before-parsing-hook 'get-image-names)
+#+END_SRC
+
 
 #+name: warning
 #+BEGIN_SRC R :exports none :eval never
@@ -106,7 +143,7 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
 
 *** Where have all the flowers gone
 
-#+comprss
+#+name: comprss
 #+BEGIN_SRC R :exports none :var tx="1.23e9"
   ## https://stackoverflow.com/a/28160474
   comprss <- function(tx, words=FALSE) {
@@ -123,11 +160,9 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
   comprss(tx, words=TRUE)
 #+END_SRC
 
-#+RESULTS:
-: 1.23 billion
-
-the national income has increased from 9.876136e+12 in 1972 to
-2.005585e+13 in 2016.  who got all this money?
+the national income has increased from
+call_comprss(tx="9.876136e+12") in 1972 to call_comprss(tx="2.005585e+13")
+in 2016.  who got all this money?
 
 in 1972, .5 of pop made 42000 or less, .9 of pop made 85000 or less
 in 2014, .5 of pop made 47000 or less, .9 of pop made 126000 or less
