@@ -106,6 +106,26 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
 
 *** Where have all the flowers gone
 
+#+comprss
+#+BEGIN_SRC R :exports none :var tx="1.23e9"
+  ## https://stackoverflow.com/a/28160474
+  comprss <- function(tx, words=FALSE) {
+      if (words) {
+          units <- c("", "thousand", "million", "billion", "trillion")
+      } else {
+          units <- c("","K","M","B","T")
+      }
+      div <- findInterval(as.numeric(gsub("\\,", "", tx)), 
+                          c(1, 1e3, 1e6, 1e9, 1e12) )
+      paste(round( as.numeric(gsub("\\,","",tx))/10^(3*(div-1)), 2), 
+            units[div] )}
+
+  comprss(tx, words=TRUE)
+#+END_SRC
+
+#+RESULTS:
+: 1.23 billion
+
 the national income has increased from 9.876136e+12 in 1972 to
 2.005585e+13 in 2016.  who got all this money?
 
