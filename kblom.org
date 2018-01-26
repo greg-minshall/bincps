@@ -176,7 +176,7 @@ contains no actual reported incomes.
 
 from 1968 through 1975, the reported incomes appear to have been
 capped at 50,000 dollars.  it *appears* as if incomes greater than
-50,000 dollars were reported as 50,000 dollars.  (for example, one
+50,000 dollars [[https://cps.ipums.org/cps/inctaxcodes.shtml][were reported as 50,000 dollars]].  (for example, one
 sees a hump at the 1999 equivalent of 50,000 1972 dollars (a bit over
 200,000 1999 dollars) in the figure in [[High income issues]].
 
@@ -846,10 +846,13 @@ second the number of elements with that value.
   ##   (the unique values in x), returns the corresponding value of the
   ##   CDF in [0,1).
 
-  ecdf.binned.common <- function(x, nobs, inverse, from) {
+  ecdf.binned.common <- function(x, nobs, inverse, from, cumsum) {
     "like ecdf, but for binned values; cribbed from ecdf.  this works for forward function (ecdf.binned) and for inverse function (iecdf.binned)"
     check.binned(from, x, nobs)
     wet <- wtd.Ecdf(x=x, weights=nobs)     # get table
+    if (cumsum) {                          # we want cumsum, not cumpct
+        wet$ecdf <- wet$ecdf*sum(nobs)
+    }
     if (!inverse) {
       X <- wet$x
       yleft <- 0
@@ -872,12 +875,12 @@ second the number of elements with that value.
     rval
   }
 
-  ecdf.binned <- function(x, nobs) {
+  ecdf.binned <- function(x, nobs, cumsum) {
     "like ecdf, but for binned values; cribbed from ecdf"
     ecdf.binned.common(x, nobs, inverse = FALSE, "ecdf.binned")
   }
 
-  iecdf.binned <- function(x, nobs) {
+  iecdf.binned <- function(x, nobs, cumsum) {
     "this is the inverse function from ecdf.binned
    (allowing you to get order statistics easily);
   probably \"slight\" overkill for that usage"
@@ -1537,38 +1540,28 @@ the following code is common to all our visualizations
           "totalincome:population" = c("cumulative percentage of total income in, or below, a given percentile of the population", "totalincome", "population"))
   }
 
-  looking.create.ecdfs <- function(dset, cumcdf) {
-    ## create ECDF
-    my.ecdfs <- list()
-    for (year in unique(dset$YEAR)) {
+  looking.create.ecdf <- function(dset, year, cumcdf, cumsum) {
+      ## create ECDF
       sy <- dset$YEAR==year
       bracket <- dset[sy, attr(dset, "bracket")]
       supp <- dset[sy, attr(dset, "supp")]
-      my.ecdfs[[year]] <-
-        switch(cumcdf,
-               "population:bracket" = ecdf.binned(bracket, supp),
-               "totalincome:bracket" = ecdf.binned(bracket, bracket*supp),
-               ## in the following, we divide by "sum(supp)" to
-               ## normalize across years (for comparability)
-               "totalincome:population" = ecdf.binned(cumsum(supp)/sum(supp), bracket*supp))
-    }
-    my.ecdfs
+      switch(cumcdf,
+             "population:bracket" = ecdf.binned(bracket, supp, cumsum),
+             "totalincome:bracket" = ecdf.binned(bracket, bracket*supp, sumcum),
+             ## in the following, we divide by "sum(supp)" to
+             ## normalize across years (for comparability)
+             "totalincome:population" = ecdf.binned(cumsum(supp)/sum(supp), bracket*supp, cumsum))
   }
 
-  looking.create.iecdfs <- function(dset, cumcdf) {
+  looking.create.iecdf <- function(dset, year, cumcdf, cumsum) {
     ## create inverse (IECDF)
-    my.iecdfs <- list()
-    for (year in unique(dset$YEAR)) {
       sy <- dset$YEAR==year
       bracket <- dset[sy, attr(dset, "bracket")]
       supp <- dset[sy, attr(dset, "supp")]
-      my.iecdfs[[year]] <-
-        switch(cumcdf,
-               "population:bracket" = iecdf.binned(bracket, supp),
-               "totalincome:bracket" = iecdf.binned(bracket, bracket*supp),
-               "totalincome:population" = iecdf.binned(cumsum(supp)/sum(supp), bracket*supp))
-    }
-    my.iecdfs
+      switch(cumcdf,
+             "population:bracket" = iecdf.binned(bracket, supp, cumsum),
+             "totalincome:bracket" = iecdf.binned(bracket, bracket*supp, cumsum),
+             "totalincome:population" = iecdf.binned(cumsum(supp)/sum(supp), bracket*supp, cumsum))
   }
 
   pyear <- function(iecdf, y1, y2, tiles) {
@@ -1789,7 +1782,6 @@ the following code is common to all our visualizations
   ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
   ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
   ggp.ecdf <- function(dset, years, cumcdf, delta) {
-    my.ecdfs <- looking.create.ecdfs(dset, cumcdf)
     ds <- switch(cumcdf, 
                  "bracket/supp" = list("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)",
                    attr(dset, "maxhh"),
@@ -1818,14 +1810,15 @@ the following code is common to all our visualizations
         }
         maxy <- max(years)
         miny <- min(years)
+        max.ecdf <- looking.create.ecdf(dset, maxy, cumcdf, cumsum=FALSE)
+        min.ecdf <- looking.create.ecdf(dset, miny, cumcdf, cumsum=FALSE)
         base <- base + stat_function(fun=function(x) {
-            y <- my.ecdfs[[maxy]](x)-my.ecdfs[[miny]](x)
-            y
+            max.ecdf(x)-min.ecdf(y)
         })
     } else {
-        for (y in years) {
-            base <- base + stat_function(fun=my.ecdfs[[y]],
-                                         aes_(colour=as.factor(y)))
+        for (year in years) {
+            ecdf <- looking.create.ecdf(dset, year=year, cumcdf=cumcdf, cumsum=FALSE)
+            base <- base + stat_function(fun=ecdf, aes_(colour=as.factor(year)))
         }
     }
     print(base)
@@ -1878,17 +1871,17 @@ the following code is common to all our visualizations
 
   ggp.tiles <- function(dset, years, tiles) {
     "plot the tiles for a given set of deciles over a set of years"
-    my.iecdfs <- looking.create.iecdfs(dset)
     base <- ggplot() +
       ggtitle("Select deciles of household income in the United States (1999 dollars)") +
         ylab(attr(dset, "bracket"))
-    for (y in years) {
-      df <- data.frame(Year=as.factor(y),
-                       Decile=tiles,
-                       hhbracket99=my.iecdfs[[y]](tiles))
-      base <- base + geom_point(data=df, aes(x=Decile,
-                                  y=hhbracket99,
-                                  colour=Year))
+    for (year in years) {
+        iecdf <- looking.create.iecdf(dset, year=year, cumsum=FALSE)
+        df <- data.frame(Year=as.factor(year),
+                         Decile=tiles,
+                         hhbracket99=iecdf(tiles))
+        base <- base + geom_point(data=df, aes(x=Decile,
+                                               y=hhbracket99,
+                                               colour=Year))
     }
     print(base)
   }
@@ -1991,18 +1984,16 @@ this returns
 
   values.ecdf <- function(dset, years, vals) {
       cumcdf <- attributes(dset)$cumcdf
-      ecdfs <- looking.create.ecdfs(dset, cumcdf)
       df <- data.frame()
       for (year in years) {
+          ecdf <- looking.create.ecdf(dset, year=year, cumcdf=cumcdf, cumsum=FALSE)
           yset <- dset[dset$YEAR==year,]
           for (val in vals) {
-              df <- rbind(df, data.frame(year=year,
-                                         value=val,
-                                         cumpct=ecdfs[[year]](val)))
+              df <- rbind(df, data.frame(year=year, value=val, cumpct=ecdf(val)))
           }
       }
       ccdfex <- cumcdf(cumcdf)
-      colnames(df) <- c("year", ccdfex[3], ccdfex[2])
+      colnames(df) <- c("year", ccdfex[3], ccdfex[2]) # XXX
       print(df, row.names=FALSE)
   }
 
@@ -2032,12 +2023,12 @@ this returns
 
   values.iecdf <- function(dset, years, tiles) {
     cumcdf <- attributes(dset)$cumcdf
-    iecdfs <- looking.create.iecdfs(dset, cumcdf)
     df <- data.frame()
     for (year in years) {
+      iecdf <- looking.create.iecdf(dset, year=year, cumcdf=cumcdf)
       yset <- dset[dset$YEAR==year,]
       for (tile in tiles) {
-        df <- rbind(df, data.frame(year=year, tile=tile, bracket=iecdfs[[year]](tile)))
+        df <- rbind(df, data.frame(year=year, tile=tile, bracket=iecdf(tile)))
       }
     }
     ccdfex <- cumcdf(cumcdf)
