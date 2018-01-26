@@ -850,19 +850,24 @@ second the number of elements with that value.
     "like ecdf, but for binned values; cribbed from ecdf.  this works for forward function (ecdf.binned) and for inverse function (iecdf.binned)"
     check.binned(from, x, nobs)
     wet <- wtd.Ecdf(x=x, weights=nobs)     # get table
-    if (count) {                          # we want cumsum, not cumpct
-        wet$ecdf <- wet$ecdf*sum(nobs)
-    }
     if (!inverse) {
       X <- wet$x
       yleft <- 0
       yright <- 1
-      Y <- wet$ecdf
+      if (count) {                          # we want cumsum, not cumpct
+          Y <- wet$ecdf*sum(nobs)
+      } else {
+          Y <- wet$ecdf
+      }
     } else {
-      X <- wet$ecdf
-      Y <- wet$x
-      yleft <- X[1]
-      yright <- X[length(X)]
+        X <- wet$ecdf
+        if (count) {
+            Y <- wet$x*sum(x)
+        } else {
+            Y <- wet$x
+        }
+        yleft <- X[1]
+        yright <- X[length(X)]
     }
     rval <- approxfun(X, Y,
                       method="constant",
@@ -1537,20 +1542,37 @@ the following code is common to all our visualizations
       switch(cumcdf,
           "population:bracket" = c("cumulative percentage of population in, or below, a given bracket", "population", "bracket"),
           "totalincome:bracket" = c("cumulative percent of total income in, or below, a given bracket", "totalincome", "bracket"),
-          "totalincome:population" = c("cumulative percentage of total income in, or below, a given percentile of the population", "totalincome", "population"))
+          "totalincome:population" = c("cumulative percentage of total income in, or below, a given percentile of the population", "totalincome", "population"),
+          stop(sprintf("invalid cumcdf \"%s\"", cumcdf)))
   }
+
+  ## looking up:
+  ## 1. totalincome:population: given a cum population, what is cum totalincome?
+  ## 2. %totalincome:population: given a cum population, what is % totalincome?
+  ## 3. totalincome:%population: given a % population, what is cum totalincome?
+  ## totalincome:population; totalincome:bracket; totalincome:totalincome
+  ## population:totalincome; population:bracket; population:population
+  ## bracket:totalincome; bracket:bracket; bracket:population
+  ## (where each can be, e.g., "population" or "%population")
+
+  ## lookup(target, by, target%=TRUE, by%=TRUE): given a value (%) of
+  ## "by", return corresponding value (%) of target.  target, by \in
+  ## {totalincome, bracket, population}.
+
+
 
   looking.create.ecdf <- function(dset, year, cumcdf, count) {
       ## create ECDF
       sy <- dset$YEAR==year
       bracket <- dset[sy, attr(dset, "bracket")]
       supp <- dset[sy, attr(dset, "supp")]
-      switch(cumcdf,
+      rval <- switch(cumcdf,
              "population:bracket" = ecdf.binned(bracket, supp, count),
              "totalincome:bracket" = ecdf.binned(bracket, bracket*supp, count),
              ## in the following, we divide by "sum(supp)" to
              ## normalize across years (for comparability)
-             "totalincome:population" = ecdf.binned(cumsum(supp)/sum(supp), bracket*supp, count))
+             "totalincome:population" = ecdf.binned(cumsum(supp), bracket*supp, count),
+            stop(sprintf("invalid cumcdf \"%s\"", cumcdf)))
   }
 
   looking.create.iecdf <- function(dset, year, cumcdf, count) {
@@ -1561,7 +1583,7 @@ the following code is common to all our visualizations
       switch(cumcdf,
              "population:bracket" = iecdf.binned(bracket, supp, count),
              "totalincome:bracket" = iecdf.binned(bracket, bracket*supp, count),
-             "totalincome:population" = iecdf.binned(cumsum(supp)/sum(supp), bracket*supp, count))
+             "totalincome:population" = iecdf.binned(cumsum(supp), bracket*supp, count))
   }
 
   pyear <- function(iecdf, y1, y2, tiles) {
@@ -1986,14 +2008,15 @@ this returns
       cumcdf <- attributes(dset)$cumcdf
       df <- data.frame()
       for (year in years) {
-          ecdf <- looking.create.ecdf(dset, year=year, cumcdf=cumcdf, count=FALSE)
+          frac.ecdf <- looking.create.ecdf(dset, year=year, cumcdf=cumcdf, count=FALSE)
+          count.ecdf <- looking.create.ecdf(dset, year=year, cumcdf=cumcdf, count=TRUE)
           yset <- dset[dset$YEAR==year,]
           for (val in vals) {
-              df <- rbind(df, data.frame(year=year, value=val, cumpct=ecdf(val)))
+              df <- rbind(df, data.frame(year=year, value=val, count=count.ecdf(val), cumpct=frac.ecdf(val)))
           }
       }
-      ccdfex <- cumcdf(cumcdf)
-      colnames(df) <- c("year", ccdfex[3], ccdfex[2]) # XXX
+      # ccdfex <- cumcdf(cumcdf)
+      # colnames(df) <- c("year", ccdfex[3], ccdfex[2]) # XXX
       print(df, row.names=FALSE)
   }
 
@@ -2025,14 +2048,16 @@ this returns
     cumcdf <- attributes(dset)$cumcdf
     df <- data.frame()
     for (year in years) {
-      iecdf <- looking.create.iecdf(dset, year=year, cumcdf=cumcdf, count=FALSE)
+      frac.iecdf <- looking.create.iecdf(dset, year=year, cumcdf=cumcdf, count=FALSE)
+      count.iecdf <- looking.create.iecdf(dset, year=year, cumcdf=cumcdf, count=TRUE)
       yset <- dset[dset$YEAR==year,]
       for (tile in tiles) {
-        df <- rbind(df, data.frame(year=year, tile=tile, bracket=iecdf(tile)))
+          df <- rbind(df, data.frame(year=year, cumpct=tile, # XXX cumsum=dfsflk,
+                                     value=count.iecdf(tile), percentile=frac.iecdf(tile)))
       }
     }
     ccdfex <- cumcdf(cumcdf)
-    colnames(df) <- c("year", ccdfex[2], ccdfex[3])
+    # colnames(df) <- c("year", ccdfex[2], ccdfex[3])
     print(df, row.names=FALSE)
   }
 
