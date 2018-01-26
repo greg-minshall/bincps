@@ -905,7 +905,7 @@ second the number of elements with that value.
   returns the new observation counts."
     ## only care about actual observed outcomes (and, this makes it
     ## easier to have newvals technically smaller than max(vals), in
-    ## case where max(vals) is not actually an observed value.
+    ## case where max(vals) is not actually an observed value).
     vals <- vals[nobs!=0]
     nobs <- nobs[nobs!=0]
     if (!ordered) {
@@ -940,6 +940,7 @@ second the number of elements with that value.
     rval <- c(rval, rep(0, length(newvals)-length(rval)))
     rval                                  # return value
   }
+
 
   rebinvals.binned <- function(limita, limitb=NA, binsize) {
     "return the set of new values for a given new BINSIZE.  
@@ -1528,6 +1529,14 @@ the following code is common to all our visualizations
     dset
   }
 
+  cumcdf <- function(cumcdf) {
+      "for each cumcdf, return 1: explanation; 2: label"
+      switch(cumcdf,
+          "population:bracket" = c("cumulative percentage of population in, or below, a given bracket", "population", "bracket"),
+          "totalincome:bracket" = c("cumulative percent of total income in, or below, a given bracket", "totalincome", "bracket"),
+          "totalincome:population" = c("cumulative percentage of total income in, or below, a given percentile of the population", "totalincome", "population"))
+  }
+
   looking.create.ecdfs <- function(dset, cumcdf) {
     ## create ECDF
     my.ecdfs <- list()
@@ -1537,11 +1546,11 @@ the following code is common to all our visualizations
       supp <- dset[sy, attr(dset, "supp")]
       my.ecdfs[[year]] <-
         switch(cumcdf,
-               "bracket/supp" = ecdf.binned(bracket, supp),
-               "bracket/bracket*supp" = ecdf.binned(bracket, bracket*supp),
+               "population:bracket" = ecdf.binned(bracket, supp),
+               "totalincome:bracket" = ecdf.binned(bracket, bracket*supp),
                ## in the following, we divide by "sum(supp)" to
                ## normalize across years (for comparability)
-               "supp/bracket*supp" = ecdf.binned(cumsum(supp)/sum(supp), bracket*supp))
+               "totalincome:population" = ecdf.binned(cumsum(supp)/sum(supp), bracket*supp))
     }
     my.ecdfs
   }
@@ -1555,9 +1564,9 @@ the following code is common to all our visualizations
       supp <- dset[sy, attr(dset, "supp")]
       my.iecdfs[[year]] <-
         switch(cumcdf,
-               "bracket/supp" = iecdf.binned(bracket, supp),
-               "bracket/bracket*supp" = iecdf.binned(bracket, bracket*supp),
-               "supp/bracket*supp" = iecdf.binned(cumsum(supp), bracket*supp))
+               "population:bracket" = iecdf.binned(bracket, supp),
+               "totalincome:bracket" = iecdf.binned(bracket, bracket*supp),
+               "totalincome:population" = iecdf.binned(cumsum(supp)/sum(supp), bracket*supp))
     }
     my.iecdfs
   }
@@ -1647,7 +1656,7 @@ the following code is common to all our visualizations
     }
     if ("cumcdf" %in% need) {
       need <- subset(need, need!="cumcdf")
-      p <- add_argument(p, "--cumcdf", type="character", default="bracket/supp",
+      p <- add_argument(p, "--cumcdf", type="character", default="population:bracket",
                         help="cumcdf of what?  \"bracket/supp\", \"supp/bracket*supp\", \"bracket/bracket*supp\"")
     }
     if ("delta" %in% need) {
@@ -1981,28 +1990,33 @@ this returns
   <<stats.binned>>
 
   values.ecdf <- function(dset, years, vals) {
-    df <- data.frame()
-    for (year in years) {
-      yset <- dset[dset$YEAR==year,]
-      ecdf <- ecdf.binned(yset[,attr(dset, "bracket")],
-                          yset[,attr(dset, "supp")])
-      for (val in vals) {
-        df <- rbind(df, data.frame(year=year, value=val, cumpct=ecdf(val)))
+      cumcdf <- attributes(dset)$cumcdf
+      ecdfs <- looking.create.ecdfs(dset, cumcdf)
+      df <- data.frame()
+      for (year in years) {
+          yset <- dset[dset$YEAR==year,]
+          for (val in vals) {
+              df <- rbind(df, data.frame(year=year,
+                                         value=val,
+                                         cumpct=ecdfs[[year]](val)))
+          }
       }
-    }
-    print(df, row.names=FALSE)
+      ccdfex <- cumcdf(cumcdf)
+      colnames(df) <- c("year", ccdfex[3], ccdfex[2])
+      print(df, row.names=FALSE)
   }
-      
+
 
   main <- function(args=NULL) {
-    dset <- doparser(name="values.ecdf",
-                     need=c("ifile",
-                       "maxhh", "supp", "bracket",
-                       "binsize",
-                       "years", "values"),
-                     args)
-    df <- values.ecdf(dset, years=attr(dset, "years"), vals=attr(dset, "values"))
-    endup(dset)
+      dset <- doparser(name="values.ecdf",
+                       need=c("ifile",
+                              "maxhh", "supp", "bracket",
+                              "binsize",
+                              "cumcdf",
+                              "years", "values"),
+                       args)
+      df <- values.ecdf(dset, years=attr(dset, "years"), vals=attr(dset, "values"))
+      endup(dset)
   }
 
   <<looking.endbits>>
@@ -2017,15 +2031,17 @@ this returns
   <<stats.binned>>
 
   values.iecdf <- function(dset, years, tiles) {
+    cumcdf <- attributes(dset)$cumcdf
+    iecdfs <- looking.create.iecdfs(dset, cumcdf)
     df <- data.frame()
     for (year in years) {
       yset <- dset[dset$YEAR==year,]
-      iecdf <- iecdf.binned(yset[,attr(dset, "bracket")],
-                            yset[,attr(dset, "supp")])
       for (tile in tiles) {
-        df <- rbind(df, data.frame(year=year, tile=tile, bracket=iecdf(tile)))
+        df <- rbind(df, data.frame(year=year, tile=tile, bracket=iecdfs[[year]](tile)))
       }
     }
+    ccdfex <- cumcdf(cumcdf)
+    colnames(df) <- c("year", ccdfex[2], ccdfex[3])
     print(df, row.names=FALSE)
   }
 
@@ -2034,7 +2050,7 @@ this returns
     dset <- doparser(name="values.iecdf",
                      need=c("ifile",
                        "maxhh", "supp", "bracket",
-                       "binsize",
+                       "binsize", "cumcdf",
                        "years", "tiles"),
                      args)
     df <- values.iecdf(dset, years=attr(dset, "years"), tiles=attr(dset, "tiles"))
