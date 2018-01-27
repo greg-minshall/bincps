@@ -1464,50 +1464,66 @@ the following code is common to all our visualizations
     dset
   }
 
-  part.desc <- function(part, pct) {
-      rval <- switch(part,
+  ## the following work on named part(s)
+  part.pct <- function(part) {
+      part$pct
+  }
+
+  part.base <- function(part) {
+      gsub("^%", "", part$name)
+  }
+
+  part.desc.subr <- function(base, pct) {
+      rval <- switch(base,
                      "bracket" = "income brackets",
                      "totalincome" = "total income",
                      "population" = "population",
                      stop("programming error"))
       if (pct) {
-          rval <- sprintf("percent of %s", rval)
+          rval <- sprintf("fraction of %s", rval)
       }
       rval
   }
 
-  part.max <- function(dset, years, part, pct) {
-      if (pct) {
+  part.desc <- function(part) {
+      part.desc.subr(part$name, part$pct)
+  }
+
+  part.max <- function(dset, years, part) {
+      if (part$pct) {
           return(1)                       # easy!
       }
-      switch(part,
+      yset <- dset[dset$YEAR %in% years,]
+      switch(part.base(part),
              "bracket" = attr(dset, "maxhh"),
-             "totalincome" = sum(dset[dset$YEAR%in%years, attr(dset, "bracket")]*
-                                dset[dset$YEAR%in%years, attr(dset, "supp")]),
-             "population" = sum(dset[dset$YEAR%in%years, attr(dset, "supp")]))
-  }x
-    
+             "totalincome" = sum(yset[, attr(dset, "bracket")]*
+                                 yset[, attr(dset, "supp")]),
+             "population" = sum(yset[, attr(dset, "supp")]))
+  }
 
+  part.create <- function(str) {
+      pct <- grepl("^%.*$", str)
+      part <- gsub("^%", "", str)
+      list(name=part, pct=pct,
+           desc=part.desc.subr(part, pct))
+  }
+
+  ## this *creates* named parts
   tgt.in.key <- function(tgt.in.key) {
       parts <- unlist(strsplit(tgt.in.key, ":")) # get bits of tgt.in.key
       if (length(parts) != 2) {
           stop(sprintf("unknown/improperly formatted tgt.in.key \"%s\"", tgt.in.key))
       }
-      pcts <- grepl("^%.*$", parts)
-      list(tgt=list(name=parts[1],
-                pct=pcts[1],
-                desc=part.desc(parts[1],pcts[1])),
-           key=list(name=parts[2],
-                pct=pcts[2],
-                desc=part.desc(parts[2],pcts[2])))
+      list(tgt=part.create(parts[[1]]),
+           key=part.create(parts[[2]]))
   }
 
   parts.title <- function(parts) {
       "cumulative distribution [of values] of [totalincome] as a function of increasing [fraction of] [population]"
       sprintf("cumulative distribution%sof %s as a function of increasing%s%s",
-              ifelse(pct, " ", " of values "),
+              ifelse(parts$tgt$pct, " ", " of values "),
               parts$tgt$desc,
-              ifelse(pct, " ", " of values "),
+              ifelse(parts$key$pct, " ", " of values "),
               parts$key$desc)
   }
 
@@ -1525,17 +1541,17 @@ the following code is common to all our visualizations
   ## {totalincome, bracket, population}.
 
 
-  cumpart <- function(dset, which, pct) {
+  cumpart <- function(dset, part) {
       "return a vector of the appropriate bit of the database"
       ## precompute for code legibility
       bracket <- dset[,attr(dset, "bracket")]
       supp <- dset[,attr(dset, "supp")]
-      rval <- switch(which,
+      rval <- switch(part.base(part),
                      "totalincome" = bracket*supp,
                      "bracket" = c(bracket[1], diff(bracket)),
                      "population" = supp,
                      stop(sprintf("invalid tgt.in.key \"%s\"", tgt.in.key)))
-      if (pct) {
+      if (part.pct(part)) {
           rval <- cumsum(rval)/sum(rval)  # fraction it
       } else {
           rval <- cumsum(rval)
@@ -1549,8 +1565,8 @@ the following code is common to all our visualizations
       yset <- dset[dset$YEAR==year,]
       ## decode keys
       parts <- tgt.in.key(tgt.in.key)
-      key <- cumpart(yset, parts[[1]]$name, parts[[1]]$pct)
-      tgt <- cumpart(yset, parts[[2]]$name, parts[[2]]$pct)
+      key <- cumpart(yset, part$key)
+      tgt <- cumpart(yset, parts$tgt)
 
       rval <- approxfun(key, tgt,
                         method="constant",
@@ -1794,7 +1810,7 @@ the following code is common to all our visualizations
     }
     ulx <- part.max(dset, years, parts$key)
     base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
-      ggtitle(ds[[1]]) +
+      ggtitle(title) +
         xlab(title) +
         ylab("Cumulative fraction") +
         scale_colour_discrete(name="Year")
@@ -1805,14 +1821,14 @@ the following code is common to all our visualizations
         }
         maxy <- max(years)
         miny <- min(years)
-        max.ecdf <- looking.create.ecdf(dset, maxy, tgt.in.key, count=FALSE)
-        min.ecdf <- looking.create.ecdf(dset, miny, tgt.in.key, count=FALSE)
+        max.ecdf <- create.lookup(dset, maxy, tgt.in.key)
+        min.ecdf <- create.lookup(dset, miny, tgt.in.key)
         base <- base + stat_function(fun=function(x) {
             max.ecdf(x)-min.ecdf(y)
         })
     } else {
         for (year in years) {
-            ecdf <- looking.create.ecdf(dset, year=year, tgt.in.key=tgt.in.key, count=FALSE)
+            ecdf <- create.lookup(dset, year=year, tgt.in.key=tgt.in.key)
             base <- base + stat_function(fun=ecdf, aes_(colour=as.factor(year)))
         }
     }
