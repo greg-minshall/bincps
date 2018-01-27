@@ -1469,12 +1469,16 @@ the following code is common to all our visualizations
       part$pct
   }
 
-  part.base <- function(part) {
-      gsub("^%", "", part$name)
+  part.base.subr <- function(str) {
+      gsub("^%", "", str)
   }
 
-  part.desc.subr <- function(base, pct) {
-      rval <- switch(base,
+  part.base <- function(part) {
+      part.base.subr(part$name)
+  }
+
+  part.desc.subr <- function(str, pct) {
+      rval <- switch(part.base.subr(str),
                      "bracket" = "income brackets",
                      "totalincome" = "total income",
                      "population" = "population",
@@ -1503,9 +1507,8 @@ the following code is common to all our visualizations
 
   part.create <- function(str) {
       pct <- grepl("^%.*$", str)
-      part <- gsub("^%", "", str)
-      list(name=part, pct=pct,
-           desc=part.desc.subr(part, pct))
+      list(name=str, pct=pct,
+           desc=part.desc.subr(str, pct))
   }
 
   ## this *creates* named parts
@@ -1995,18 +1998,17 @@ the following code is common to all our visualizations
   <<looking.bits>>
   <<stats.binned>>
 
-  lookup <- function(dset, years, vals) {
-      tgt.in.key <- attributes(dset)$tgt.in.key
+  lookup <- function(dset, years, tgt.in.key, keys) {
       df <- data.frame()
       for (year in years) {
           ecdf <- create.lookup(dset, year=year, tgt.in.key=tgt.in.key)
           yset <- dset[dset$YEAR==year,]
-          for (val in vals) {
-              df <- rbind(df, data.frame(year=year, lookup=val, result=ecdf(val)))
+          for (key in keys) {
+              df <- rbind(df, data.frame(year=year, lookup=key, result=ecdf(key)))
           }
       }
-      ccdfex <- tgt.in.key(tgt.in.key)
-      colnames(df) <- c("year", ccdfex[3], ccdfex[2]) # XXX
+      parts <- tgt.in.key(tgt.in.key)
+      colnames(df) <- c("year", parts$key$name, parts$tgt$name)
       print(df, row.names=FALSE)
   }
 
@@ -2019,7 +2021,10 @@ the following code is common to all our visualizations
                               "tgt.in.key",
                               "years", "keys"),
                        args)
-      df <- lookup(dset, years=attr(dset, "years"), vals=attr(dset, "keys"))
+      df <- lookup(dset,
+                   years=attr(dset, "years"), 
+                   tgt.in.key=attr(dset, "tgt.in.key"),
+                   keys=attr(dset, "keys"))
       endup(dset)
   }
 
