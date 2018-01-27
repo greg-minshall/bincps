@@ -156,9 +156,20 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
                           c(1, 1e3, 1e6, 1e9, 1e12) )
       paste(round( as.numeric(gsub("\\,","",tx))/10^(3*(div-1)), 2), 
             units[div] )}
-
-  comprss(tx, words=TRUE)
 #+END_SRC
+
+#+name: lucr
+#+BEGIN_SRC R :exports none :var tgtinkey="bracket:%population" :var keys="0.5" :var years="1972,2016" :var ifile="ipums/cps_00006.1962-2017-binned.csv" :session ss
+  <<lookup>>
+  <<comprss>>
+
+  df <- lookup.main(c("--ifile", ifile, "--years", years, "--tgt.in.key", tgtinkey, "--keys", keys))
+  sprintf("$%s", comprss(df[,3]))
+#+END_SRC
+
+#+RESULTS: lucr
+| $42 K |
+| $47 K |
 
 #+name: lookup
 #+BEGIN_SRC R
@@ -1998,6 +2009,7 @@ the following code is common to all our visualizations
 
 **** lookup
 
+#+name: lookup
 #+BEGIN_SRC R :tangle lookup :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
@@ -2014,11 +2026,11 @@ the following code is common to all our visualizations
       }
       parts <- tgt.in.key(tgt.in.key)
       colnames(df) <- c("year", parts$key$name, parts$tgt$name)
-      print(df, row.names=FALSE)
+      df
   }
 
 
-  main <- function(args=NULL) {
+  lookup.main <- function(args=NULL) {
       dset <- doparser(name="lookup",
                        need=c("ifile",
                               "maxhh", "supp", "bracket",
@@ -2031,6 +2043,11 @@ the following code is common to all our visualizations
                    tgt.in.key=attr(dset, "tgt.in.key"),
                    keys=attr(dset, "keys"))
       endup(dset)
+      df
+  }
+
+  main <- function(args=NULL) {
+      print(lookup.main(args), row.names=FALSE)
   }
 
   <<looking.endbits>>
