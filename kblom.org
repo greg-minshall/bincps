@@ -1938,7 +1938,7 @@ the following code is common to all our visualizations
                           supp="HWTSUPP",
                           years=c(1972, 2016),
                           binsize=5000, # FT used binsize 5000
-                          tgt.in.key="bracket/supp") {
+                          tgt.in.key) {
     df <- data.frame()
     for (year in years) {
       yset <- dset[dset$YEAR==year,]
