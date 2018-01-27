@@ -97,7 +97,7 @@ In 1972, 23% of US households made less than $20,000; by 2016, that
 number has increased to 26%. ???
 
 ** Appendices
-*** CDF
+*** TODO CDF
 *** Methodological problems
 
 **** TODO High income issues
@@ -158,6 +158,11 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
             units[div] )}
 
   comprss(tx, words=TRUE)
+#+END_SRC
+
+#+name: lookup
+#+BEGIN_SRC R
+
 #+END_SRC
 
 the national income has increased from
@@ -2029,6 +2034,11 @@ the following code is common to all our visualizations
   }
 
   <<looking.endbits>>
+#+END_SRC
+
+#+BEGIN_SRC sh :tangle lookup-one :shebang "#!/bin/sh" :results none :eval never :exports none
+  # like lookup, but only return the value (for scripting ease)
+  ./lookup $* | sed 's/^ *//g' | sed 's/[  ][      ]*/ /g' | cut -d" " -f3 | tail -n+2
 #+END_SRC
 
 **** create.totalincome.distribution
