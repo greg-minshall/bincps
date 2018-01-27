@@ -1464,10 +1464,10 @@ the following code is common to all our visualizations
     dset
   }
 
-  cumcdf <- function(cumcdf) {
-      parts <- unlist(strsplit(cumcdf, ":")) # get bits of cumcdf
+  tgt.in.key <- function(tgt.in.key) {
+      parts <- unlist(strsplit(tgt.in.key, ":")) # get bits of tgt.in.key
       if (length(parts) != 2) {
-          stop(sprintf("unknown/improperly formatted cumcdf \"%s\"", cumcdf))
+          stop(sprintf("unknown/improperly formatted tgt.in.key \"%s\"", tgt.in.key))
       }
       parts
   }
@@ -1495,7 +1495,7 @@ the following code is common to all our visualizations
                      "totalincome" = bracket*supp,
                      "bracket" = c(bracket[1], diff(bracket)),
                      "population" = supp,
-                     stop(sprintf("invalid cumcdf \"%s\"", cumcdf)))
+                     stop(sprintf("invalid tgt.in.key \"%s\"", tgt.in.key)))
       if (pct) {
           rval <- cumsum(rval)/sum(rval)  # fraction it
       } else {
@@ -1505,15 +1505,15 @@ the following code is common to all our visualizations
   }
 
 
-  create.lookup <- function(dset, year, cumcdf) {
+  create.lookup <- function(dset, year, tgt.in.key) {
       "create a lookup function"
       yset <- dset[dset$YEAR==year,]
       ## first, remember and then get rid of percent signs
-      tgtpct <- grepl("^%.*:.*$", cumcdf)
-      keypct <- grepl("^.*:%.*$", cumcdf)
-      cumcdf <- gsub("%", "", cumcdf)
+      tgtpct <- grepl("^%.*:.*$", tgt.in.key)
+      keypct <- grepl("^.*:%.*$", tgt.in.key)
+      tgt.in.key <- gsub("%", "", tgt.in.key)
       ## now, look at base key, target
-      parts <- cumcdf(cumcdf)
+      parts <- tgt.in.key(tgt.in.key)
       key <- cumpart(yset, parts[2], keypct)
       tgt <- cumpart(yset, parts[1], tgtpct)
 
@@ -1609,10 +1609,10 @@ the following code is common to all our visualizations
       p <- add_argument(p, "--values", type="character", default="20000",
                         help="values to check for")
     }
-    if ("cumcdf" %in% need) {
-      need <- subset(need, need!="cumcdf")
-      p <- add_argument(p, "--cumcdf", type="character", default="population:bracket",
-                        help="cumcdf of what?  \"bracket/supp\", \"supp/bracket*supp\", \"bracket/bracket*supp\"")
+    if ("tgt.in.key" %in% need) {
+      need <- subset(need, need!="tgt.in.key")
+      p <- add_argument(p, "--tgt.in.key", type="character", default="population:bracket",
+                        help="tgt.in.key of what?  \"bracket/supp\", \"supp/bracket*supp\", \"bracket/bracket*supp\"")
     }
     if ("delta" %in% need) {
         need <- subset(need, need!="delta")
@@ -1751,8 +1751,8 @@ the following code is common to all our visualizations
 
   ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
   ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
-  ggp.ecdf <- function(dset, years, cumcdf, delta) {
-    ds <- switch(cumcdf, 
+  ggp.ecdf <- function(dset, years, tgt.in.key, delta) {
+    ds <- switch(tgt.in.key, 
                  "bracket/supp" = list("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)",
                    attr(dset, "maxhh"),
                    attr(dset, "bracket")),
@@ -1762,7 +1762,7 @@ the following code is common to all our visualizations
                  "supp/bracket*supp" = list("CDF showing what percentage of population accounts for how much of total national income",
                  1,
                  "fraction of total population"),
-                 stop(sprintf("unknown \"--cumcdf\" argument \"%s\"", cumcdf)))
+                 stop(sprintf("unknown \"--tgt.in.key\" argument \"%s\"", tgt.in.key)))
     title <- ds[[3]]
     if (delta) {
         title <- sprintf("%s (delta)", title)
@@ -1780,14 +1780,14 @@ the following code is common to all our visualizations
         }
         maxy <- max(years)
         miny <- min(years)
-        max.ecdf <- looking.create.ecdf(dset, maxy, cumcdf, count=FALSE)
-        min.ecdf <- looking.create.ecdf(dset, miny, cumcdf, count=FALSE)
+        max.ecdf <- looking.create.ecdf(dset, maxy, tgt.in.key, count=FALSE)
+        min.ecdf <- looking.create.ecdf(dset, miny, tgt.in.key, count=FALSE)
         base <- base + stat_function(fun=function(x) {
             max.ecdf(x)-min.ecdf(y)
         })
     } else {
         for (year in years) {
-            ecdf <- looking.create.ecdf(dset, year=year, cumcdf=cumcdf, count=FALSE)
+            ecdf <- looking.create.ecdf(dset, year=year, tgt.in.key=tgt.in.key, count=FALSE)
             base <- base + stat_function(fun=ecdf, aes_(colour=as.factor(year)))
         }
     }
@@ -1802,11 +1802,11 @@ the following code is common to all our visualizations
                        "graphics", "gfile", "gopts",
                        "height", "width",
                        "years",
-                       "cumcdf", "delta"
+                       "tgt.in.key", "delta"
                        ),
                      args)
     ggp.ecdf(dset, years=attr(dset, "years"),
-             cumcdf=attr(dset, "cumcdf"), delta=attr(dset, "delta"))
+             tgt.in.key=attr(dset, "tgt.in.key"), delta=attr(dset, "delta"))
     endup(dset)
     return(0)
   }
@@ -1894,7 +1894,7 @@ the following code is common to all our visualizations
                           supp="HWTSUPP",
                           years=c(1972, 2016),
                           binsize=5000, # FT used binsize 5000
-                          cumcdf="bracket/supp") {
+                          tgt.in.key="bracket/supp") {
     df <- data.frame()
     for (year in years) {
       yset <- dset[dset$YEAR==year,]
@@ -1902,7 +1902,7 @@ the following code is common to all our visualizations
                                   max(yset[,bracket], na.rm=TRUE), binsize)
       newnobs <- rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
                               newvals=newvals)
-      if (cumcdf != "bracket/supp") {     # XXX
+      if (tgt.in.key != "bracket/supp") {     # XXX
         newnobs <- newnobs*newvals        # total income in each bracket
       }
       dfnew <- data.frame(vals=newvals, nobs=newnobs)
@@ -1933,10 +1933,10 @@ the following code is common to all our visualizations
                        "binsize",
                        "graphics", "gfile", "gopts",
                        "height", "width",
-                       "years", "cumcdf"),
+                       "years", "tgt.in.key"),
                      args)
 
-    repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"), cumcdf=attr(dset, "cumcdf"))
+    repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"), tgt.in.key=attr(dset, "tgt.in.key"))
     endup(dset)
     return(0)
   }
@@ -1952,30 +1952,30 @@ the following code is common to all our visualizations
   <<stats.binned>>
 
   lookup <- function(dset, years, vals) {
-      cumcdf <- attributes(dset)$cumcdf
+      tgt.in.key <- attributes(dset)$tgt.in.key
       df <- data.frame()
       for (year in years) {
-          ecdf <- create.lookup(dset, year=year, cumcdf=cumcdf, count=FALSE)
+          ecdf <- create.lookup(dset, year=year, tgt.in.key=tgt.in.key, count=FALSE)
           yset <- dset[dset$YEAR==year,]
           for (val in vals) {
               df <- rbind(df, data.frame(year=year, lookup=val, result=ecdf(val)))
           }
       }
-      ccdfex <- cumcdf(cumcdf)
+      ccdfex <- tgt.in.key(tgt.in.key)
       colnames(df) <- c("year", ccdfex[3], ccdfex[2]) # XXX
       print(df, row.names=FALSE)
   }
 
 
   main <- function(args=NULL) {
-      dset <- doparser(name="values.ecdf",
+      dset <- doparser(name="lookup",
                        need=c("ifile",
                               "maxhh", "supp", "bracket",
                               "binsize",
-                              "cumcdf",
+                              "tgt.in.key",
                               "years", "values"),
                        args)
-      df <- values.ecdf(dset, years=attr(dset, "years"), vals=attr(dset, "values"))
+      df <- lookup(dset, years=attr(dset, "years"), vals=attr(dset, "values"))
       endup(dset)
   }
 
