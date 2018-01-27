@@ -1673,12 +1673,6 @@ the following code is common to all our visualizations
         p <- add_argument(p, "--delta", type="boolean", flag=TRUE,
                           help="if we should look at difference between (exactly) two years")
     }
-    if ("fourway" %in% need) {
-        need <- subset(need, need!="fourway")
-        p <- add_argument(p, "--fourway", type="boolean", flag=TRUE,
-                          help="for lookup of tgt:key, return tgt:tgt OTHER(tgt):tgt key:tgt OTHER(key):tgt\n
-  (where \"OTHER\" adds '%' if not already, otherwise removes the '%')")
-    }      
     ## detect bad arguments in need
     if (length(need) != 0) {
       print(need)
@@ -2004,7 +1998,7 @@ the following code is common to all our visualizations
   <<looking.bits>>
   <<stats.binned>>
 
-  lookup <- function(dset, years, tgt.in.key, keys, fourway) {
+  lookup <- function(dset, years, tgt.in.key, keys) {
       df <- data.frame()
       for (year in years) {
           ecdf <- create.lookup(dset, year=year, tgt.in.key=tgt.in.key)
@@ -2025,14 +2019,12 @@ the following code is common to all our visualizations
                               "maxhh", "supp", "bracket",
                               "binsize",
                               "tgt.in.key",
-                              "years", "keys",
-                              "fourway"),
+                              "years", "keys"),
                        args)
       df <- lookup(dset,
                    years=attr(dset, "years"), 
                    tgt.in.key=attr(dset, "tgt.in.key"),
-                   keys=attr(dset, "keys"),
-                   fourway=attr(dset, "fourway"))
+                   keys=attr(dset, "keys"))
       endup(dset)
   }
 
