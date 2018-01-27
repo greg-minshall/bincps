@@ -1565,7 +1565,7 @@ the following code is common to all our visualizations
       yset <- dset[dset$YEAR==year,]
       ## decode keys
       parts <- tgt.in.key(tgt.in.key)
-      key <- cumpart(yset, part$key)
+      key <- cumpart(yset, parts$key)
       tgt <- cumpart(yset, parts$tgt)
 
       rval <- approxfun(key, tgt,
@@ -1828,8 +1828,8 @@ the following code is common to all our visualizations
         })
     } else {
         for (year in years) {
-            ecdf <- create.lookup(dset, year=year, tgt.in.key=tgt.in.key)
-            base <- base + stat_function(fun=ecdf, aes_(colour=as.factor(year)))
+            approx <- create.lookup(dset, year=year, tgt.in.key=tgt.in.key)
+            base <- base + stat_function(fun=approx, aes_(colour=as.factor(year)))
         }
     }
     print(base)
@@ -1880,17 +1880,17 @@ the following code is common to all our visualizations
   <<stats.binned>>
 
 
-  ggp.tiles <- function(dset, years, tiles) {
+  ggp.tiles <- function(dset, years, tgt.in.key, tiles) {
     "plot the tiles for a given set of deciles over a set of years"
     base <- ggplot() +
       ggtitle("Select deciles of household income in the United States (1999 dollars)") +
         ylab(attr(dset, "bracket"))
     for (year in years) {
-        iecdf <- looking.create.iecdf(dset, year=year, count=FALSE, count=FALSE)
+        iecdf <- create.lookup(dset, year=year, tgt.in.key)
         df <- data.frame(Year=as.factor(year),
-                         Decile=tiles,
+                         Fraction=tiles,
                          hhbracket99=iecdf(tiles))
-        base <- base + geom_point(data=df, aes(x=Decile,
+        base <- base + geom_point(data=df, aes(x=Fraction,
                                                y=hhbracket99,
                                                colour=Year))
     }
@@ -1904,9 +1904,12 @@ the following code is common to all our visualizations
                        "binsize",
                        "graphics", "gfile", "gopts",
                        "height", "width",
-                       "years", "tiles"
+                       "years", "tgt.in.key", "tiles"
                        ), args)
-    ggp.tiles(dset, years=attr(dset, "years"), tiles=attr(dset, "tiles"))
+    ggp.tiles(dset,
+              years=attr(dset, "years"),
+              tgt.in.key=attr(dset, "tgt.in.key"),
+              tiles=attr(dset, "tiles"))
     endup(dset)
     return(0)
   }
