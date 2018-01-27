@@ -2038,7 +2038,7 @@ the following code is common to all our visualizations
 
 #+BEGIN_SRC sh :tangle lookup-one :shebang "#!/bin/sh" :results none :eval never :exports none
   # like lookup, but only return the value (for scripting ease)
-  ./lookup $* | sed 's/^ *//g' | sed 's/[  ][      ]*/ /g' | cut -d" " -f3 | tail -n+2
+  ./lookup $* | awk 'NR > 1 { print $3 }'
 #+END_SRC
 
 **** create.totalincome.distribution
