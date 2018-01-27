@@ -1464,12 +1464,51 @@ the following code is common to all our visualizations
     dset
   }
 
+  part.desc <- function(part, pct) {
+      rval <- switch(part,
+                     "bracket" = "income brackets",
+                     "totalincome" = "total income",
+                     "population" = "population",
+                     stop("programming error"))
+      if (pct) {
+          rval <- sprintf("percent of %s", rval)
+      }
+      rval
+  }
+
+  part.max <- function(dset, years, part, pct) {
+      if (pct) {
+          return(1)                       # easy!
+      }
+      switch(part,
+             "bracket" = attr(dset, "maxhh"),
+             "totalincome" = sum(dset[dset$YEAR%in%years, attr(dset, "bracket")]*
+                                dset[dset$YEAR%in%years, attr(dset, "supp")]),
+             "population" = sum(dset[dset$YEAR%in%years, attr(dset, "supp")]))
+  }x
+    
+
   tgt.in.key <- function(tgt.in.key) {
       parts <- unlist(strsplit(tgt.in.key, ":")) # get bits of tgt.in.key
       if (length(parts) != 2) {
           stop(sprintf("unknown/improperly formatted tgt.in.key \"%s\"", tgt.in.key))
       }
-      parts
+      pcts <- grepl("^%.*$", parts)
+      list(tgt=list(name=parts[1],
+                pct=pcts[1],
+                desc=part.desc(parts[1],pcts[1])),
+           key=list(name=parts[2],
+                pct=pcts[2],
+                desc=part.desc(parts[2],pcts[2])))
+  }
+
+  parts.title <- function(parts) {
+      "cumulative distribution [of values] of [totalincome] as a function of increasing [fraction of] [population]"
+      sprintf("cumulative distribution%sof %s as a function of increasing%s%s",
+              ifelse(pct, " ", " of values "),
+              parts$tgt$desc,
+              ifelse(pct, " ", " of values "),
+              parts$key$desc)
   }
 
   ## looking up:
@@ -1508,14 +1547,10 @@ the following code is common to all our visualizations
   create.lookup <- function(dset, year, tgt.in.key) {
       "create a lookup function"
       yset <- dset[dset$YEAR==year,]
-      ## first, remember and then get rid of percent signs
-      tgtpct <- grepl("^%.*:.*$", tgt.in.key)
-      keypct <- grepl("^.*:%.*$", tgt.in.key)
-      tgt.in.key <- gsub("%", "", tgt.in.key)
-      ## now, look at base key, target
+      ## decode keys
       parts <- tgt.in.key(tgt.in.key)
-      key <- cumpart(yset, parts[2], keypct)
-      tgt <- cumpart(yset, parts[1], tgtpct)
+      key <- cumpart(yset, parts[[1]]$name, parts[[1]]$pct)
+      tgt <- cumpart(yset, parts[[2]]$name, parts[[2]]$pct)
 
       rval <- approxfun(key, tgt,
                         method="constant",
@@ -1604,10 +1639,10 @@ the following code is common to all our visualizations
       p <- add_argument(p, "--tiles", type="character", default="0.1,0.9",
                         help="percentiles to mark")
     }
-    if ("values" %in% need) {
-      need <- subset(need, need!="values")
-      p <- add_argument(p, "--values", type="character", default="20000",
-                        help="values to check for")
+    if ("keys" %in% need) {
+      need <- subset(need, need!="keys")
+      p <- add_argument(p, "--keys", type="character",
+                        help="keys to look up")
     }
     if ("tgt.in.key" %in% need) {
       need <- subset(need, need!="tgt.in.key")
@@ -1637,7 +1672,7 @@ the following code is common to all our visualizations
 
     ## turn space/comma separated values into numeric vector (for
     ## certain arguments)
-    for (i in c("years", "tiles", "values")) {
+    for (i in c("years", "tiles", "keys")) {
       if ((!is.null(argv[[i]])) && !is.na(argv[[i]])) {
         argv[i] <- list(as.numeric(unlist(strsplit(argv[[i]], "[ ,]+"))))
       }
@@ -1752,22 +1787,12 @@ the following code is common to all our visualizations
   ## http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/
   ## http://www.cookbook-r.com/Graphs/Axes_(ggplot2)
   ggp.ecdf <- function(dset, years, tgt.in.key, delta) {
-    ds <- switch(tgt.in.key, 
-                 "bracket/supp" = list("CDF showing what percent of population is in each household income bracket in the United States (1999 dollars)",
-                   attr(dset, "maxhh"),
-                   attr(dset, "bracket")),
-                 "bracket/bracket*supp" = list("CDF showing what percent of total household income is accounted for by each income bracket in the United States (1999 dollars)",
-                   attr(dset, "maxhh"),
-                   attr(dset, "bracket")),
-                 "supp/bracket*supp" = list("CDF showing what percentage of population accounts for how much of total national income",
-                 1,
-                 "fraction of total population"),
-                 stop(sprintf("unknown \"--tgt.in.key\" argument \"%s\"", tgt.in.key)))
-    title <- ds[[3]]
+    parts <- tgt.in.key(tgt.in.key)
+    title <- parts.title(parts)
     if (delta) {
         title <- sprintf("%s (delta)", title)
     }
-    ulx <- ds[[2]]
+    ulx <- part.max(dset, years, parts$key)
     base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
       ggtitle(ds[[1]]) +
         xlab(title) +
@@ -1955,7 +1980,7 @@ the following code is common to all our visualizations
       tgt.in.key <- attributes(dset)$tgt.in.key
       df <- data.frame()
       for (year in years) {
-          ecdf <- create.lookup(dset, year=year, tgt.in.key=tgt.in.key, count=FALSE)
+          ecdf <- create.lookup(dset, year=year, tgt.in.key=tgt.in.key)
           yset <- dset[dset$YEAR==year,]
           for (val in vals) {
               df <- rbind(df, data.frame(year=year, lookup=val, result=ecdf(val)))
@@ -1973,9 +1998,9 @@ the following code is common to all our visualizations
                               "maxhh", "supp", "bracket",
                               "binsize",
                               "tgt.in.key",
-                              "years", "values"),
+                              "years", "keys"),
                        args)
-      df <- lookup(dset, years=attr(dset, "years"), vals=attr(dset, "values"))
+      df <- lookup(dset, years=attr(dset, "years"), vals=attr(dset, "keys"))
       endup(dset)
   }
 
@@ -2102,7 +2127,7 @@ run by, e.g.,
                      need=c("ifile",
                        "maxhh", "supp", "bracket",
                        "binsize",
-                       "years", "values"),
+                       "years", "keys"),
                      args)
     endup(dset)
     dset
