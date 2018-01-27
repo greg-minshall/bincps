@@ -1662,8 +1662,8 @@ the following code is common to all our visualizations
     }
     if ("tgt.in.key" %in% need) {
       need <- subset(need, need!="tgt.in.key")
-      p <- add_argument(p, "--tgt.in.key", type="character", default="population:bracket",
-                        help="tgt.in.key of what?  \"bracket/supp\", \"supp/bracket*supp\", \"bracket/bracket*supp\"")
+      p <- add_argument(p, "--tgt.in.key", type="character", default="bracket:%population",
+                        help="tgt.in.key of what?  terms are \"[%]population\", \"[%]totalincome\", \"[%]bracket\"")
     }
     if ("delta" %in% need) {
         need <- subset(need, need!="delta")
