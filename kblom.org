@@ -1523,7 +1523,7 @@ the following code is common to all our visualizations
       sprintf("cumulative distribution%sof %s as a function of increasing%s%s",
               ifelse(parts$tgt$pct, " ", " of values "),
               parts$tgt$desc,
-              ifelse(parts$key$pct, " ", " of values "),
+              ifelse(parts$key$pct, " ", " values of "),
               parts$key$desc)
   }
 
@@ -1811,8 +1811,8 @@ the following code is common to all our visualizations
     ulx <- part.max(dset, years, parts$key)
     base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
       ggtitle(title) +
-        xlab(title) +
-        ylab("Cumulative fraction") +
+        xlab(parts$key$desc) +
+        ylab(parts$tgt$desc) +
         scale_colour_discrete(name="Year")
     if (delta) {
         if (length(years) != 2) {
