@@ -1,12 +1,23 @@
 * [[https://twitter.com/kltblom][Kristian Blom]]: does recent (40+ years) change in US income distribution matter?
 ** misc configuration, etc., stuff                                 :noexport:
 #+property: header-args :noweb yes
+#+property: header-args:R :session ss
 
+the following means that the results of inline calls are "raw".
+#+bind: org-babel-inline-result-wrap "%s"
+# macro with our canonical file name...
+#+name: ifile
+#+BEGIN_SRC sh :cache yes
+make bins
+#+END_SRC
+
+#+RESULTS[f43f76bafeb827b627f0a9cc98f177c4a94a9594]: ifile
+: ./ipums/cps_00006.1962-2017-binned.csv
 
 XXX can't use without "x" in front, or crash... [[https://stackoverflow.com/q/18162477][xcall_XXX()]] to get
 (more-or-less) inline:
 #+name: test
-#+BEGIN_SRC sh :exports none :results output
+#+BEGIN_SRC sh :exports none :results output :eval never-export
 echo 4
 #+END_SRC
 
@@ -14,7 +25,9 @@ this
 #+call: test() :results output raw
 is a test
 
-here call_test()[:results org] is another test
+here xcall_test()[:results org] is another test
+
+to change how the result is "wrapped", customize the variable org-babel-inline-result-wrap.
 
 ** image suffix                                                    :noexport:
 
@@ -29,6 +42,8 @@ unable to make that work.
 
 this code runs as org-mode starts to export, and changes everything
 under the sun.
+
+#+name: get-image-names
 #+BEGIN_SRC emacs-lisp :exports results :results none
   (defun get-image-names (backend)
     (let ((rment (if (equal backend 'html) ".png" ".pdf"))
@@ -143,45 +158,61 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
 
 *** Where have all the flowers gone
 
-#+name: comprss
-#+BEGIN_SRC R :exports none :var tx="1.23e9"
+#+name: comprss.subr
+#+BEGIN_SRC R :exports none :eval no-export
   ## https://stackoverflow.com/a/28160474
-  comprss <- function(tx, words=FALSE) {
+  comprss <- function(tx, words=FALSE, precision=2) {
       if (words) {
           units <- c("", "thousand", "million", "billion", "trillion")
       } else {
           units <- c("","K","M","B","T")
       }
-      div <- findInterval(as.numeric(gsub("\\,", "", tx)), 
-                          c(1, 1e3, 1e6, 1e9, 1e12) )
-      paste(round( as.numeric(gsub("\\,","",tx))/10^(3*(div-1)), 2), 
-            units[div] )}
+      div <- findInterval(abs(as.numeric(gsub("\\,", "", tx))),
+                          c(1, 1e3, 1e6, 1e9, 1e12))
+
+      div[div==0] <- 1
+      paste(round(as.numeric(gsub("\\,","",tx))/10^(3*(div-1)),
+                  precision),
+            units[div])
+  }
+#+END_SRC
+
+#+RESULTS: comprss.subr
+
+
+#+BEGIN_SRC R :exports none :var tx=".23e0" :results output :eval no-export
+<<comprss.subr>>
+print(comprss(tx))
 #+END_SRC
 
 #+name: lucr
-#+BEGIN_SRC R :exports none :var tgtinkey="bracket:%population" :var keys="0.5" :var years="1972,2016" :var ifile="ipums/cps_00006.1962-2017-binned.csv" :session ss
+#+BEGIN_SRC R :exports none :eval never-export :var tgtinkey="%totalincome:%population" :var keys="0.5" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var comprss="TRUE"
   <<lookup>>
   <<comprss>>
 
   df <- lookup.main(c("--ifile", ifile, "--years", years, "--tgt.in.key", tgtinkey, "--keys", keys))
-  sprintf("$%s", comprss(df[,3]))
-#+END_SRC
-
-#+RESULTS: lucr
-| $42 K |
-| $47 K |
-
-#+name: lookup
-#+BEGIN_SRC R
-
+  if (comprss) {
+      df[,3] <- comprss(df[,3])
+  }
+  sprintf("%s", df[,3], words=words)
 #+END_SRC
 
 the national income has increased from
-call_comprss(tx="9.876136e+12") in 1972 to call_comprss(tx="2.005585e+13")
-in 2016.  who got all this money?
+$ call_lucr(tgtinkey="totalincome:%population", key=1, years=1972, words="TRUE")
+{{{results(2.52 trillion)}}} in 1972 to
+$ call_lucr(tgtinkey="totalincome:%population", key=1, years=2016, words="TRUE")
+{{{results(3.78 trillion)}}} in 2016.  who got all this money?
 
-in 1972, .5 of pop made 42000 or less, .9 of pop made 85000 or less
-in 2014, .5 of pop made 47000 or less, .9 of pop made 126000 or less
+in 1972, .5 of pop made $
+call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",comprss="FALSE") {{{results(42000)}}}
+or less, .9 of pop made
+call_lucr(tgtinkey="bracket:%population",keys=0.9,years=1972,words="TRUE",comprss="FALSE") {{{results(85000)}}}
+85000 or less.  in 2016, .5 of pop made
+call_lucr(tgtinkey="bracket:%population",keys=0.5,years=2016,words="TRUE",comprss="FALSE") {{{results(47000)}}}
+47000 or
+less, .9 of pop made
+call_lucr(tgtinkey="bracket:%population",keys=0.9,years=2016,words="TRUE",comprss="FALSE") {{{results(126000)}}}
+126000 or less
 
 [[file:totalincome.distribution.IMG]]
 
@@ -225,7 +256,7 @@ Third, my approach to anything statistical is indebted to [[https://en.wikipedia
 
 [[https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls][Census Bureau]] has something that breaks down by each fifth and top 5%.
 
-#+BEGIN_SRC R :session ss :var tseries=tseries :eval no-export :exports none
+#+BEGIN_SRC R :var tseries=tseries :eval no-export :exports none
 colnames(tseries) <- c("year", "number", "lowest", "second", "third", "fourth", "llimittop5")
 #+END_SRC
 
@@ -731,7 +762,7 @@ then, we use some R code to put the preceding two outputs together and
 compute the number of seconds per person.
 
 #+name: peoplepersecond
-#+BEGIN_SRC R :session ss :var yeartimes=yeartimes :var yearpeople=yearpeople :eval no-export :exports none
+#+BEGIN_SRC R :var yeartimes=yeartimes :var yearpeople=yearpeople :eval no-export :exports none
   rownames(yearpeople) <- yearpeople[,1]
   colnames(yearpeople) <- c("pyear", "people")
   rownames(yeartimes) <- yeartimes[,1]
@@ -815,7 +846,7 @@ the input is a matrix with 2 columns, the first being the value, the
 second the number of elements with that value.
 
 #+name: stats.binned
-#+BEGIN_SRC R :session ss :tangle stats.binned :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle stats.binned :results none :eval no-export :exports none
   <<warning>>
 
   require(Hmisc, warn.conflicts=FALSE, quietly=TRUE)
@@ -977,7 +1008,7 @@ run something like this:
 : ./bincps --ifile ipums/cps_00006.csv.gz --ofile foo.csv --rfile goo.csv
 
 #+name: bincps
-#+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<stats.binned>>
 
@@ -1413,7 +1444,7 @@ run something like this:
 **** common code
 the following code is common to all our visualizations
 #+name: looking.bits
-#+BEGIN_SRC R :session ss :results none :eval no-export :exports none
+#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
   <<warning>>
   require(ggplot2, quietly=TRUE)
   require(assertthat, quietly=TRUE)
@@ -1611,7 +1642,7 @@ the following code is common to all our visualizations
     p <- arg_parser(name)
     if ("ifile" %in% need) {
       need <- subset(need, need!= "ifile")
-      p <- add_argument(p, "--ifile", type="character", default=NA,
+      p <- add_argument(p, "--ifile", type="character", default=ifile,
                         help="name of input file")
     }
     if ("maxhh" %in% need) {
@@ -1813,7 +1844,7 @@ the following code is common to all our visualizations
 **** create.ecdf
 ***** create.ecdf.common (called by shell scripts)
 
-#+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1893,7 +1924,7 @@ the following code is common to all our visualizations
 #+END_SRC
 
 ***** create.tiles
-#+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -1946,7 +1977,7 @@ the following code is common to all our visualizations
 
 **** create.repro
 
-#+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -2010,7 +2041,7 @@ the following code is common to all our visualizations
 **** lookup
 
 #+name: lookup
-#+BEGIN_SRC R :tangle lookup :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle lookup :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -2072,7 +2103,7 @@ or, should we create the total income at each percentile, then
 subtract, then create the integral of that?  i'm not sure.
 
 
-#+BEGIN_SRC R :tangle create.totalincome.distribution :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle create.totalincome.distribution :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -2132,7 +2163,7 @@ subtract, then create the integral of that?  i'm not sure.
 #+END_SRC
 **** histogram of number of data points per bracket
 
-#+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -2169,7 +2200,7 @@ this bit is just for running interactively, returns the desired dset
 run by, e.g.,
 : dset <- main(args=c("--ifile", "ipums/cps_00006.1962-2017-binned.csv"))
 
-#+BEGIN_SRC R :shebang "#!/usr/bin/env Rscript" :session ss :results none :eval no-export :exports none
+#+BEGIN_SRC R :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -2186,3 +2217,4 @@ run by, e.g.,
 
   <<looking.endbits>>
 #+END_SRC
+
