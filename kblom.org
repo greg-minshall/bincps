@@ -213,7 +213,7 @@ or less, .9 of pop made
 call_lucr(tgtinkey="bracket:%population",keys=0.9,years=2016,words="TRUE",comprss="FALSE") {{{results(126000)}}}
 or less.
 
-[[file:totalincome.distribution.IMG]]
+[[file:ecdf.delta.IMG]]
 
 *** oddities
 
@@ -1641,7 +1641,7 @@ the following code is common to all our visualizations
     p <- arg_parser(name)
     if ("ifile" %in% need) {
       need <- subset(need, need!= "ifile")
-      p <- add_argument(p, "--ifile", type="character", default=ifile,
+      p <- add_argument(p, "--ifile", type="character", default=NA,
                         help="name of input file")
     }
     if ("maxhh" %in% need) {
@@ -1873,7 +1873,7 @@ the following code is common to all our visualizations
         max.ecdf <- create.lookup(dset, maxy, tgt.in.key)
         min.ecdf <- create.lookup(dset, miny, tgt.in.key)
         base <- base + stat_function(fun=function(x) {
-            max.ecdf(x)-min.ecdf(y)
+            max.ecdf(x)-min.ecdf(x)
         })
     } else {
         for (year in years) {
@@ -1920,6 +1920,22 @@ the following code is common to all our visualizations
 
 #+BEGIN_SRC sh :tangle create.ecdf2 :shebang "#!/bin/sh" :results none :eval never :exports none
   ./create.ecdf.common $* --maxhh 50000
+#+END_SRC
+
+we want to understand how the increase in total income between two
+years has been distributed among the population (as represented by
+percentiles).
+
+to do this, we create an ecdf for each year which relates population
+percentile (supp/sum(supp)) to total income at or below that level.
+
+then, we graph the difference between the two
+
+or, should we create the total income at each percentile, then
+subtract, then create the integral of that?  i'm not sure.
+
+#+BEGIN_SRC sh :tangle create.ecdf.delta :shebang "#!/bin/sh" :results none :eval never :exports none
+  ./create.ecdf.common $* --delta --tgt.in.key totalincome:%population --maxhh 2e14
 #+END_SRC
 
 ***** create.tiles
@@ -2088,78 +2104,7 @@ the following code is common to all our visualizations
   ./lookup $* | awk 'NR > 1 { print $3 }'
 #+END_SRC
 
-**** create.totalincome.distribution
-we want to understand how the increase in total income between two
-years has been distributed among the population (as represented by
-percentiles).
 
-to do this, we create an ecdf for each year which relates population
-percentile (supp/sum(supp)) to total income at or below that level.
-
-then, we graph the difference between the two
-
-or, should we create the total income at each percentile, then
-subtract, then create the integral of that?  i'm not sure.
-
-
-#+BEGIN_SRC R :tangle create.totalincome.distribution :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
-  <<warning>>
-  <<looking.bits>>
-  <<stats.binned>>
-
-  ggm.totalincome.distribution <- function(dset, years) {
-      if (length(years) != 2) {
-          stop(sprintf("with --delta, exactly two years must be specified; instead %d %s",
-                       length(years),
-                       ifelse(length(years == 1), "was", "were")))
-      }
-      xset <- dset[dset$YEAR %in% years,]
-      xset <- cbind(xset,
-                    totalincome=xset[,attr(dset,"bracket")]*xset[,attr(dset,"supp")],
-                    percentile=0)
-      ## now, compute percentiles within each year
-      for (year in years) {
-          xset[xset$YEAR==year,"percentile"] <-
-              cumsum(xset[xset$YEAR==year,attr(dset,"supp")]) /
-              sum(xset[xset$YEAR==year,attr(dset,"supp")])
-      }
-      maxy <- max(years)
-      miny <- min(years)
-      fymin <- approxfun(xset[xset$YEAR==miny,"percentile"],
-                         cumsum(xset[xset$YEAR==miny,"totalincome"]),
-                         method="constant",
-                         rule=2,  # clamp at ends
-                         f = 0,   # XXX is this the right f for inverse?
-                         ties = "ordered")
-      fymax <- approxfun(xset[xset$YEAR==maxy,"percentile"],
-                         cumsum(xset[xset$YEAR==maxy,"totalincome"]),
-                         method="constant",
-                         rule=2,  # clamp at ends
-                         f = 0,   # XXX is this the right f for inverse?
-                         ties = "ordered")
-      base <- ggplot(data.frame(x=c(0,1)), aes(x)) +
-          ggtitle("how increase in total income was shared across the population") +
-          ylab("Amount of gain (or loss)")
-      base <- base + stat_function(fun=function(x) { fymax(x)-fymin(x) })
-      print(base)
-  }
-
-  main <- function(args=NULL) {
-      dset <- doparser(name="totalincome",
-                       need=c("ifile",
-                              "maxhh", "supp", "bracket",
-                              "binsize",
-                              "graphics", "gfile", "gopts",
-                              "height", "width",
-                              "years"),
-                       args)
-      ggm.totalincome.distribution(dset, years=attr(dset, "years"))
-      endup(dset)
-      return(0)
-  }
-
-  <<looking.endbits>>
-#+END_SRC
 **** histogram of number of data points per bracket
 
 #+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
