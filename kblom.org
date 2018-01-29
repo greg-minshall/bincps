@@ -207,12 +207,11 @@ in 1972, .5 of pop made $
 call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",comprss="FALSE") {{{results(42000)}}}
 or less, .9 of pop made
 call_lucr(tgtinkey="bracket:%population",keys=0.9,years=1972,words="TRUE",comprss="FALSE") {{{results(85000)}}}
-85000 or less.  in 2016, .5 of pop made
+or less.  in 2016, .5 of pop made
 call_lucr(tgtinkey="bracket:%population",keys=0.5,years=2016,words="TRUE",comprss="FALSE") {{{results(47000)}}}
-47000 or
-less, .9 of pop made
+or less, .9 of pop made
 call_lucr(tgtinkey="bracket:%population",keys=0.9,years=2016,words="TRUE",comprss="FALSE") {{{results(126000)}}}
-126000 or less
+or less.
 
 [[file:totalincome.distribution.IMG]]
 
