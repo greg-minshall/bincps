@@ -19,6 +19,9 @@ create.tiles
 create.totalincome.distribution
 values.ecdf
 values.iecdf
+create.tidistr
+lookup
+lookup-one
 
 ipums/cps_00006.csv.gz
 
@@ -35,3 +38,5 @@ totalincome.distribution.pdf
 totalincome.distribution.png
 repro.pdf
 repro.png
+tidistr.pdf
+tidistr.png
