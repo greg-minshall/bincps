@@ -75,14 +75,81 @@ function ([[https://en.wikipedia.org/wiki/Cumulative_distribution_function][CDF]
 from [[http://www.ipums.org][IPUMS-CS]], I was able to create the following graphic (which is
 presented in 1999 dollars, not the2014 dollars of the FT graph):
 
+**** create.repro
+
+#+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
+  <<warning>>
+  <<looking.bits>>
+  <<stats.binned>>
+
+
+  repro.chart <- function(dset,
+                          bracket="HHBRACKET99",
+                          supp="HWTSUPP",
+                          years=c(1972, 2016),
+                          binsize=5000, # FT used binsize 5000
+                          tgt.in.key) {
+    df <- data.frame()
+    for (year in years) {
+      yset <- dset[dset$YEAR==year,]
+      newvals <- rebinvals.binned(min(yset[,bracket], na.rm=TRUE),
+                                  max(yset[,bracket], na.rm=TRUE), binsize)
+      newnobs <- rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
+                              newvals=newvals)
+      if (tgt.in.key != "bracket/supp") {     # XXX
+        newnobs <- newnobs*newvals        # total income in each bracket
+      }
+      dfnew <- data.frame(vals=newvals, nobs=newnobs)
+      dfnew <- cbind(dfnew, year=as.factor(year), tobs=sum(dfnew$nobs))
+      df <- rbind(df, dfnew)
+    }
+
+    base <- ggplot(df, aes(vals, nobs/tobs, colour=year)) + geom_step()
+
+    print(base)                           # actually display
+
+    ## by the way, the differences between the two curves should sum to
+    ## (approx) zero
+    sh <- df$year==min(years)
+    sl <- df$year==max(years)
+    sbzero <- sum(df[sh,"nobs"]/df[sh, "tobs"] - df[sl,"nobs"]/df[sl,"tobs"])
+    if (abs(sbzero) > 0.001) {
+      stop(sprintf("[approx] integral between curves s/b zero, is %g", sbzero))
+    }
+    return(base)
+  }
+
+
+  main <- function(args=NULL) {
+    dset <- doparser(name="create.repro",
+                     need=c("ifile",
+                       "maxhh", "supp", "bracket",
+                       "binsize",
+                       "graphics", "gfile", "gopts",
+                       "height", "width",
+                       "years", "tgt.in.key"),
+                     args)
+
+    repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"), tgt.in.key=attr(dset, "tgt.in.key"))
+    endup(dset)
+    return(0)
+  }
+
+  <<looking.endbits>>
+#+END_SRC
+
 [[file:repro.IMG]]
 
 This is not by any means exactly as the FT graphic Blom tweeted.
 However, if you squint, it is roughly the same.
 
-If you will grant me that the two graphs represent the same
-distribution of household incomes, then we can now look at the CDF of
-the dataset underlying the second graphic:
+If you will grant me that the two graphs represent something like the
+same distribution of household incomes, then we can now look at the
+CDF of the dataset underlying the second graphic:
+
+#+BEGIN_SRC sh :tangle create.ecdf :shebang "#!/bin/sh" :results none :eval never :exports none
+  ./create.ecdf.common $*
+#+END_SRC
 
 [[file:ecdf.IMG]]
 
@@ -90,6 +157,10 @@ In the above, we see that about 30% of US households have done better
 in the years since 1972.  If we blow up the section for household
 incomes below $50,000, we can see what happens around that area in
 more detail:
+
+#+BEGIN_SRC sh :tangle create.ecdf2 :shebang "#!/bin/sh" :results none :eval never :exports none
+  ./create.ecdf.common $* --maxhh 50000
+#+END_SRC
 
 [[file:ecdf2.IMG]]
 
@@ -1967,16 +2038,6 @@ get the dataset
   }
 #+END_SRC
 
-***** create.ecdf, create.ecdf2 (shell scripts which call create.ecdf.common)
-
-#+BEGIN_SRC sh :tangle create.ecdf :shebang "#!/bin/sh" :results none :eval never :exports none
-  ./create.ecdf.common $*
-#+END_SRC
-
-#+BEGIN_SRC sh :tangle create.ecdf2 :shebang "#!/bin/sh" :results none :eval never :exports none
-  ./create.ecdf.common $* --maxhh 50000
-#+END_SRC
-
 ***** create.tiles
 #+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
@@ -2027,69 +2088,6 @@ get the dataset
       print(warnings())
     }
   }
-#+END_SRC
-
-**** create.repro
-
-#+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
-  <<warning>>
-  <<looking.bits>>
-  <<stats.binned>>
-
-
-  repro.chart <- function(dset,
-                          bracket="HHBRACKET99",
-                          supp="HWTSUPP",
-                          years=c(1972, 2016),
-                          binsize=5000, # FT used binsize 5000
-                          tgt.in.key) {
-    df <- data.frame()
-    for (year in years) {
-      yset <- dset[dset$YEAR==year,]
-      newvals <- rebinvals.binned(min(yset[,bracket], na.rm=TRUE),
-                                  max(yset[,bracket], na.rm=TRUE), binsize)
-      newnobs <- rebin.binned(vals=yset[,bracket], nobs=yset[,supp],
-                              newvals=newvals)
-      if (tgt.in.key != "bracket/supp") {     # XXX
-        newnobs <- newnobs*newvals        # total income in each bracket
-      }
-      dfnew <- data.frame(vals=newvals, nobs=newnobs)
-      dfnew <- cbind(dfnew, year=as.factor(year), tobs=sum(dfnew$nobs))
-      df <- rbind(df, dfnew)
-    }
-
-    base <- ggplot(df, aes(vals, nobs/tobs, colour=year)) + geom_step()
-
-    print(base)                           # actually display
-
-    ## by the way, the differences between the two curves should sum to
-    ## (approx) zero
-    sh <- df$year==min(years)
-    sl <- df$year==max(years)
-    sbzero <- sum(df[sh,"nobs"]/df[sh, "tobs"] - df[sl,"nobs"]/df[sl,"tobs"])
-    if (abs(sbzero) > 0.001) {
-      stop(sprintf("[approx] integral between curves s/b zero, is %g", sbzero))
-    }
-    return(base)
-  }
-
-
-  main <- function(args=NULL) {
-    dset <- doparser(name="create.repro",
-                     need=c("ifile",
-                       "maxhh", "supp", "bracket",
-                       "binsize",
-                       "graphics", "gfile", "gopts",
-                       "height", "width",
-                       "years", "tgt.in.key"),
-                     args)
-
-    repro.chart(dset, bracket=attr(dset, "bracket"), supp=attr(dset, "supp"), years=attr(dset, "years"), tgt.in.key=attr(dset, "tgt.in.key"))
-    endup(dset)
-    return(0)
-  }
-
-  <<looking.endbits>>
 #+END_SRC
 
 **** lookup
