@@ -1884,8 +1884,7 @@ get the dataset
         miny <- min(years)
         maxy.ecdf <- create.lookup(dset, maxy, tgt.in.key)
         miny.ecdf <- create.lookup(dset, miny, tgt.in.key)
-        ## okay, in tgt.in.key, XXX assume key is "%", but that tgt is
-        ## not
+        ## okay, in tgt.in.key, assume key is "%"
         if (!part.pct(parts$key)) {
             stop(sprintf("with \"--delta\", need the key in \"%s\" to begin with '%%'",
                          tgt.in.key))
