@@ -193,11 +193,16 @@ look at 1972, we see this:
 
 file:histo.hhbracket99-1972.IMG
 
-**** Low income issues
+**** TODO Low income issues
 
-low income quality of life may be highly influenced by social "safety
-net" (welfare) programs.  so, loss of N% over 40 years may not
+Low income quality of life may be highly influenced by social "safety
+net" (welfare) programs.  So, loss of N% over 40 years may not
 translate to an N% lower quality of life.
+
+On the other hand, our charts tend to emphasize the *percentage*
+difference between two groups, or between the same group over two
+different years.  For middle- and high-income families, that may be very
+reasonable.  However, for low-income families
 
 *** TODO Most reported incomes
 
@@ -285,7 +290,24 @@ income had been shared equally across the ten income groups, the ten
 bars would all have the same height.  Instead, we see that the highest
 decile (the highest ten percent of earners) has captured more than 35
 percent of the increased income, while the lowest ten percent has
-captured effectively nothing.
+captured effectively nothing of the increase in income over the
+previous 40+ years.
+
+Note that this chart shows that within *all* (other than maybe the
+lowest income decile) income deciles, there was more total income
+received by that group in 2016 than in 1972.  This might seem to
+contradict the main point of this note, i.e., that a large number of
+lower income households in fact were in fact worse off in 2016 than
+they were in 1972.  (And, of course, our methodology doesn't let us
+look at, e.g., the Smith family from 1972 Main Street, and see how
+their fortunes changed over the span of years.)  But, the reason for
+the increase in *total* income being positive, whereas the income per
+family is *negative* is that, in 2016 there were more families than in
+1972, as the US population grew about 50 percent over that time
+period.  So, the total income for a given group may have grown,
+without the income per family growing.  [fn:1:The bars in the above
+graph are *still* reflective of the overall inequality, as the number
+of households in each income decile are the same.]
 
 *** oddities
 
