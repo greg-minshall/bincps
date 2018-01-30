@@ -23,71 +23,6 @@ check.binned <- function(fname, vals, nobs) {
   }
 }
 
-## so, in ecdf():
-
-## - vals are the unique values of x
-
-## - match(x, vals) are, for each value of x, the index of that value
-##   of x in vals.  length(match(x, vals)) == length(x).
-
-## - tabulate(match(x, vals)) returns, for each *index* in vals (i.e.,
-##   in 1:length(vals)), the number of *times* that index appears in
-##   match(x, vals), i.e., how often each value in x appears in x.
-##   sort of a pdf of x.  length(tabulate(match(x, vals))) ==
-##   max(match(x, vals)) == [because of sorting, indexing] length(vals)
-
-##   (note that all these are ordered by index in vals, which, because
-##   of sort, are ordered by value of x)
-
-## - cumsum(tabulate(match(x, vals)) produces a CDF, from 1:n of, for
-##   each unique value in x, how often that value occurs in x.
-
-## - so, finally, cumsum(tabulate(match(x, vals)))/n produces a CDF
-##   with the standard values, i.e., in [0,1).
-
-## - then approxfun(vals, cumsum(tabulate(match(x, vals)))/n, ...)
-##   produces a function that, when called for a given value in vals
-##   (the unique values in x), returns the corresponding value of the
-##   CDF in [0,1).
-
-ecdf.binned.common <- function(x, nobs, inverse, from) {
-  "like ecdf, but for binned values; cribbed from ecdf.  this works for forward function (ecdf.binned) and for inverse function (iecdf.binned)"
-  check.binned(from, x, nobs)
-  wet <- wtd.Ecdf(x=x, weights=nobs)     # get table
-  if (!inverse) {
-    X <- wet$x
-    yleft <- 0
-    yright <- 1
-    Y <- wet$ecdf
-  } else {
-    X <- wet$ecdf
-    Y <- wet$x
-    yleft <- X[1]
-    yright <- X[length(X)]
-  }
-  rval <- approxfun(X, Y,
-                    method="constant",
-                    yleft = yleft, yright = yright,
-                    f = 0,              # XXX is this the right f for inverse?
-                    ties = "ordered")
-  # class(rval) <- c("ecdf", "stepfun", class(rval))
-  assign("nobs", sum(nobs), envir = environment(rval))
-  attr(rval, "call") <- sys.call()
-  rval
-}
-
-ecdf.binned <- function(x, nobs) {
-  "like ecdf, but for binned values; cribbed from ecdf"
-  ecdf.binned.common(x, nobs, inverse = FALSE, "ecdf.binned")
-}
-
-iecdf.binned <- function(x, nobs) {
-  "this is the inverse function from ecdf.binned
- (allowing you to get order statistics easily);
-probably \"slight\" overkill for that usage"
-  ecdf.binned.common(x, nobs, inverse = TRUE, "iecdf.binned")
-}
-
 summary.binned <- function(vals, nobs) {
   if ((length(vals[!is.na(vals)]) == 0) ||
       (length(nobs[!is.na(nobs)]) == 0)) { # "||"? i'm not sure
@@ -109,7 +44,7 @@ the old values vals must fit \"integrally\" into the new vals.
 returns the new observation counts."
   ## only care about actual observed outcomes (and, this makes it
   ## easier to have newvals technically smaller than max(vals), in
-  ## case where max(vals) is not actually an observed value.
+  ## case where max(vals) is not actually an observed value).
   vals <- vals[nobs!=0]
   nobs <- nobs[nobs!=0]
   if (!ordered) {
@@ -144,6 +79,7 @@ returns the new observation counts."
   rval <- c(rval, rep(0, length(newvals)-length(rval)))
   rval                                  # return value
 }
+
 
 rebinvals.binned <- function(limita, limitb=NA, binsize) {
   "return the set of new values for a given new BINSIZE.  
