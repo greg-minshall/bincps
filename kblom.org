@@ -4,8 +4,11 @@
 #+property: header-args :noweb yes
 #+property: header-args:R :session ss
 
-the following means that the results of inline calls are "raw".
+to change how the result is "wrapped", customize the variable
+org-babel-inline-result-wrap.  the following means that the results of
+inline calls are "raw".
 #+bind: org-babel-inline-result-wrap "%s"
+
 # macro with our canonical file name...
 #+name: ifile
 #+BEGIN_SRC sh :cache yes
@@ -14,21 +17,6 @@ make bins
 
 #+RESULTS[f43f76bafeb827b627f0a9cc98f177c4a94a9594]: ifile
 : ./ipums/cps_00006.1962-2017-binned.csv
-
-XXX can't use without "x" in front, or crash... [[https://stackoverflow.com/q/18162477][xcall_XXX()]] to get
-(more-or-less) inline:
-#+name: test
-#+BEGIN_SRC sh :exports none :results output :eval never-export
-echo 4
-#+END_SRC
-
-this
-#+call: test() :results output raw
-is a test
-
-here xcall_test()[:results org] is another test
-
-to change how the result is "wrapped", customize the variable org-babel-inline-result-wrap.
 
 ** image suffix                                                    :noexport:
 
@@ -191,12 +179,13 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
   sprintf("%s", df[,3])
 #+END_SRC
 
-the national income (amount of money reported as household income)
-increased from
-$ call_lucr(tgtinkey="totalincome:%population",key=1,years=1972,words="TRUE")
-in 1972 to
-$ call_lucr(tgtinkey="totalincome:%population",key=1,years=2016,words="TRUE")
-in 2016.  who got all this money?
+The national income (the total of the amounts of money reported as
+household income) increased from $
+call_lucr(tgtinkey="totalincome:%population",key=1,years=1972,words="TRUE")
+in 1972 to $
+call_lucr(tgtinkey="totalincome:%population",key=1,years=2016,words="TRUE")
+in 2016.  Who got all this money?  How was it shared among the
+population?
 
 in 1972, .5 of pop made $
 call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",docomprss="FALSE") {{{results(42000)}}}
@@ -221,8 +210,8 @@ While the above graphic may look to be the graph of a cumulative
 distribution, it is not.  It is, rather, the actual distribution,
 showing how much of the excess income between 1972 and 2016 is earned
 by each of the ten decile income groups in the US.  If the extra
-income had been shared equally across the ten income deciles, all the
-bars would be at the same height.  Instead, we see that the highest
+income had been shared equally across the ten income groups, the ten
+bars would all have the same height.  Instead, we see that the highest
 decile (the highest ten percent of earners) has captured more than 35
 percent of the increased income, while the lowest ten percent has
 captured effectively nothing.
