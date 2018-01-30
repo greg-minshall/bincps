@@ -1856,14 +1856,6 @@ the following code is common to all our visualizations
     title <- parts.title(parts)
     if (delta) {
         title <- sprintf("%s (delta)", title)
-    }
-    ulx <- part.max(dset, years, parts$key)
-    base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
-      ggtitle(title) +
-        xlab(parts$key$desc) +
-        ylab(parts$tgt$desc) +
-        scale_colour_discrete(name="Year")
-    if (delta) {
         if (length(years) != 2) {
             stop(sprintf("with --delta, exactly two years must be specified; instead %d were",
                          length(years)))
@@ -1874,11 +1866,21 @@ the following code is common to all our visualizations
         miny.ecdf <- create.lookup(dset, miny, tgt.in.key)
         ## okay, in tgt.in.key, XXX assume key is "%", but that tgt is
         ## not
-        sequence <- seq(from=0.00, to=1.00, by=0.01)
+        sequence <- seq(from=0.0, to=1.0, by=0.1)
         deltas <- vapply(sequence, function(x) maxy.ecdf(x)-miny.ecdf(x),1)
-        toplot <- data.frame(x=seq(0,1,.01), y=cumsum(deltas/sum(deltas)))
-        base <- base + geom_smooth(data=toplot, aes(x=x,y=y),size=1, se=FALSE)
+        toplot <- data.frame(x=sequence, y=cumsum(deltas/sum(deltas)))
+        base <- ggplot(toplot, aes(x=x, y=y)) +
+            ggtitle(title) +
+            xlab(parts$key$desc) +
+            ylab(parts$tgt$desc)
+        base <- base + geom_step()
     } else {
+        ulx <- part.max(dset, years, parts$key)
+        base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
+            ggtitle(title) +
+            xlab(parts$key$desc) +
+            ylab(parts$tgt$desc) +
+            scale_colour_discrete(name="Year")
         for (year in years) {
             approx <- create.lookup(dset, year=year, tgt.in.key=tgt.in.key)
             base <- base + stat_function(fun=approx, aes_(colour=as.factor(year)))
