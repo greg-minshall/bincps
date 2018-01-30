@@ -1441,13 +1441,22 @@ run something like this:
 
 *** looking at the data
 **** common code
-the following code is common to all our visualizations
+the following code is common to all our visualizations.  we break it
+down in pieces
+***** all the bits, nothing but the bits
 #+name: looking.bits
 #+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
   <<warning>>
-  require(ggplot2, quietly=TRUE)
-  require(assertthat, quietly=TRUE)
+  <<looking.dset>>
+  <<looking.parts>>
+  <<looking.create.lookup>>
+  <<looking.parser>>
+  <<looking.graph>>
+#+END_SRC
 
+get the dataset
+#+name: looking.dset
+#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
   looking.tidyup <- function(nvals, nobs, maxval) {
     "take the input dataset, cap it"
     ## now, clamp upper end at maxval (200,000, say)
@@ -1509,6 +1518,12 @@ the following code is common to all our visualizations
     }
     dset
   }
+#+END_SRC
+
+#+name: looking.parts
+#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
+  require(ggplot2, quietly=TRUE)
+  require(assertthat, quietly=TRUE)
 
   ## the following work on named part(s)
   part.pct <- function(part) {
@@ -1607,8 +1622,10 @@ the following code is common to all our visualizations
       }
       rval
   }
+#+END_SRC
 
-
+#+name: looking.create.lookup
+#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
   create.lookup <- function(dset, year, tgt.in.key) {
       "create a lookup function"
       yset <- dset[dset$YEAR==year,]
@@ -1625,14 +1642,10 @@ the following code is common to all our visualizations
       attr(rval, "call") <- sys.call()
       rval
   }
+#+END_SRC
 
-  pyear <- function(iecdf, y1, y2, tiles) {
-    "what is the annual rate of growth for a given decile between years y1 and y2?"
-    my1 <- min(y1, y2)
-    my2 <- max(y1, y2)
-    (iecdf[[y2]](tiles)/my.iecdfs[[y1]](tiles))^(1/(y2-y1))-1
-  }
-
+#+name: looking.parser
+#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
   ## different utilities need different combinations of (a common set
   ## of) parameters
   doparser <- function(name, need, args) {
@@ -1753,7 +1766,11 @@ the following code is common to all our visualizations
 
     looking.dset(argv)
   }
+#+END_SRC
 
+
+#+name: looking.graph
+#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
   dograph <- function(graphics, gfile, height, width, gopts) {
     "point our graphic output at a particular device (X11, pdf, png, svg)"
     topts <- function(name, value) {
