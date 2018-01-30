@@ -1977,22 +1977,6 @@ get the dataset
   ./create.ecdf.common $* --maxhh 50000
 #+END_SRC
 
-we want to understand how the increase in total income between two
-years has been distributed among the population (as represented by
-percentiles).
-
-to do this, we create an ecdf for each year which relates population
-percentile (supp/sum(supp)) to total income at or below that level.
-
-then, we graph the difference between the two
-
-or, should we create the total income at each percentile, then
-subtract, then create the integral of that?  i'm not sure.
-
-#+BEGIN_SRC sh :tangle create.ecdf.delta :shebang "#!/bin/sh" :results none :eval never :exports none
-  ./create.ecdf.common $* --delta --tgt.in.key totalincome:%population --maxhh 2e14
-#+END_SRC
-
 ***** create.tiles
 #+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
