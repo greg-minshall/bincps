@@ -1868,12 +1868,12 @@ the following code is common to all our visualizations
         ## not
         sequence <- seq(from=0.0, to=1.0, by=0.1)
         deltas <- vapply(sequence, function(x) maxy.ecdf(x)-miny.ecdf(x),1)
-        toplot <- data.frame(x=sequence, y=cumsum(deltas/sum(deltas)))
+        toplot <- data.frame(x=sequence[-length(sequence)], y=diff(deltas))
         base <- ggplot(toplot, aes(x=x, y=y)) +
             ggtitle(title) +
             xlab(parts$key$desc) +
             ylab(parts$tgt$desc)
-        base <- base + geom_step()
+        base <- base + geom_col()
     } else {
         ulx <- part.max(dset, years, parts$key)
         base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
