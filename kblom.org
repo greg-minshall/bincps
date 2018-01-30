@@ -1872,7 +1872,10 @@ get the dataset
     parts <- tgt.in.key(tgt.in.key)
     title <- parts.title(parts)
     if (delta) {
-        title <- sprintf("%s (delta)", title)
+        title <- sprintf("how difference in %s between %s and %s is split up among deciles of %s",
+              parts$tgt$desc,
+              years[1], years[2],
+              parts$key$desc)
         if (length(years) != 2) {
             stop(sprintf("with --delta, exactly two years must be specified; instead %d were",
                          length(years)))
@@ -1883,6 +1886,10 @@ get the dataset
         miny.ecdf <- create.lookup(dset, miny, tgt.in.key)
         ## okay, in tgt.in.key, XXX assume key is "%", but that tgt is
         ## not
+        if (!part.pct(parts$key)) {
+            stop(sprintf("with \"--delta\", need the key in \"%s\" to begin with '%%'",
+                         tgt.in.key))
+        }
         sequence <- seq(from=0.0, to=1.0, by=0.1)
         deltas <- vapply(sequence, function(x) maxy.ecdf(x)-miny.ecdf(x),1)
         toplot <- data.frame(x=sequence[-length(sequence)], y=diff(deltas))
