@@ -1,5 +1,6 @@
 * [[https://twitter.com/kltblom][Kristian Blom]]: does recent (40+ years) change in US income distribution matter?
 ** misc configuration, etc., stuff                                 :noexport:
+#+title: A small confirmation of some fairly well-known facts regarding the distribution of (household) incomes in the US
 #+property: header-args :noweb yes
 #+property: header-args:R :session ss
 
@@ -158,37 +159,30 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
 
 *** Where have all the flowers gone
 
-#+name: comprss.subr
+#+name: comprss
 #+BEGIN_SRC R :exports none :eval no-export
   ## https://stackoverflow.com/a/28160474
-  comprss <- function(tx, words=FALSE, precision=2) {
+  comprss <- function(number, words=FALSE, precision=2) {
+      "output a (presumably) large NUMBER with trailing units, at a specified PRECISION"
       if (words) {
           units <- c("", "thousand", "million", "billion", "trillion")
       } else {
           units <- c("","K","M","B","T")
       }
-      div <- findInterval(abs(as.numeric(gsub("\\,", "", tx))),
+      div <- findInterval(abs(as.numeric(gsub("\\,", "", number))),
                           c(1, 1e3, 1e6, 1e9, 1e12))
 
       div[div==0] <- 1
-      paste(round(as.numeric(gsub("\\,","",tx))/10^(3*(div-1)),
+      paste(round(as.numeric(gsub("\\,","",number))/10^(3*(div-1)),
                   precision),
             units[div])
   }
 #+END_SRC
 
-#+RESULTS: comprss.subr
-
-#+name: comprss
-#+BEGIN_SRC R :exports none :var tx=".23e0" :results output :eval no-export
-<<comprss.subr>>
-print(comprss(tx))
-#+END_SRC
-
 #+name: lucr
 #+BEGIN_SRC R :exports none :var tgtinkey="%totalincome:%population" :var keys="0.5" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE"
   <<lookup>>
-  <<comprss.subr>>
+  <<comprss>>
 
   df <- lookup.main(c("--ifile", ifile, "--maxhh", "2e14", "--years", years, "--tgt.in.key", tgtinkey, "--keys", keys))
   if (docomprss) {
@@ -214,7 +208,24 @@ or less, .9 of pop made
 call_lucr(tgtinkey="bracket:%population",keys=0.9,years=2016,words="TRUE",docomprss="FALSE") {{{results(126000)}}}
 or less.
 
-[[file:ecdf.delta.IMG]]
+The following graphic shows how the extra money earned in 2016 (over
+that earned in 1972) has been shared among the income deciles in the US.
+
+#+BEGIN_SRC sh :tangle create.tidistr :shebang "#!/bin/sh" :results none :eval never :exports none
+  ./create.ecdf.common $* --years 1972,2016 --tgt.in.key %totalincome:%population --delta --maxhh 2e14
+#+END_SRC
+
+[[file:tidistr.IMG]]
+
+While the above graphic may look to be the graph of a cumulative
+distribution, it is not.  It is, rather, the actual distribution,
+showing how much of the excess income between 1972 and 2016 is earned
+by each of the ten decile income groups in the US.  If the extra
+income had been shared equally across the ten income deciles, all the
+bars would be at the same height.  Instead, we see that the highest
+decile (the highest ten percent of earners) has captured more than 35
+percent of the increased income, while the lowest ten percent has
+captured effectively nothing.
 
 *** oddities
 
@@ -1592,6 +1603,27 @@ get the dataset
               parts$key$desc)
   }
 
+  part.other <- function(part) {
+      "if %foo, foo; else %foo"
+      rval <- part
+      if (part.pct(part)) {
+          rval$name <- part.base(part)
+          rval$pct <- FALSE
+      } else {
+          rval$name <- sprintf("%%%s", part.base(part))
+          rval$pct <- TRUE
+      }
+      rval
+  }
+
+  parts.two.to.parts <- function(tgt, key) {
+      "combine a target and a key part into a tgt.in.key string"
+      sprintf("%s:%s", tgt$name, key$name)
+  }
+
+
+
+
   ## looking up:
   ## 1. totalincome:population: given a cum population, what is cum totalincome?
   ## 2. %totalincome:population: given a cum population, what is % totalincome?
@@ -1883,21 +1915,26 @@ get the dataset
         }
         maxy <- max(years)
         miny <- min(years)
-        maxy.ecdf <- create.lookup(dset, maxy, tgt.in.key)
-        miny.ecdf <- create.lookup(dset, miny, tgt.in.key)
+        other.tik <- parts.two.to.parts(part.other(parts$tgt), parts$key)
+        maxy.ecdf <- create.lookup(dset, maxy, other.tik)
+        miny.ecdf <- create.lookup(dset, miny, other.tik)
         ## okay, in tgt.in.key, assume key is "%"
         if (!part.pct(parts$key)) {
             stop(sprintf("with \"--delta\", need the key in \"%s\" to begin with '%%'",
                          tgt.in.key))
         }
-        sequence <- seq(from=0.0, to=1.0, by=0.1)
+        sequence <- seq(from=0.1, to=1.0, by=0.1)
         deltas <- vapply(sequence, function(x) maxy.ecdf(x)-miny.ecdf(x),1)
-        toplot <- data.frame(x=sequence[-length(sequence)], y=diff(deltas))
+        if (part.pct(parts$tgt)) {
+            deltas <- deltas/sum(deltas)
+        }
+        toplot <- data.frame(x=sequence, y=deltas)
         base <- ggplot(toplot, aes(x=x, y=y)) +
             ggtitle(title) +
             xlab(parts$key$desc) +
-            ylab(parts$tgt$desc)
-        base <- base + geom_col()
+            ylab(parts$tgt$desc) +
+            scale_x_continuous(breaks=sequence)
+        base <- base + geom_col(position=position_nudge(-.05))
     } else {
         ulx <- part.max(dset, years, parts$key)
         base <- ggplot(data.frame(x=c(0,ulx)), aes(x)) +
