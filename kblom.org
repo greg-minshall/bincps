@@ -179,38 +179,39 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
 
 #+RESULTS: comprss.subr
 
-
+#+name: comprss
 #+BEGIN_SRC R :exports none :var tx=".23e0" :results output :eval no-export
 <<comprss.subr>>
 print(comprss(tx))
 #+END_SRC
 
 #+name: lucr
-#+BEGIN_SRC R :exports none :eval never-export :var tgtinkey="%totalincome:%population" :var keys="0.5" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var comprss="TRUE"
+#+BEGIN_SRC R :exports none :var tgtinkey="%totalincome:%population" :var keys="0.5" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE"
   <<lookup>>
-  <<comprss>>
+  <<comprss.subr>>
 
-  df <- lookup.main(c("--ifile", ifile, "--years", years, "--tgt.in.key", tgtinkey, "--keys", keys))
-  if (comprss) {
-      df[,3] <- comprss(df[,3])
+  df <- lookup.main(c("--ifile", ifile, "--maxhh", "2e14", "--years", years, "--tgt.in.key", tgtinkey, "--keys", keys))
+  if (docomprss) {
+      df[,3] <- comprss(df[,3], words=words)
   }
-  sprintf("%s", df[,3], words=words)
+  sprintf("%s", df[,3])
 #+END_SRC
 
-the national income has increased from
-$ call_lucr(tgtinkey="totalincome:%population", key=1, years=1972, words="TRUE")
-{{{results(2.52 trillion)}}} in 1972 to
-$ call_lucr(tgtinkey="totalincome:%population", key=1, years=2016, words="TRUE")
-{{{results(3.78 trillion)}}} in 2016.  who got all this money?
+the national income (amount of money reported as household income)
+increased from
+$ call_lucr(tgtinkey="totalincome:%population",key=1,years=1972,words="TRUE")
+in 1972 to
+$ call_lucr(tgtinkey="totalincome:%population",key=1,years=2016,words="TRUE")
+in 2016.  who got all this money?
 
 in 1972, .5 of pop made $
-call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",comprss="FALSE") {{{results(42000)}}}
+call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",docomprss="FALSE") {{{results(42000)}}}
 or less, .9 of pop made
-call_lucr(tgtinkey="bracket:%population",keys=0.9,years=1972,words="TRUE",comprss="FALSE") {{{results(85000)}}}
+call_lucr(tgtinkey="bracket:%population",keys=0.9,years=1972,words="TRUE",docomprss="FALSE") {{{results(85000)}}}
 or less.  in 2016, .5 of pop made
-call_lucr(tgtinkey="bracket:%population",keys=0.5,years=2016,words="TRUE",comprss="FALSE") {{{results(47000)}}}
+call_lucr(tgtinkey="bracket:%population",keys=0.5,years=2016,words="TRUE",docomprss="FALSE") {{{results(47000)}}}
 or less, .9 of pop made
-call_lucr(tgtinkey="bracket:%population",keys=0.9,years=2016,words="TRUE",comprss="FALSE") {{{results(126000)}}}
+call_lucr(tgtinkey="bracket:%population",keys=0.9,years=2016,words="TRUE",docomprss="FALSE") {{{results(126000)}}}
 or less.
 
 [[file:ecdf.delta.IMG]]
