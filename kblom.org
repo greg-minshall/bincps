@@ -175,29 +175,66 @@ number has increased to 26%. ???
 *** TODO CDF
 *** Methodological problems
 
-**** TODO High income issues
+**** TODO High income issues -- not enough data points?
 
-not enough data points?  Piketty, Saez, et al.  show number of data
-points per income group (i.e., *not* multiplied by HWTSUPP).  (does
-problem affect lower income groups as well?)
+#+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
+  <<warning>>
+  <<looking.bits>>
+  <<stats.binned>>
+
+  histo.hhbracket99 <- function(dset, years) {
+    dset$YEAR <- as.factor(dset$YEAR)
+    base <- ggplot(dset[dset$YEAR %in% years,],
+                   aes(HHBRACKET99, NRESP, colour=YEAR))
+    base <- base + geom_col()
+    print(base)
+  }
+
+  main <- function(args=NULL) {
+      dset <- doparser(name="totalincome",
+                       need=c("ifile",
+                              "maxhh", "supp", "bracket",
+                              "binsize",
+                              "graphics", "gfile", "gopts",
+                              "height", "width",
+                              "years"),
+                       args)
+      histo.hhbracket99(dset, years=attr(dset, "years"))
+      endup(dset)
+      return(0)
+  }
+
+  <<looking.endbits>>
+
+#+END_SRC
+
+It's tricky trying to get reliable data at the high end of the income
+scale (XXX Piketty, Saez, et al.)  In the following graphic, we show
+number of data points per income group (i.e., *not* multiplied by the
+weighting factor [[https://cps.ipums.org/cps-action/variables/HWTSUPP#codes_section][HWTSUPP]]).
 
 file:histo.hhbracket99-both.IMG
 
-ignoring the hump around 200,000 dollars for the year 1972 (see the
+Ignoring the hump around 200,000 dollars for the year 1972 (see the
 section [[oddities]]), it is clear that very few respondents have high
 incomes.
 
-while it's not apparent in this graphic, incomes below around 5,000,
-6,000 dollars also have a small number of respondents.  if we just
+While it's not apparent in this graphic, incomes below around 5,000,
+6,000 dollars also have a small number of respondents.  If we just
 look at 1972, we see this:
 
 file:histo.hhbracket99-1972.IMG
 
 **** TODO Low income issues
 
-Low income quality of life may be highly influenced by social "safety
-net" (welfare) programs.  So, loss of N% over 40 years may not
-translate to an N% lower quality of life.
+In addition to the problems of getting enough data points, low income
+quality of life may be highly influenced by social "safety net"
+(welfare) programs.  So, loss of N% over 40 years may not translate to
+an N% lower quality of life, as the social safety net in the US has
+changed dramatically over that period of time.  We are not experts in
+this area, and so cannot make any pronouncements about how these
+changes may either offset or reinforce the trend seen in household
+income over this period of time.
 
 On the other hand, our charts tend to emphasize the *percentage*
 difference between two groups, or between the same group over two
@@ -251,27 +288,30 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
   df <- lookup.main(c("--ifile", ifile, "--maxhh", "2e14", "--years", years, "--tgt.in.key", tgtinkey, "--keys", keys))
   if (docomprss) {
       df[,3] <- comprss(df[,3], words=words)
+  } else {
+      # Sys.localeconv()["thousands_sep"] == "" for some reason, so...
+      df[,3] <- prettyNum(df[,3], big.mark=" ")
   }
   sprintf("%s", df[,3])
 #+END_SRC
 
 The national income (the total of the amounts of money reported as
-household income) increased from $
-call_lucr(tgtinkey="totalincome:%population",key=1,years=1972,words="TRUE")
-in 1972 to $
-call_lucr(tgtinkey="totalincome:%population",key=1,years=2016,words="TRUE")
+household income) increased from
+$​call_lucr(tgtinkey="totalincome:%population",key=1,years=1972,words="TRUE")
+in 1972 to
+$​call_lucr(tgtinkey="totalincome:%population",key=1,years=2016,words="TRUE")
 in 2016.  Who got all this money?  How was it shared among the
 population?
 
-in 1972, .5 of pop made $
-call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",docomprss="FALSE") {{{results(42000)}}}
-or less, .9 of pop made
-call_lucr(tgtinkey="bracket:%population",keys=0.9,years=1972,words="TRUE",docomprss="FALSE") {{{results(85000)}}}
-or less.  in 2016, .5 of pop made
-call_lucr(tgtinkey="bracket:%population",keys=0.5,years=2016,words="TRUE",docomprss="FALSE") {{{results(47000)}}}
-or less, .9 of pop made
-call_lucr(tgtinkey="bracket:%population",keys=0.9,years=2016,words="TRUE",docomprss="FALSE") {{{results(126000)}}}
-or less.
+in 1972, .5 of pop made
+$​call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",docomprss="FALSE")
+{{{results(42000)}}} or less, .9 of pop made
+$​call_lucr(tgtinkey="bracket:%population",keys=0.9,years=1972,words="TRUE",docomprss="FALSE")
+{{{results(85000)}}} or less.  in 2016, .5 of pop made
+$​call_lucr(tgtinkey="bracket:%population",keys=0.5,years=2016,words="TRUE",docomprss="FALSE")
+{{{results(47000)}}} or less, .9 of pop made
+$​call_lucr(tgtinkey="bracket:%population",keys=0.9,years=2016,words="TRUE",docomprss="FALSE")
+{{{results(126000)}}} or less.
 
 The following graphic shows how the extra money earned in 2016 (over
 that earned in 1972) has been shared among the income deciles in the US.
@@ -280,6 +320,7 @@ that earned in 1972) has been shared among the income deciles in the US.
   ./create.ecdf.common $* --years 1972,2016 --tgt.in.key %totalincome:%population --delta --maxhh 2e14
 #+END_SRC
 
+#+caption: How the increase in incomes of US households in 2016 over 1972 was distributed over different income groups.
 [[file:tidistr.IMG]]
 
 While the above graphic may look to be the graph of a cumulative
@@ -311,16 +352,16 @@ of households in each income decile are the same.]
 
 *** oddities
 
-the IPUMS data set starts in 1962.  but, from 1962 through 1967, it
+The IPUMS data set starts in 1962.  But, from 1962 through 1967, it
 contains no actual reported incomes.
 
-from 1968 through 1975, the reported incomes appear to have been
-capped at 50,000 dollars.  it *appears* as if incomes greater than
-50,000 dollars [[https://cps.ipums.org/cps/inctaxcodes.shtml][were reported as 50,000 dollars]].  (for example, one
+From 1968 through 1975, the reported incomes appear to have been
+capped at 50,000 dollars.  It *appears* as if incomes greater than
+50,000 dollars [[https://cps.ipums.org/cps/inctaxcodes.shtml][were reported as 50,000 dollars]].  For example, one
 sees a hump at the 1999 equivalent of 50,000 1972 dollars (a bit over
 200,000 1999 dollars) in the figure in [[High income issues]].
 
-from 1976, onwards, we see no evidence of such a cap on reported
+From 1976, onwards, we see no evidence of such a cap on reported
 income.
 ** Acknowledgements
 
@@ -700,6 +741,7 @@ the so-called "self-description".
 
 i think in an ideal world, i'd provide a command line switch that
 would determine how to deal with these files.
+
 *** performance tuning bincps
 
 the original version of this code processed each (non-trivial) year in
@@ -1972,8 +2014,7 @@ get the dataset
   }
 #+END_SRC
 
-**** create.ecdf
-***** create.ecdf.common (called by shell scripts)
+**** create.ecdf.common (called by shell scripts)
 
 #+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
@@ -2060,7 +2101,7 @@ get the dataset
   }
 #+END_SRC
 
-***** create.tiles
+**** create.tiles
 #+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
@@ -2163,40 +2204,6 @@ get the dataset
   ./lookup $* | awk 'NR > 1 { print $3 }'
 #+END_SRC
 
-
-**** histogram of number of data points per bracket
-
-#+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
-  <<warning>>
-  <<looking.bits>>
-  <<stats.binned>>
-
-  histo.hhbracket99 <- function(dset, years) {
-    dset$YEAR <- as.factor(dset$YEAR)
-    base <- ggplot(dset[dset$YEAR %in% years,],
-                   aes(HHBRACKET99, NRESP, colour=YEAR))
-    base <- base + geom_col()
-    print(base)
-  }
-
-  main <- function(args=NULL) {
-      dset <- doparser(name="totalincome",
-                       need=c("ifile",
-                              "maxhh", "supp", "bracket",
-                              "binsize",
-                              "graphics", "gfile", "gopts",
-                              "height", "width",
-                              "years"),
-                       args)
-      histo.hhbracket99(dset, years=attr(dset, "years"))
-      endup(dset)
-      return(0)
-  }
-
-  <<looking.endbits>>
-
-#+END_SRC
-
 **** for interactive use, return desired dset
 this bit is just for running interactively, returns the desired dset
 
@@ -2221,3 +2228,7 @@ run by, e.g.,
   <<looking.endbits>>
 #+END_SRC
 
+** local variables :noexport:
+# Local Variables:
+# org-babel-inline-result-wrap: "%s"
+# End:
