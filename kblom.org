@@ -282,7 +282,7 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
 #+END_SRC
 
 #+name: lucr
-#+BEGIN_SRC R :exports none :var tgtinkey="%totalincome:%population" :var keys="0.5" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE"
+#+BEGIN_SRC R :exports none :var tgtinkey="%totalincome:%population" :var keys="1" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE"
   <<lookup>>
   <<comprss>>
 
@@ -296,16 +296,48 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
   sprintf("%s", df[,3])
 #+END_SRC
 
+#+name: tincbypop
+#+begin_src sh :exports none :results output table :cache yes
+./create.tiles --ifile ipums/cps_00006.1962-2017-binned.csv --tgt.in.key totalincome:%population --maxhh 2e14 --tiles 0.1,0.25,0.5,0.75,0.9,1
+#+end_src
+
+#+RESULTS[2c5ed90ab87bf011b978e31b7c7b5ea4e6365b41]: tincbypop
+| Year |          0.1 |         0.25 |          0.5 |         0.75 |          0.9 |            1 |
+| 1972 | 166804348930 | 7.579472e+11 | 2.522949e+12 | 5.224458e+12 | 7.412272e+12 | 9.884043e+12 |
+| 2016 | 178756984470 | 1.060351e+12 | 3.784333e+12 | 8.734499e+12 | 1.354807e+13 | 2.005585e+13 |
+
+#+name: gettincbypop
+#+begin_src R :session ss :var tincbypop=tincbypop :var year=1972 :var fraction=1 :var words="FALSE" :var docomprss="TRUE" :exports none
+    colnames(tincbypop) <- tincbypop[1,]
+    tincbypop <- tincbypop[-1,]
+    rownames(tincbypop) <- tincbypop[,1]
+    tincbypop <- tincbypop[,-1]
+        rval <- tincbypop[as.character(year), as.character(fraction)]
+    if (docomprss) {
+        rval <- comprss(rval, words=words)
+    } else {
+        # Sys.localeconv()["thousands_sep"] == "" for some reason, so...
+        rval <- prettyNum(rval, big.mark=" ")
+    }
+      sprintf("%s", rval)
+#+end_src
+
+call_gettincbypop(year=1972,fraction=.25) {{{results(757.95 B)}}}
+
 The national income (the total of the amounts of money reported as
 household income) increased from
-$​call_lucr(tgtinkey="totalincome:%population",key=1,years=1972,words="TRUE")
+$​call_gettincbypop(fraction=1,year=1972,words="TRUE",docomprss="TRUE") {{{results(9.88 trillion)}}}
+$​call_lucr(tgtinkey="totalincome:%population",key=1,years=1972,words="TRUE") {{{results(9.88 trillion)}}}
 in 1972 to
-$​call_lucr(tgtinkey="totalincome:%population",key=1,years=2016,words="TRUE")
+$​call_gettincbypop(fraction=1,year=2016,words="TRUE",docomprss="TRUE") {{{results(20.06 trillion)}}}
+$​call_lucr(tgtinkey="totalincome:%population",key=1,years=2016,words="TRUE") {{{results(20.06 trillion)}}}
 in 2016.  Who got all this money?  How was it shared among the
 population?
 
+
+
 in 1972, .5 of pop made
-$​call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",docomprss="FALSE")
+$​call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",docomprss="FALSE") {{{results(42 000)}}}
 or less, .9 of pop made
 $​call_lucr(tgtinkey="bracket:%population",keys=0.9,years=1972,words="TRUE",docomprss="FALSE")
 or less.  in 2016, .5 of pop made
@@ -2109,20 +2141,14 @@ get the dataset
 
 
   ggp.tiles <- function(dset, years, tgt.in.key, tiles) {
-    "plot the tiles for a given set of deciles over a set of years"
-    base <- ggplot() +
-      ggtitle("Select deciles of household income in the United States (1999 dollars)") +
-        ylab(attr(dset, "bracket"))
+    "compute percentiles over a set of years"
+    df <- data.frame()
     for (year in years) {
         iecdf <- create.lookup(dset, year=year, tgt.in.key)
-        df <- data.frame(Year=as.factor(year),
-                         Fraction=tiles,
-                         hhbracket99=iecdf(tiles))
-        base <- base + geom_point(data=df, aes(x=Fraction,
-                                               y=hhbracket99,
-                                               colour=Year))
+        df <- rbind(df, c(year, iecdf(tiles)))
     }
-    print(base)
+    colnames(df) <- c("Year", tiles)
+    df
   }
 
   main <- function(args=NULL) {
@@ -2130,16 +2156,14 @@ get the dataset
                      need=c("ifile",
                        "maxhh", "supp", "bracket",
                        "binsize",
-                       "graphics", "gfile", "gopts",
-                       "height", "width",
                        "years", "tgt.in.key", "tiles"
                        ), args)
-    ggp.tiles(dset,
-              years=attr(dset, "years"),
-              tgt.in.key=attr(dset, "tgt.in.key"),
-              tiles=attr(dset, "tiles"))
-    endup(dset)
-    return(0)
+    rval <- ggp.tiles(dset,
+                      years=attr(dset, "years"),
+                      tgt.in.key=attr(dset, "tgt.in.key"),
+                      tiles=attr(dset, "tiles"))
+    options("width"=1000)                 # so print() doesn't insert linebreaks
+    print(rval, row.names=FALSE)
   }
 
   options(error=recover)
