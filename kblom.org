@@ -175,7 +175,8 @@ number has increased to 26%. ???
 *** TODO CDF
 *** Methodological problems
 
-**** TODO High income issues -- not enough data points?
+**** TODO High income issues
+-- not enough data points?
 
 #+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
@@ -305,13 +306,13 @@ population?
 
 in 1972, .5 of pop made
 $​call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",docomprss="FALSE")
-{{{results(42000)}}} or less, .9 of pop made
+or less, .9 of pop made
 $​call_lucr(tgtinkey="bracket:%population",keys=0.9,years=1972,words="TRUE",docomprss="FALSE")
-{{{results(85000)}}} or less.  in 2016, .5 of pop made
+or less.  in 2016, .5 of pop made
 $​call_lucr(tgtinkey="bracket:%population",keys=0.5,years=2016,words="TRUE",docomprss="FALSE")
-{{{results(47000)}}} or less, .9 of pop made
+or less, .9 of pop made
 $​call_lucr(tgtinkey="bracket:%population",keys=0.9,years=2016,words="TRUE",docomprss="FALSE")
-{{{results(126000)}}} or less.
+or less.
 
 The following graphic shows how the extra money earned in 2016 (over
 that earned in 1972) has been shared among the income deciles in the US.
@@ -320,7 +321,7 @@ that earned in 1972) has been shared among the income deciles in the US.
   ./create.ecdf.common $* --years 1972,2016 --tgt.in.key %totalincome:%population --delta --maxhh 2e14
 #+END_SRC
 
-#+caption: How the increase in incomes of US households in 2016 over 1972 was distributed over different income groups.
+#+caption: How the increase in incomes of US households in 2016 over 1972 was distributed across deciles of the US popuation (sorted by income)
 [[file:tidistr.IMG]]
 
 While the above graphic may look to be the graph of a cumulative
@@ -2028,17 +2029,16 @@ get the dataset
     parts <- tgt.in.key(tgt.in.key)
     title <- parts.title(parts)
     if (delta) {
-        title <- sprintf("how difference in %s between %s and %s is split up among deciles of %s",
-              parts$tgt$desc,
-              years[1], years[2],
-              parts$key$desc)
+        other.tik <- parts.two.to.parts(part.other(parts$tgt), parts$key)
+        other.parts <- tgt.in.key(other.tik)
+        maxy <- max(years)
+        miny <- min(years)
+        title <- sprintf("Allocation of change in %s between %s and %s",
+                         parts$tgt$desc, maxy, miny)
         if (length(years) != 2) {
             stop(sprintf("with --delta, exactly two years must be specified; instead %d were",
                          length(years)))
         }
-        maxy <- max(years)
-        miny <- min(years)
-        other.tik <- parts.two.to.parts(part.other(parts$tgt), parts$key)
         maxy.ecdf <- create.lookup(dset, maxy, other.tik)
         miny.ecdf <- create.lookup(dset, miny, other.tik)
         ## okay, in tgt.in.key, assume key is "%"
