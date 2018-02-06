@@ -284,7 +284,10 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
 #+name: doprint
 #+begin_src R :exports none :eval no-export
   <<comprss>>
-  doprint <- function(vals, words=words, docomprss, format) {
+  doprint <- function(vals, words=words, docomprss, format, diff) {
+      if (diff && (length(vals)>1)) {
+          vals <- diff(vals)
+      }
       if (docomprss) {
           vals <- comprss(vals, words=words)
       } else {
@@ -304,37 +307,21 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
   <<doprint>>
 
   df <- lookup.main(c("--ifile", ifile, "--maxhh", "2e14", "--years", years, "--tgt.in.key", tgtinkey, "--keys", keys))
-  vals <- df[,3]
-  if (diff && (length(vals)>1)) {
-      vals <- diff(vals)
-  }
-  doprint(vals, words=words, docomprss=docomprss, format=format)
+  doprint(df[,3], words=words, docomprss=docomprss, format=format, diff=diff)
 #+END_SRC
 
-#+RESULTS: lucr
-: 10.17 T
-
-#+name: tincbypop
-#+begin_src sh :exports results :results output table raw :cache yes
-./create.tiles --ifile ipums/cps_00006.1962-2017-binned.csv --tgt.in.key %totalincome:%population --maxhh 2e14 --tiles 0.1,0.25,0.5,0.75,0.9,1
+#+name: dosometiles
+#+begin_src R :results table :colnames yes :exports results
+  <<create.tiles>>
+  df <- tiles.main(c("--ifile", ifile, "--maxhh", "2e14", "--tgt.in.key", "%totalincome:%population", "--tiles", "0.1,0.25,0.5,0.75,0.9,1"))
+  round(df,4)
 #+end_src
 
-#+RESULTS[e60c872230cc4c421816d2a284c1da6e4d4db4fa]: tincbypop
-| Year |    0.1 |  0.25 |  0.5 | 0.75 |  0.9 | 1 |
-| 1972 | 0.0169 | 0.077 | 0.26 | 0.53 | 0.75 | 1 |
-| 2016 | 0.0089 | 0.053 | 0.19 | 0.44 | 0.68 | 1 |
-
-#+name: tincome1972
-#+call: lucr(keys=1,years=1972,words="FALSE",docomprss="FALSE", format="%f")
-
-#+RESULTS: tincome1972
-: 9.884043e+12
-
-#+name: tincome2016
-#+call: lucr(keys=1,years=2016,words="FALSE",docomprss="FALSE", format="%f")
-
-#+RESULTS: tincome2016
-: 2.005585e+13
+#+RESULTS: dosometiles
+| Year |    0.1 |   0.25 |    0.5 |   0.75 |    0.9 | 1 |
+|------+--------+--------+--------+--------+--------+---|
+| 1972 | 0.0169 | 0.0767 | 0.2553 | 0.5286 | 0.7499 | 1 |
+| 2016 | 0.0089 | 0.0529 | 0.1887 | 0.4355 | 0.6755 | 1 |
 
 The national income (the total of the amounts of money reported as
 household income) increased from
@@ -2144,6 +2131,7 @@ get the dataset
 #+END_SRC
 
 **** create.tiles
+#+name: create.tiles
 #+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
@@ -2161,7 +2149,7 @@ get the dataset
     df
   }
 
-  main <- function(args=NULL) {
+  tiles.main <- function(args=NULL) {
     dset <- doparser(name="looking",
                      need=c("ifile",
                        "maxhh", "supp", "bracket",
@@ -2172,19 +2160,14 @@ get the dataset
                       years=attr(dset, "years"),
                       tgt.in.key=attr(dset, "tgt.in.key"),
                       tiles=attr(dset, "tiles"))
+  }
+
+  main <- function(args=NULL) {
     options("width"=1000)                 # so print() doesn't insert linebreaks
-    print(rval, row.names=FALSE, digits=2)
+    print(tiles.main(args), row.names=FALSE, digits=2)
   }
 
-  options(error=recover)
-  options(warn=2)
-
-  if (!interactive()) {
-    rval <- main()
-    if (length(warnings()) != 0) {
-      print(warnings())
-    }
-  }
+  <<looking.endbits>>
 #+END_SRC
 
 **** lookup
