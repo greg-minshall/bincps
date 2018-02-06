@@ -281,27 +281,38 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
   }
 #+END_SRC
 
-#+name: lucr
-#+BEGIN_SRC R :exports none :var tgtinkey="totalincome:%population" :var keys="1" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE" :var format=""
-  <<lookup>>
+#+name: doprint
+#+begin_src R :exports none :eval no-export
   <<comprss>>
+  doprint <- function(vals, words=words, docomprss, format) {
+      if (docomprss) {
+          vals <- comprss(vals, words=words)
+      } else {
+          if (format == "") {
+              format <- NULL
+          }
+          ## Sys.localeconv()["thousands_sep"] == "" for some reason, so...
+          vals <- prettyNum(vals, big.mark=" ", format=format)
+      }
+      sprintf("%s", vals)
+  }
+#+end_src
+
+#+name: lucr
+#+BEGIN_SRC R :exports none :var tgtinkey="totalincome:%population" :var keys="1" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE" :var format="" :var diff=1
+  <<lookup>>
+  <<doprint>>
 
   df <- lookup.main(c("--ifile", ifile, "--maxhh", "2e14", "--years", years, "--tgt.in.key", tgtinkey, "--keys", keys))
-  if (docomprss) {
-      df[,3] <- comprss(df[,3], words=words)
-  } else {
-      if (format == "") {
-          format <- NULL
-      }
-      # Sys.localeconv()["thousands_sep"] == "" for some reason, so...
-      df[,3] <- prettyNum(df[,3], big.mark=" ", format=format)
+  vals <- df[,3]
+  if (diff && (length(vals)>1)) {
+      vals <- diff(vals)
   }
-  sprintf("%s", df[,3])
+  doprint(vals, words=words, docomprss=docomprss, format=format)
 #+END_SRC
 
 #+RESULTS: lucr
-| 1 |
-| 1 |
+: 10.17 T
 
 #+name: tincbypop
 #+begin_src sh :exports results :results output table raw :cache yes
@@ -330,8 +341,7 @@ household income) increased from
 $​call_lucr(keys=1,years=1972,words="TRUE",docomprss="TRUE") in 1972
 to $​call_lucr(keys=1,years=2016,words="TRUE",docomprss="TRUE") in
 2016, an increase in
-$​src_R[:var a=tincome2016 :var b=tincome1972 :results value
-:exports results]{as.numeric(a) - as.numeric(b)} {{{results(1.0171807e+13)}}}.  Who got all this
+$​call_lucr(keys=1,years="1972,2016",words="TRUE").  Who got all this
 money?  How was it shared among the population?
 
 
