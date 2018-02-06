@@ -282,7 +282,7 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
 #+END_SRC
 
 #+name: lucr
-#+BEGIN_SRC R :exports none :var tgtinkey="%totalincome:%population" :var keys="1" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE"
+#+BEGIN_SRC R :exports none :var tgtinkey="totalincome:%population" :var keys="1" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE" :var format=""
   <<lookup>>
   <<comprss>>
 
@@ -290,54 +290,54 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
   if (docomprss) {
       df[,3] <- comprss(df[,3], words=words)
   } else {
+      if (format == "") {
+          format <- NULL
+      }
       # Sys.localeconv()["thousands_sep"] == "" for some reason, so...
-      df[,3] <- prettyNum(df[,3], big.mark=" ")
+      df[,3] <- prettyNum(df[,3], big.mark=" ", format=format)
   }
   sprintf("%s", df[,3])
 #+END_SRC
 
+#+RESULTS: lucr
+| 1 |
+| 1 |
+
 #+name: tincbypop
-#+begin_src sh :exports none :results output table :cache yes
-./create.tiles --ifile ipums/cps_00006.1962-2017-binned.csv --tgt.in.key totalincome:%population --maxhh 2e14 --tiles 0.1,0.25,0.5,0.75,0.9,1
+#+begin_src sh :exports results :results output table raw :cache yes
+./create.tiles --ifile ipums/cps_00006.1962-2017-binned.csv --tgt.in.key %totalincome:%population --maxhh 2e14 --tiles 0.1,0.25,0.5,0.75,0.9,1
 #+end_src
 
-#+RESULTS[2c5ed90ab87bf011b978e31b7c7b5ea4e6365b41]: tincbypop
-| Year |          0.1 |         0.25 |          0.5 |         0.75 |          0.9 |            1 |
-| 1972 | 166804348930 | 7.579472e+11 | 2.522949e+12 | 5.224458e+12 | 7.412272e+12 | 9.884043e+12 |
-| 2016 | 178756984470 | 1.060351e+12 | 3.784333e+12 | 8.734499e+12 | 1.354807e+13 | 2.005585e+13 |
+#+RESULTS[e60c872230cc4c421816d2a284c1da6e4d4db4fa]: tincbypop
+| Year |    0.1 |  0.25 |  0.5 | 0.75 |  0.9 | 1 |
+| 1972 | 0.0169 | 0.077 | 0.26 | 0.53 | 0.75 | 1 |
+| 2016 | 0.0089 | 0.053 | 0.19 | 0.44 | 0.68 | 1 |
 
-#+name: gettincbypop
-#+begin_src R :session ss :var tincbypop=tincbypop :var year=1972 :var fraction=1 :var words="FALSE" :var docomprss="TRUE" :exports none
-    colnames(tincbypop) <- tincbypop[1,]
-    tincbypop <- tincbypop[-1,]
-    rownames(tincbypop) <- tincbypop[,1]
-    tincbypop <- tincbypop[,-1]
-        rval <- tincbypop[as.character(year), as.character(fraction)]
-    if (docomprss) {
-        rval <- comprss(rval, words=words)
-    } else {
-        # Sys.localeconv()["thousands_sep"] == "" for some reason, so...
-        rval <- prettyNum(rval, big.mark=" ")
-    }
-      sprintf("%s", rval)
-#+end_src
+#+name: tincome1972
+#+call: lucr(keys=1,years=1972,words="FALSE",docomprss="FALSE", format="%f")
 
-call_gettincbypop(year=1972,fraction=.25) {{{results(757.95 B)}}}
+#+RESULTS: tincome1972
+: 9.884043e+12
+
+#+name: tincome2016
+#+call: lucr(keys=1,years=2016,words="FALSE",docomprss="FALSE", format="%f")
+
+#+RESULTS: tincome2016
+: 2.005585e+13
 
 The national income (the total of the amounts of money reported as
 household income) increased from
-$​call_gettincbypop(fraction=1,year=1972,words="TRUE",docomprss="TRUE") {{{results(9.88 trillion)}}}
-$​call_lucr(tgtinkey="totalincome:%population",key=1,years=1972,words="TRUE") {{{results(9.88 trillion)}}}
-in 1972 to
-$​call_gettincbypop(fraction=1,year=2016,words="TRUE",docomprss="TRUE") {{{results(20.06 trillion)}}}
-$​call_lucr(tgtinkey="totalincome:%population",key=1,years=2016,words="TRUE") {{{results(20.06 trillion)}}}
-in 2016.  Who got all this money?  How was it shared among the
-population?
+$​call_lucr(keys=1,years=1972,words="TRUE",docomprss="TRUE") in 1972
+to $​call_lucr(keys=1,years=2016,words="TRUE",docomprss="TRUE") in
+2016, an increase in
+$​src_R[:var a=tincome2016 :var b=tincome1972 :results value
+:exports results]{as.numeric(a) - as.numeric(b)} {{{results(1.0171807e+13)}}}.  Who got all this
+money?  How was it shared among the population?
 
 
 
 in 1972, .5 of pop made
-$​call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",docomprss="FALSE") {{{results(42 000)}}}
+$​call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",docomprss="FALSE")
 or less, .9 of pop made
 $​call_lucr(tgtinkey="bracket:%population",keys=0.9,years=1972,words="TRUE",docomprss="FALSE")
 or less.  in 2016, .5 of pop made
@@ -2163,7 +2163,7 @@ get the dataset
                       tgt.in.key=attr(dset, "tgt.in.key"),
                       tiles=attr(dset, "tiles"))
     options("width"=1000)                 # so print() doesn't insert linebreaks
-    print(rval, row.names=FALSE)
+    print(rval, row.names=FALSE, digits=2)
   }
 
   options(error=recover)
