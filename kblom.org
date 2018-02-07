@@ -252,12 +252,53 @@ incomes that people tend to report?
 
 *** Who gets what percent of the national income?
 
+The total household income of the United States increased from
+
 A lot of money is paid out in income in the United States.  How is
-this money distributed among the various income groups?  Here is a CDF
+this money, the total household income (the total of the amounts of
+money reported as household income, henceforth, "total income"
+[fn::I.e., the sum of the product of each of the amount reported as a
+household income times the number of households reporting that
+amount]) distributed among the various income groups?  Here is a CDF
 which shows what percent of the total national income is paid out to
 which income groups in the US.
 
-HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
+First we show, in a table form [fn::Also a CDF, by the way], how much
+of the total income was earned by different percentiles of households
+in the United States, for the years 1972 and 2016.  We see that, for
+example, in 1972,
+call_lucr(keys=0.5,tgtinkey="%totalincome:%population",years=1972,docomprss="FALSE")
+of the total US income was earned by the less wealthy half of US
+households (by income), whereas, in 2016, the less wealthy half of US
+households earned only
+call_lucr(keys=0.1,tgtinkey="%totalincome:%population",years=2016,docomprss="FALSE")
+of the total US income.
+
+
+#+name: tincdistrbydecile
+#+begin_src R :results table :colnames yes :exports results
+  <<create.tiles>>
+  df <- tiles.main(c("--ifile", ifile, "--maxhh", "2e14", "--tgt.in.key", "%totalincome:%population", "--tiles", "0.1,0.25,0.5,0.75,0.9,1"))
+  round(df,4)
+#+end_src
+
+#+RESULTS: dosometiles
+| Year |    0.1 |   0.25 |    0.5 |   0.75 |    0.9 | 1 |
+|------+--------+--------+--------+--------+--------+---|
+| 1972 | 0.0169 | 0.0767 | 0.2553 | 0.5286 | 0.7499 | 1 |
+| 2016 | 0.0089 | 0.0529 | 0.1887 | 0.4355 | 0.6755 | 1 |
+
+Now we look at the same data, however looking at the total income
+earned by each household income bracket.
+
+#+name: tincdistrbybracket
+#+BEGIN_SRC sh :tangle create.tidistrbybracket :shebang "#!/bin/sh" :results none :exports none :eval never
+  ./create.ecdf.common $* --years 1972,2016 --tgt.in.key %totalincome:bracket --maxhh 2e14
+#+END_SRC
+
+#+caption: How the increase in incomes of US households in 2016 over 1972 was distributed across deciles of the US popuation (sorted by income)
+[[file:tidistr.IMG]]
+
 
 *** Where have all the flowers gone
 
@@ -284,9 +325,12 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
 #+name: doprint
 #+begin_src R :exports none :eval no-export
   <<comprss>>
-  doprint <- function(vals, words=words, docomprss, format, diff) {
+  doprint <- function(vals, words=words, docomprss, format, diff, round) {
       if (diff && (length(vals)>1)) {
           vals <- diff(vals)
+      }
+      if (round) {
+          vals <- round(vals, round)
       }
       if (docomprss) {
           vals <- comprss(vals, words=words)
@@ -301,47 +345,27 @@ HHBRACKET99*HWTSUPP/sum(HHBRACKET99*HWTSUPP)
   }
 #+end_src
 
+#+RESULTS: doprint
+
 #+name: lucr
-#+BEGIN_SRC R :exports none :var tgtinkey="totalincome:%population" :var keys="1" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE" :var format="" :var diff=1
+#+BEGIN_SRC R :exports none :var tgtinkey="totalincome:%population" :var keys="1" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE" :var format="" :var diff=1 :var round=4
   <<lookup>>
   <<doprint>>
 
   df <- lookup.main(c("--ifile", ifile, "--maxhh", "2e14", "--years", years, "--tgt.in.key", tgtinkey, "--keys", keys))
-  doprint(df[,3], words=words, docomprss=docomprss, format=format, diff=diff)
+  doprint(df[,3], words=words, docomprss=docomprss, format=format, diff=diff, round=round)
 #+END_SRC
 
-#+name: dosometiles
-#+begin_src R :results table :colnames yes :exports results
-  <<create.tiles>>
-  df <- tiles.main(c("--ifile", ifile, "--maxhh", "2e14", "--tgt.in.key", "%totalincome:%population", "--tiles", "0.1,0.25,0.5,0.75,0.9,1"))
-  round(df,4)
-#+end_src
-
-#+RESULTS: dosometiles
-| Year |    0.1 |   0.25 |    0.5 |   0.75 |    0.9 | 1 |
-|------+--------+--------+--------+--------+--------+---|
-| 1972 | 0.0169 | 0.0767 | 0.2553 | 0.5286 | 0.7499 | 1 |
-| 2016 | 0.0089 | 0.0529 | 0.1887 | 0.4355 | 0.6755 | 1 |
-
-The national income (the total of the amounts of money reported as
-household income) increased from
-$​call_lucr(keys=1,years=1972,words="TRUE",docomprss="TRUE") in 1972
-to $​call_lucr(keys=1,years=2016,words="TRUE",docomprss="TRUE") in
-2016, an increase in
-$​call_lucr(keys=1,years="1972,2016",words="TRUE").  Who got all this
-money?  How was it shared among the population?
-
-
-
-in 1972, .5 of pop made
-$​call_lucr(tgtinkey="bracket:%population",keys=0.5,years=1972,words="TRUE",docomprss="FALSE")
-or less, .9 of pop made
-$​call_lucr(tgtinkey="bracket:%population",keys=0.9,years=1972,words="TRUE",docomprss="FALSE")
-or less.  in 2016, .5 of pop made
-$​call_lucr(tgtinkey="bracket:%population",keys=0.5,years=2016,words="TRUE",docomprss="FALSE")
-or less, .9 of pop made
-$​call_lucr(tgtinkey="bracket:%population",keys=0.9,years=2016,words="TRUE",docomprss="FALSE")
-or less.
+The total household income of the United States (the total of the
+amounts of money reported as household income, henceforth, "total
+income" [fn::I.e., the sum of the product of each of the amount
+reported as a household income times the number of households
+reporting that amount]) increased from
+call_lucr(keys=1,years=1972,words="TRUE",docomprss="TRUE") dollars in
+1972 to call_lucr(keys=1,years=2016,words="TRUE",docomprss="TRUE") in
+2016, an increase of call_lucr(keys=1,years="1972,2016",words="TRUE")
+dollars.  Who got all this money?  How was it shared among the
+population?
 
 The following graphic shows how the extra money earned in 2016 (over
 that earned in 1972) has been shared among the income deciles in the US.
@@ -1832,7 +1856,7 @@ get the dataset
 #+END_SRC
 
 #+name: looking.parser
-#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
+#+BEGIN_SRC R :results none :eval no-export :exports none
   ## different utilities need different combinations of (a common set
   ## of) parameters
   doparser <- function(name, need, args) {
@@ -1841,7 +1865,7 @@ get the dataset
     p <- arg_parser(name)
     if ("ifile" %in% need) {
       need <- subset(need, need!= "ifile")
-      p <- add_argument(p, "--ifile", type="character", default=NA,
+      p <- add_argument(p, "--ifile", type="character", default=system("make bins", intern=TRUE),
                         help="name of input file")
     }
     if ("maxhh" %in% need) {
@@ -1928,6 +1952,9 @@ get the dataset
     if (is.null(args)) {
       argv <- parse_args(p)
     } else {
+      if (length(args) == 1) {
+        args <- unlist(strsplit(x=args, split=" "))
+      }
       argv <- parse_args(p, args)
     }
 
