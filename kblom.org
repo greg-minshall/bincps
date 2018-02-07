@@ -9,7 +9,7 @@ org-babel-inline-result-wrap.  the following means that the results of
 inline calls are "raw".
 #+bind: org-babel-inline-result-wrap "%s"
 
-# macro with our canonical file name...
+# our canonical file name...
 #+name: ifile
 #+BEGIN_SRC sh :cache yes
 make bins
@@ -17,6 +17,15 @@ make bins
 
 #+RESULTS[f43f76bafeb827b627f0a9cc98f177c4a94a9594]: ifile
 : ./ipums/cps_00006.1962-2017-binned.csv
+
+# our years
+#+name: years
+#+BEGIN_SRC sh :cache yes :results verbatim
+(make fyear; make lyear) | tr '\n' ',' | sed 's/,$//'
+#+END_SRC
+
+#+RESULTS[fea825c4ca5c095b74fa62be088b072ae715f74b]: years
+: 1972,2016
 
 ** image suffix                                                    :noexport:
 
@@ -278,11 +287,11 @@ of the total US income.
 #+name: tincdistrbydecile
 #+begin_src R :results table :colnames yes :exports results
   <<create.tiles>>
-  df <- tiles.main(c("--ifile", ifile, "--maxhh", "2e14", "--tgt.in.key", "%totalincome:%population", "--tiles", "0.1,0.25,0.5,0.75,0.9,1"))
+  df <- tiles.main(c("--maxhh", "2e14", "--tgt.in.key", "%totalincome:%population", "--tiles", "0.1,0.25,0.5,0.75,0.9,1"))
   round(df,4)
 #+end_src
 
-#+RESULTS: dosometiles
+#+RESULTS: tincdistrbydecile
 | Year |    0.1 |   0.25 |    0.5 |   0.75 |    0.9 | 1 |
 |------+--------+--------+--------+--------+--------+---|
 | 1972 | 0.0169 | 0.0767 | 0.2553 | 0.5286 | 0.7499 | 1 |
@@ -292,8 +301,8 @@ Now we look at the same data, however looking at the total income
 earned by each household income bracket.
 
 #+name: tincdistrbybracket
-#+BEGIN_SRC sh :tangle create.tidistrbybracket :shebang "#!/bin/sh" :results none :exports none :eval never
-  ./create.ecdf.common $* --years 1972,2016 --tgt.in.key %totalincome:bracket --maxhh 2e14
+#+BEGIN_SRC sh :tangle create.tidistrbybracket :shebang "#!/bin/sh" :results none :exports none :eval never :var years=years
+  ./create.ecdf.common $* --years years --tgt.in.key %totalincome:bracket --maxhh 2e14
 #+END_SRC
 
 #+caption: How the increase in incomes of US households in 2016 over 1972 was distributed across deciles of the US popuation (sorted by income)
