@@ -302,7 +302,7 @@ earned by each household income bracket.
 
 #+name: tincdistrbybracket
 #+BEGIN_SRC sh :tangle create.tidistrbybracket :shebang "#!/bin/sh" :results none :exports none :eval never :var years=years
-  ./create.ecdf.common $* --years years --tgt.in.key %totalincome:bracket --maxhh 2e14
+  ./create.ecdf.common $* --years ${years} --tgt.in.key %totalincome:bracket --maxhh 2e14
 #+END_SRC
 
 #+caption: How the increase in incomes of US households in 2016 over 1972 was distributed across deciles of the US popuation (sorted by income)
@@ -1929,7 +1929,7 @@ get the dataset
     }
     if ("years" %in% need) {
       need <- subset(need, need!="years")
-      p <- add_argument(p, "--years", type="character", default="1972,2016", # XXX
+      p <- add_argument(p, "--years", type="character", default==system("make years", intern=TRUE),
                         help="years to graph")
     }
     if ("tiles" %in% need) {
