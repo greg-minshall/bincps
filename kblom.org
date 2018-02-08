@@ -281,18 +281,27 @@ call_lucr(keys=0.1,tgtinkey="%totalincome:%population",years=2016,docomprss="FAL
 of the total US income.
 
 
-#+name: tincdistrbydecile
+#+name: tincdistrbytile
 #+begin_src R :results table :colnames yes :exports results
   <<create.tiles>>
-  df <- tiles.main(c("--maxhh", "2e14", "--tgt.in.key", "%totalincome:%population", "--tiles", paste(seq(.1,1,.1), collapse=","), "--diff"))
+  df <- tiles.main(c("--maxhh", "2e14", "--tgt.in.key", "%totalincome:%population", "--tiles", ".1,.25,.5,.75,.9,1", "--diff"))
   round(df,4)
 #+end_src
 
-#+RESULTS: tincdistrbypercentile
-| Year |    0.1 |    0.2 |    0.3 |    0.4 |    0.5 |    0.6 |    0.7 |    0.8 |    0.9 |      1 |
-|------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------|
-| 1972 | 0.0169 | 0.0342 | 0.0556 | 0.0689 | 0.0796 | 0.0942 | 0.1128 | 0.1263 | 0.1614 | 0.2501 |
-| 2016 | 0.0089 | 0.0264 | 0.0366 | 0.0527 | 0.0641 | 0.0874 |  0.103 |  0.128 | 0.1684 | 0.3245 |
+#+RESULTS: tincdistrbytile
+| Year |    0.1 |   0.25 |    0.5 |   0.75 |    0.9 |      1 |
+|------+--------+--------+--------+--------+--------+--------|
+| 1972 | 0.0169 | 0.0598 | 0.1786 | 0.2733 | 0.2213 | 0.2501 |
+| 2016 | 0.0089 |  0.044 | 0.1358 | 0.2468 |   0.24 | 0.3245 |
+
+Here we notice that the top 10% (from 0.9 to 1) has increased its
+share of the total US household income from 25% in 1972 to almost 33%
+in 2016 while, at the same time, the bottom 10% (from 0 to 0.1) has
+seen *its* share of the total income decrease by about one half.  This
+is to the point I saw in Blom's question, i.e, even *if* the *share*
+of the bottom income bracket fell, do we really care, assuming (which
+turns out to be an untrue assumption) that the actual household income
+of that bottom income bracket in fact increased.
 
 Now we look at the same data, however looking at the total income
 earned by each household income bracket.
@@ -409,6 +418,19 @@ period.  So, the total income for a given group may have grown,
 without the income per family growing.  [fn:1:The bars in the above
 graph are *still* reflective of the overall inequality, as the number
 of households in each income decile are the same.]
+
+*** TODO Age issues
+
+It would be nice to know the age of the head(s) of household for
+reporting, as it is said to be the case that many "households" start
+off in low income brackets, and make their way up.  If it were the
+case that, e.g., the lowest income brackets were all made up of 20
+year olds, but that by 30 years of age, almost all households have
+moved into brackets which *have*, have seen their 2016 income increase
+from its previous 1972 value, then we would think of a different set
+of social issues than if, rather, certain classes within our society
+find themselves overly represented in the bottom ten percent without
+any movement. XXX
 
 *** oddities
 
@@ -1756,7 +1778,7 @@ get the dataset
       }
       yset <- dset[dset$YEAR %in% years,]
       switch(part.base(part),
-             "bracket" = attr(dset, "maxhh"),
+             "bracket" = max(yset[,attr(dset, "bracket")]),
              "totalincome" = sum(yset[, attr(dset, "bracket")]*
                                  yset[, attr(dset, "supp")]),
              "population" = sum(yset[, attr(dset, "supp")]))
