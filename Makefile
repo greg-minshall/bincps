@@ -12,7 +12,7 @@ PNGOPTS = --width 852 --height 480
 PDFOPTS = --width 7 --height 4
 
 # graphs for our text
-GRAPHS = repro ecdf ecdf2 tidistr \
+GRAPHS = repro ecdf ecdf2 tidistr tincdistrbybracket \
 		histo.hhbracket99-both histo.hhbracket99-1972
 
 # extra options any of those need
@@ -43,6 +43,8 @@ fyear:
 	@echo ${FYEAR}
 lyear:
 	@echo ${LYEAR}
+years:
+	@echo "${FYEAR},${LYEAR}"
 bins:
 	@echo ${BINS}
 
