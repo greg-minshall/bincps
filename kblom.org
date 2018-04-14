@@ -294,21 +294,22 @@ of the total US income.
 | 1972 | 0.0169 | 0.0598 | 0.1786 | 0.2733 | 0.2213 | 0.2501 |
 | 2016 | 0.0089 |  0.044 | 0.1358 | 0.2468 |   0.24 | 0.3245 |
 
-Here we notice that the top 10% (from 0.9 to 1) has increased its
-share of the total US household income from 25% in 1972 to almost 33%
-in 2016 while, at the same time, the bottom 10% (from 0 to 0.1) has
-seen *its* share of the total income decrease by about one half.  This
-is to the point I saw in Blom's question, i.e, even *if* the *share*
-of the bottom income bracket fell, do we really care, assuming (which
-turns out to be an untrue assumption) that the actual household income
-of that bottom income bracket in fact increased.
+Here we notice that the top ten percent of income earners (from 0.9
+to 1) has increased its share of the total US household income from 25
+percent in 1972 to almost 33 percent in 2016 while, at the same time,
+the bottom ten percent (from 0 to 0.1) has seen *its* share of the
+total income decrease by about one half.  This is to the point I
+understood to be Blom's question, i.e, even *if* the *share* of the
+bottom income bracket fell, do we really care, assuming (which turns
+out to be an untrue assumption) that the *actual* household income of
+that bottom income bracket in fact increased.
 
 Now we look at the same data, however looking at the total income
 earned by each household income bracket.
 
 #+name: tincdistrbybracket
-#+BEGIN_SRC sh :tangle create.tidistrbybracket :shebang "#!/bin/sh" :results none :exports none :eval never :var years=years
-  ./create.ecdf.common $* --years ${years} --tgt.in.key %totalincome:bracket --maxhh 2e14
+#+BEGIN_SRC sh :tangle create.tincdistrbybracket :shebang "#!/bin/sh" :results none :exports none :eval never :var years=years
+  ./create.ecdf.common $* --years ${years} --tgt.in.key %totalincome:bracket --maxhh 220000
 #+END_SRC
 
 #+caption: How the increase in incomes of US households in 2016 over 1972 was distributed across deciles of the US popuation (sorted by income)
@@ -363,13 +364,16 @@ earned by each household income bracket.
 #+RESULTS: doprint
 
 #+name: lucr
-#+BEGIN_SRC R :exports none :var tgtinkey="totalincome:%population" :var keys="1" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE" :var format="" :var diff=1 :var round=4
+#+BEGIN_SRC R :exports none :var tgtinkey="totalincome:%population" :var keys="1" :var years="1972,2016" :var ifile=ifile :var words="FALSE" :var docomprss="TRUE" :var format="" :var diff=1 :var round=3
   <<lookup>>
   <<doprint>>
 
   df <- lookup.main(c("--ifile", ifile, "--maxhh", "2e14", "--years", years, "--tgt.in.key", tgtinkey, "--keys", keys))
   doprint(df[,3], words=words, docomprss=docomprss, format=format, diff=diff, round=round)
 #+END_SRC
+
+#+RESULTS: lucr
+: 10.17 T
 
 The total household income of the United States (the total of the
 amounts of money reported as household income, henceforth, "total
@@ -426,11 +430,11 @@ reporting, as it is said to be the case that many "households" start
 off in low income brackets, and make their way up.  If it were the
 case that, e.g., the lowest income brackets were all made up of 20
 year olds, but that by 30 years of age, almost all households have
-moved into brackets which *have*, have seen their 2016 income increase
-from its previous 1972 value, then we would think of a different set
-of social issues than if, rather, certain classes within our society
-find themselves overly represented in the bottom ten percent without
-any movement. XXX
+moved into brackets which *have* seen their incomes increase over the
+past forty years, then we would think of a different set of social
+issues than if, rather, certain classes within our society find
+themselves overly represented in the bottom ten percent without any
+movement. XXX
 
 *** oddities
 
@@ -1889,11 +1893,12 @@ get the dataset
   ## of) parameters
   doparser <- function(name, need, args) {
     require(argparser, quietly=TRUE)
+    # options(error = quote({dump.frames(to.file = TRUE); q(status = 1)}))
 
     p <- arg_parser(name)
     if ("ifile" %in% need) {
       need <- subset(need, need!= "ifile")
-      p <- add_argument(p, "--ifile", type="character", default=system("make bins", intern=TRUE),
+      p <- add_argument(p, "--ifile", type="character", default=system("make -s bins", intern=TRUE),
                         help="name of input file")
     }
     if ("maxhh" %in% need) {
@@ -1948,7 +1953,7 @@ get the dataset
     }
     if ("years" %in% need) {
       need <- subset(need, need!="years")
-      p <- add_argument(p, "--years", type="character", default=system("make years", intern=TRUE),
+      p <- add_argument(p, "--years", type="character", default=system("make -s years", intern=TRUE),
                         help="years to graph")
     }
     if ("tiles" %in% need) {
