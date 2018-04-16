@@ -72,6 +72,7 @@ do better, should we be worried about the growing inequality?
 Blom showed the following graphic, apparently from a video from the
 Financial Times.
 
+#+name: fig:ftdisplay
 [[file:DPCIA2AUQAEO0lv.jpg]]
 
 While Blom's question was asking for a qualitative answer, here I
@@ -80,11 +81,11 @@ treat the question technically.
 ** The data
 
 For me, i felt the need to see the data as a (empirical) cumulative
-function ([[https://en.wikipedia.org/wiki/Cumulative_distribution_function][CDF]]) to really understand what was going on.  Using data
+function ([[CDF]]) to really understand what was going on.  Using data
 from [[http://www.ipums.org][IPUMS-CS]], I was able to create the following graphic (which is
 presented in 1999 dollars, not the2014 dollars of the FT graph):
 
-**** create.repro
+**** Reproduce the display
 
 #+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
@@ -147,6 +148,7 @@ presented in 1999 dollars, not the2014 dollars of the FT graph):
   <<looking.endbits>>
 #+END_SRC
 
+#+name: fig:repro
 [[file:repro.IMG]]
 
 This is not by any means exactly as the FT graphic Blom tweeted.
@@ -160,6 +162,7 @@ CDF of the dataset underlying the second graphic:
   ./create.ecdf.common $*
 #+END_SRC
 
+#+name: fig:ecdf
 [[file:ecdf.IMG]]
 
 In the above, we see that about 30% of US households have done better
@@ -171,6 +174,7 @@ more detail:
   ./create.ecdf.common $* --maxhh 50000
 #+END_SRC
 
+#+name: fig:ecdf2
 [[file:ecdf2.IMG]]
 
 Here it becomes clearer that for somewhat more than one quarter of US
@@ -202,12 +206,12 @@ sum of the probabilities over all those points will be less than one.
 When displaying a discrete probability distribution, it is common to
 show a series of "stair steps", going up and down, up and down, with
 each step centered on one (or more) of the points where the
-distribution takes a new value.
+distribution takes on a new value.
 
 A common technique for continuous probability distributions is to form
 a histogram, "binning" the possible values, and then assigning each
 bin a probability.  This histogram can then be displayed, looking
-something like the rose-colored bars in the Financial Times display
+something like the rose-colored bars in the Financial Times [[fig:ftdisplay][display]]
 Blom posted.  In the FT display, in 2015, a household income of
 $50,000 has about a four percent chance of occurring.
 
@@ -223,11 +227,25 @@ The plot of the histogram or the PDF is useful, showing, as it does,
 places where the likelihood is (locally) higher than in other places.
 
 But, there's another way of looking at a distribution, the "cumulative
-distribution function" (CDF).
+distribution function" (CDF).  The CDF can never go down -- it can
+only go up (or stay the same).  It is always in the range between zero
+and one; it starts at zero at negative infinity (say), and will have
+reached one by the time it arrives at positive infinity (often
+before).  The value of the CDF at a given point is probability that
+the a sample taken from the distribution will be less than or equal to
+that point.  Oof -- what does that mean?
 
 (In a plot of the CDF, by the way, places where the likelihood is
 locally higher than in other places is seen by a place where the slope
-of the curve is very high, i.e, where the line is steep.)
+of the curve is very high, i.e, where the curve is steep.)
+
+It takes a while to understand what one is looking at with a plot of a
+CDF.  So, why bother?  I.e., what are the advantages of a CDF over a
+PDF?  One big advantage is when trying to compare two distributions.
+If one of the two PDFs isn't clearly below the other, i.e., if they
+alternate being larger, it's sometimes easier to understand
+
+In a case like the one we are looking at, 
 
 *** Methodological problems
 
@@ -273,7 +291,7 @@ weighting factor [[https://cps.ipums.org/cps-action/variables/HWTSUPP#codes_sect
 file:histo.hhbracket99-both.IMG
 
 Ignoring the hump around 200,000 dollars for the year 1972 (see the
-section [[oddities]]), it is clear that very few respondents have high
+section [[Oddities]]), it is clear that very few respondents have high
 incomes.
 
 While it's not apparent in this graphic, incomes below around 5,000,
@@ -483,7 +501,7 @@ issues than if, rather, certain classes within our society find
 themselves overly represented in the bottom ten percent without any
 movement. XXX
 
-*** oddities
+*** Oddities
 
 The IPUMS data set starts in 1962.  But, from 1962 through 1967, it
 contains no actual reported incomes.
