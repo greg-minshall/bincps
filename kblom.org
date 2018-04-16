@@ -216,12 +216,12 @@ Blom posted.  In the FT display, in 2015, a household income of
 $50,000 has about a four percent chance of occurring.
 
 The "probability density function" (PDF -- looking something like the
-solid blue line floating "above" the bars) is the curve you would get
-if you let the "width" of the histogram bins "go to" zero, i.e., get
-thinner and thinner, approaching a limit.  In the FT display, in 1971,
-a household income of about $10,000 had about a four percent chance of
-occurring (as did a household income of about $75,000 in that same
-year).
+solid blue line floating "above" the bars in the FT [[fig:ftdisplay][display]]) is the
+curve you would get if you let the "width" of the histogram bins "go
+to" zero, i.e., get thinner and thinner, approaching a limit.  In the
+FT display, in 1971, a household income of about $10,000 had about a
+four percent chance of occurring (as did a household income of about
+$75,000 in that same year).
 
 The plot of the histogram or the PDF is useful, showing, as it does,
 places where the likelihood is (locally) higher than in other places.
@@ -235,6 +235,12 @@ before).  The value of the CDF at a given point is probability that
 the a sample taken from the distribution will be less than or equal to
 that point.  Oof -- what does that mean?
 
+Take a look at the [[fig:ecdf2][closeup CDF]].  Notice that the 1972 and the 2016
+lines cross at about 30% of the population, and that this corresponds
+to a household income of about $30,000.  What this means is that in
+both 1972 and in 2016, about 30% of the population had an income of
+less than, or equal to, $30,000.
+
 (In a plot of the CDF, by the way, places where the likelihood is
 locally higher than in other places is seen by a place where the slope
 of the curve is very high, i.e, where the curve is steep.)
@@ -245,12 +251,18 @@ PDF?  One big advantage is when trying to compare two distributions.
 If one of the two PDFs isn't clearly below the other, i.e., if they
 alternate being larger, it's sometimes easier to understand
 
-In a case like the one we are looking at, 
+In a case like the one we are looking [[fig:ecdf2][at]], we pointed out above that
+the 1972 and 2016 CDFs crossed at about $30,000.  Thus, about the same
+percentage of households in 2016 were making at least $30,000 as
+in 1972.  But, look at $25,000.  In 1972, almost exactly (fortuitous
+for expository purposes!) 25% of US households were making $25,000 or
+less.  On the other hand, in 2016, 26%, 27%, or so of US households
+were making $25,000 or less.  I.e., one or two percentage points of US
+households in 2016 were making *less* than in 1972.
 
 *** Methodological problems
 
 **** TODO High income issues
--- not enough data points?
 
 #+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
@@ -378,8 +390,8 @@ earned by each household income bracket.
   ./create.ecdf.common $* --years ${years} --tgt.in.key %totalincome:bracket --maxhh 220000
 #+END_SRC
 
-#+caption: How the increase in incomes of US households in 2016 over 1972 was distributed across deciles of the US popuation (sorted by income)
-[[file:tidistr.IMG]]
+#+caption: How the total US income in 1972 and in 2016 was distributed across US households (sorted by income)
+[[file:tincdistrbybracket.IMG]]
 
 *** Where have all the flowers gone
 
@@ -462,15 +474,16 @@ that earned in 1972) has been shared among the income deciles in the US.
 [[file:tidistr.IMG]]
 
 While the above graphic may look to be the graph of a cumulative
-distribution, it is not.  It is, rather, the actual distribution,
-showing how much of the excess income between 1972 and 2016 is earned
-by each of the ten decile income groups in the US.  If the extra
-income had been shared equally across the ten income groups, the ten
-bars would all have the same height.  Instead, we see that the highest
-decile (the highest ten percent of earners) has captured more than 35
-percent of the increased income, while the lowest ten percent has
-captured effectively nothing of the increase in income over the
-previous 40+ years.
+distribution, it is not (it looks like a CDF because, well, "the rich
+get richer").  It is, rather, the actual distribution, showing how
+much of the excess income between 1972 and 2016 is earned by each of
+the ten decile income groups in the US.  If the extra income had been
+shared equally across the ten income groups, the ten bars would all
+have the same height.  Instead, we see that the highest decile (the
+highest ten percent of earners) has captured more than 35 percent of
+the increased income, while the lowest ten percent has captured
+effectively nothing of the increase in income over the previous 40+
+years.
 
 Note that this chart shows that within *all* (other than maybe the
 lowest income decile) income deciles, there was more total income
@@ -491,7 +504,7 @@ of households in each income decile are the same.]
 *** TODO Age issues
 
 It would be nice to know the age of the head(s) of household for
-reporting, as it is said to be the case that many "households" start
+reporting, as it is [[http://www.tsowell.com/basicecon_5.html][said]] to be the case that many "households" start
 off in low income brackets, and make their way up.  If it were the
 case that, e.g., the lowest income brackets were all made up of 20
 year olds, but that by 30 years of age, almost all households have
@@ -499,7 +512,7 @@ moved into brackets which *have* seen their incomes increase over the
 past forty years, then we would think of a different set of social
 issues than if, rather, certain classes within our society find
 themselves overly represented in the bottom ten percent without any
-movement. XXX
+movement.
 
 *** Oddities
 
@@ -507,10 +520,10 @@ The IPUMS data set starts in 1962.  But, from 1962 through 1967, it
 contains no actual reported incomes.
 
 From 1968 through 1975, the reported incomes appear to have been
-capped at 50,000 dollars.  It *appears* as if incomes greater than
-50,000 dollars [[https://cps.ipums.org/cps/inctaxcodes.shtml][were reported as 50,000 dollars]].  For example, one
-sees a hump at the 1999 equivalent of 50,000 1972 dollars (a bit over
-200,000 1999 dollars) in the figure in [[High income issues]].
+capped at 50,000 dollars.  In fact, incomes greater than 50,000
+dollars [[https://cps.ipums.org/cps/inctaxcodes.shtml][were reported by the Census Bureau as 50,000 dollars]].  For
+example, one sees a hump at the 1999 equivalent of 50,000 1972 dollars
+(a bit over 200,000 1999 dollars) in the figure in [[High income issues]].
 
 From 1976, onwards, we see no evidence of such a cap on reported
 income.
@@ -539,7 +552,7 @@ Third, my approach to anything statistical is indebted to [[https://en.wikipedia
 ** explorations, etc. :noexport:
 *** where to find data?
 
-[[https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls][Census Bureau]] has something that breaks down by each fifth and top 5%.
+**** [[https://www2.census.gov/programs-surveys/cps/tables/time-series/historical-income-households/h01ar.xls][Census Bureau]] has something that breaks down by each fifth and top 5%.
 
 #+BEGIN_SRC R :var tseries=tseries :eval no-export :exports none
 colnames(tseries) <- c("year", "number", "lowest", "second", "third", "fourth", "llimittop5")
@@ -623,6 +636,8 @@ Census data seems to have have six.
 | 2015 | 125819 | 23088 | 44061 | 72911 | 118480 | 217172 |
 | 2016 | 126224 | 24002 | 45600 | 74869 | 121018 | 225251 |
 
+**** Congressional Research Service
+
 a [[https://fas.org/sgp/crs/misc/RS20811.pdf][report]] from the Congressional Research Service gives nice numbers
 for 2012.  this probably comes from (the 2012-version of) [[https://www.census.gov/data/tables/time-series/demo/income-poverty/cps-hinc/hinc-06.html][hinc-06]],
 from the Census Bureau.  sadly, hinc-06.xls seems to go back only a
@@ -634,6 +649,8 @@ new06_000.txt: 2003
 
 ([[https://www.census.gov/popclock/][US, world population clock]])
 
+**** IPUMS
+
 [[https://usa.ipums.org/usa/][ipums.org]] is a data service which uses [[http://www.nber.org/data/current-population-survey-data.html][NBER data]].  the ipums data is
 unaggregated.  about 2MB for a file (1995).  and, of course, many
 variables i don't understand.  plus, in nominal dollars.  but, the
@@ -641,6 +658,8 @@ fact that it is unaggregated means that one can put in real dollars
 *before* binning.  (though, when looking at a CDF, one can convert
 each year's bin's into real dollars after the fact without affecting
 things.)
+
+**** misc. other
 
 [[http://www.pressure.to/works/hbai_in_r/][households below average income]] analysis in R.  for UK data, however.
 
@@ -661,7 +680,8 @@ mostly quintile-level.
 
 a very nice [[https://www.cbpp.org/][Center on Budget and Policy Priorities]] paper, [[https://www.cbpp.org/research/poverty-and-inequality/a-guide-to-statistics-on-historical-trends-in-income-inequality]["A Guide to
 Statistics on Historical Trends in Income Inequality"]], points at "most
-recent" [[http://eml.berkeley.edu/~saez/TabFig2015prel.xls][Piketty/Saez estimates]].
+recent" [[http://eml.berkeley.edu/~saez/TabFig2015prel.xls][Piketty/Saez estimates]] (and, [[https://eml.berkeley.edu/~saez/saez-UStopincomes-2015.pdf][their paper]]).  the [[https://www.cbo.gov/publication/53597][newest (2018)
+version]].
 
 [[http://www.gapminder.org/data/][gapminder]] is another source of data in the world (not just US).
 
