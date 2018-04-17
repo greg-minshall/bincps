@@ -3,7 +3,7 @@
 #+title: A small confirmation of some fairly well-known facts regarding the distribution of (household) incomes in the US
 #+property: header-args :noweb yes
 #+property: header-args:R :session ss
-
+#+html_head_extra: <link href="lib/tl/kbstyle.css" rel="stylesheet"/>
 to change how the result is "wrapped", customize the variable
 org-babel-inline-result-wrap.  the following means that the results of
 inline calls are "raw".
@@ -63,8 +63,8 @@ under the sun.
   ## 
 #+END_SRC
 ** javascript, css                                                 :noexport:
-#+name: jscode
-#+begin_src js :exports none :tangle lib/nwcode.js
+
+#+begin_src js :exports none :tangle kbcode.js
   // tabbed info-box, from
   // https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Practical_positioning_examples
 
@@ -119,7 +119,7 @@ under the sun.
 
 [[https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Practical_positioning_examples][tabbed info-box]]
 
-#+begin_src css :exports none :tangle lib/tl/nwstyle.css
+#+begin_src css :exports none :tangle kbstyle.css
   .appendix {
     min-width: 960px;             /* to fit timeline */
   }
@@ -308,6 +308,8 @@ Pick a tab, any tab...
     <li><a href="#furtherinfoul">Most reported incomes</a></li>
     <li><a href="#furtherinfoul">Which groups get what percent of the national income?</a></li>
     <li><a href="#furtherinfoul">Where have all the flowers gone?</a></li>
+    <li><a href="#furtherinfoul">Age issues</a></li>
+    <li><a href="#furtherinfoul">Oddities</a></li>
   </ul>
 #+end_export
 
