@@ -62,6 +62,114 @@ under the sun.
   ## of users who don't use emacs, or don't use org-mode.
   ## 
 #+END_SRC
+** javascript, css                                                 :noexport:
+#+name: jscode
+#+begin_src js :exports none :tangle lib/nwcode.js
+  // tabbed info-box, from
+  // https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Practical_positioning_examples
+
+  var appendix = document.querySelector('.appendix');
+  var tabs = document.querySelectorAll('.appendix li a');
+  var panels = document.querySelectorAll('.appendix article');
+
+  for(i = 0; i < tabs.length; i++) {
+    var tab = tabs[i];
+    setTabHandler(tab, i);
+  }
+
+  function deleteword(string, word) {
+      // delete (the first occurrence of) WORD in STRING
+      return string.replace(new RegExp(" *\\b" + word + "\\b *"), "")
+  }
+
+  function setTabHandler(tab, tabPos) {
+      tab.onclick = function() {
+          for(i = 0; i < tabs.length; i++) {
+              tabs[i].className = deleteword(tabs[i].className, "active");
+          }
+
+          tab.className += ' active';
+
+          for(i = 0; i < panels.length; i++) {
+              panels[i].className = deleteword(panels[i].className, "active-panel");
+          }
+
+          panels[tabPos].className += ' active-panel';
+      }
+  }
+
+  // okay, to get box height right...
+
+  function tabbedloaded() {
+      var height = Math.max(appendix.scrollHeight,
+                            appendix.offsetHeight,
+                            appendix.clientHeight)
+      var width = Math.max(appendix.scrollWidth,
+                            appendix.offsetWidth,
+                            appendix.clientWidth)
+      appendix.style.height = height + "px";
+      appendix.style.width = width + "px";
+  }
+
+  // prime to wait for that
+  appendix.addEventListener("load", tabbedloaded, false);
+  tabbedloaded();                 // just in case
+#+end_src
+
+
+[[https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Practical_positioning_examples][tabbed info-box]]
+
+#+begin_src css :exports none :tangle lib/tl/nwstyle.css
+  .appendix {
+    min-width: 960px;             /* to fit timeline */
+  }
+
+  .appendix ul {
+    overflow: auto                /* as above, clear child's float */
+  }
+
+  /* the tabs */
+  .appendix li {
+    float: left;                  /* to get to stack left-to-right */
+    list-style-type: none;        /* nothing in front of list items */
+    width: 18%;                   /* there are 5, leave some extra */
+  }
+  .appendix li a {
+    display: inline-block; /* like a box, but inline */
+    text-decoration: none; /* to keep <a...> underline from appearing */
+    width: 100%;           /* fill up space allowed by parent li */
+    line-height: 4;   /* make the surrounding box a bit more generous */
+    background-color: lightgrey;
+    color: black;
+    text-align: center;
+    border: solid 1px;
+    border-collapse: collapse;    /* so we don't get double*/
+  }
+  .appendix li a:focus, .appendix li a:hover {
+    background-color: darkgrey;
+    color: black;
+  }
+  .appendix li a.active {
+    background-color: darkgrey;
+    color: black;
+  }
+
+  /* the panels */
+  .appendix .panels {
+      position: relative;
+  }
+  .appendix article {
+    position: absolute;
+    top: 0;
+    left: 0;
+    visibility: hidden;
+  }
+
+  .appendix .active-panel {
+    visibility: visible;
+  }
+#+end_src
+
 ** Introduction
 
 in a [[https://twitter.com/kltblom/status/932394678241988609][Tweet]] from 19 November, 2017, Kristian Blom showed [[file:./DPCIA2AUQAEO0lv.jpg][a histogram]]
@@ -185,6 +293,30 @@ In 1972, 23% of US households made less than $20,000; by 2016, that
 number has increased to 26%. ???
 
 ** Appendices
+   :PROPERTIES:
+   :HTML_CONTAINER_CLASS: furtherinfo
+   :HTML_CONTAINER: section
+   :END:
+
+Pick a tab, any tab...
+
+#+name: furtherinfoul
+#+begin_export html
+ <ul>
+    <li><a href="#furtherinfoul" class="active">Cumulative Distribution Functions (CDFs)</a></li>
+    <li><a href="#furtherinfoul">Methodological problems</a></li>
+    <li><a href="#furtherinfoul">Most reported incomes</a></li>
+    <li><a href="#furtherinfoul">Which groups get what percent of the national income?</a></li>
+    <li><a href="#furtherinfoul">Where have all the flowers gone?</a></li>
+  </ul>
+#+end_export
+
+*** 
+   :PROPERTIES:
+   :HTML_CONTAINER_CLASS: panels
+   :HTML_CONTAINER: div
+   :END:
+
 *** TODO CDF
 
 Statistical distributions come in two basic forms: discrete and
@@ -208,12 +340,18 @@ show a series of "stair steps", going up and down, up and down, with
 each step centered on one (or more) of the points where the
 distribution takes on a new value.
 
-A common technique for continuous probability distributions is to form
-a histogram, "binning" the possible values, and then assigning each
-bin a probability.  This histogram can then be displayed, looking
-something like the rose-colored bars in the Financial Times [[fig:ftdisplay][display]]
-Blom posted.  In the FT display, in 2015, a household income of
-$50,000 has about a four percent chance of occurring.
+A common technique for continuous probability distributions
+(especially for a so-called "empirical cumulative distribution
+function", i.e., where one is looking not at the theoretical
+distribution, but rather the results of a number of experiments) is to
+form a histogram, "binning" the possible values (so that all the
+values from, e.g., 1-10 go in one bin, from 11-20 in another, etc.),
+and then assigning each bin a "probability" based on the number of
+counts in that bin divided by the total number of counts over all the
+bins.  This histogram can then be displayed, looking something like
+the rose-colored bars in the Financial Times [[fig:ftdisplay][display]] Blom posted.  In
+the FT display, in 2015, a household income of $50,000 has about a
+four percent chance of occurring.
 
 The "probability density function" (PDF -- looking something like the
 solid blue line floating "above" the bars in the FT [[fig:ftdisplay][display]]) is the
