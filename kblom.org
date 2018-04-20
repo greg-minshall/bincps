@@ -339,13 +339,14 @@ which the probability is positive adds to one; i.e., *some* outcome
 occurs.
 
 In a continuous distribution, in contrast, the probability of a given
-outcome can be zero for *all* outcomes (points), but still, the
-*integral* over all the possible outcomes will be one; i.e., *some*
-outcome still occurs.  In a continuous distribution, it can still be
-the case that one or more of the points (again, presumably at most
-countably many points) may have a positive probability of occurring,
-but the sum of the probabilities over all such points will be less
-than one (otherwise it would in fact be a discrete distribution).
+outcome can be zero for *all* possible outcomes (points), but still,
+the *integral* over all the possible outcomes will be one; i.e.,
+*some* outcome still occurs.  In a continuous distribution, it can
+still be the case that one or more of the points (again, presumably at
+at most countably many points) may have a positive probability of
+occurring, but the sum of the probabilities over all such points will
+be less than one (otherwise, the distribution would, in fact, be a
+discrete distribution).
 
 When displaying a discrete probability distribution, it is common to
 show a series of "stair steps", going up and down, up and down, with
