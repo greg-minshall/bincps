@@ -336,12 +336,13 @@ sum of the probabilities of all the points at which the probability is
 positive adds to one; i.e., *some* outcome occurs.
 
 In a continuous distribution, in contrast, the probability of a given
-outcome *can* be zero for *all* outcomes (points), but still, the
-*integral* over all the possible outcomes will be one.  i.e., *some*
+outcome can be zero for *all* outcomes (points), but still, the
+*integral* over all the possible outcomes will be one; i.e., *some*
 outcome still occurs.  In a continuous distribution, it can still be
 the case that one or more of the points (again, presumably at most
-countably many) may have a positive probability of occurring, but the
-sum of the probabilities over all those points will be less than one.
+countably many points) may have a positive probability of occurring,
+but the sum of the probabilities over all such points will be less
+than one (otherwise it would in fact be a discrete distribution).
 
 When displaying a discrete probability distribution, it is common to
 show a series of "stair steps", going up and down, up and down, with
@@ -380,23 +381,26 @@ distribution would look like if it followed its theoretical
 distribution.  On the other hand, the empirical distribution function
 describes the results of a series of experiments, a long series of
 "draws" from the distribution in question.  While the theory of
-statistics guarantees (XXX) that over the long run, the empirical
-distribution of a series of draws from a given distribution will
-approach the theoretical distribution, it is also the case that, as
-Keynes said, in the long run we will all be dead.  And, as it is often
-the case, looking at real world "experiments", that we aren't really
-certain of what theoretical distribution we are looking at, it is
-sometimes more valuable to look at empirical distributions.
+statistics, in particular the law of large numbers, guarantees that
+over the long run, the empirical distribution of a series of draws
+from a given distribution will approach the theoretical distribution,
+it is also the case that, as Keynes said, "But this long run is a
+misleading guide to current affairs.  In the long run we are all
+dead".  And, as it is often the case, looking at real world
+"experiments", that we aren't really certain of what theoretical
+distribution we are looking at, it is sometimes more valuable to look
+at empirical distributions.
 
-In addition to the probability distribution function, there's another
-way of looking at a distribution, the "cumulative distribution
-function" (CDF).  The CDF can never go down -- it can only go up (or
-stay the same).  It is always in the range between zero and one; it
-starts at zero at negative infinity (say), and will have reached one
-by the time it arrives at positive infinity (often before).  The value
-of the CDF at a given point is probability that the a sample taken
-from the distribution will be less than or equal to that point.  Oof
--- what does that mean?
+In addition to the probability density function, there's another way
+of looking at, characterizing, a distribution, the "cumulative
+distribution function" (CDF).  The CDF can never go down -- it can
+only go up (or stay the same; we say the function is "monotonic", but
+not "strictly monotonic").  It is always in the range between zero and
+one; it starts at zero at negative infinity (say), and will have
+reached one by the time it arrives at positive infinity (often
+before).  The value of the CDF at a given point is probability that
+the a sample taken from the distribution will be less than or equal to
+that point.  Oof -- what does that mean?
 
 Take a look at the [[fig:ecdf2][closeup CDF]].  Notice that the 1972 and the 2016
 lines cross at about 30% of the population, and that this corresponds
