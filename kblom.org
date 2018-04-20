@@ -121,6 +121,18 @@ under the sun.
   tabbedloaded();                 // just in case
 #+end_src
 
+#+begin_src css :exports none :tangle kbstyle.css
+  /* https://stackoverflow.com/a/5887767 */
+  table {
+      table-layout:fixed;
+      border-collapse:collapse;
+      border-spacing:0;
+  }
+      td {
+          padding:0.25em;
+          border:1px solid black;
+      }
+#+end_src
 
 [[https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Practical_positioning_examples][tabbed info-box]]
 
@@ -279,10 +291,10 @@ CDF of the dataset underlying the graphic:
 #+name: fig:ecdf
 [[file:ecdf.IMG]]
 
-In the above, we see that about 30% of US households have done better
-in the years since 1972.  If we blow up the section for household
-incomes below $50,000, we can see what happens around that area in
-more detail:
+In the above, we see that about 30% of US households have not done
+much better in the years since 1972 (compared to how well they were
+doing in 1972).  If we blow up the section for household incomes below
+$50,000, we can see what happens around that area in more detail:
 
 #+BEGIN_SRC sh :tangle create.ecdf2 :shebang "#!/bin/sh" :results none :eval never :exports none
   ./create.ecdf.common $* --maxhh 50000
@@ -291,9 +303,8 @@ more detail:
 #+name: fig:ecdf2
 [[file:ecdf2.IMG]]
 
-Here it becomes clearer that for somewhat more than one quarter of US
-households, the years since 1972 have not improved their economic lot,
-have, in fact, made their economic situation worse.
+Here it becomes clearer that the lowest 30% of US households (ranked
+by income) are doing worse in 2016 than they had been doing in 1972.
 
 In 1972, 23% of US households made less than $20,000; by 2016, that
 number has increased to 26%. ???
