@@ -179,27 +179,19 @@ under the sun.
 
 in a [[https://twitter.com/kltblom/status/932394678241988609][Tweet]] from 19 November, 2017, Kristian Blom showed [[file:./DPCIA2AUQAEO0lv.jpg][a histogram]]
 (1971-2015), from Financial Times (based on data from Pew Trust).
-Blom asked, given that the past forty-plus years has seen *everyone*
-do better, should we be worried about the growing inequality?
+Blom asked, given that the past forty-plus years has seen so many
+people do better, should we be worried about the growing inequality?
 
 Blom showed the following graphic, apparently from a video from the
 Financial Times (click on the image to see the original):
-
-
 #+name: fig:ftdisplay
 [[file:DPCIA2AUQAEO0lv.jpg][file:DPCIA2AUQAEO0lv-small.jpg]]
 
-While Blom's question was asking for a qualitative answer, here I
-treat the question technically.
+While Blom's question was asking for a qualitative answer (given that
+the issues are really sociological), here I treat the question
+quantitatively.
 
-** The data
-
-For me, i felt the need to see the data as a (empirical) cumulative
-function ([[CDF]]) to really understand what was going on.  Using data
-from [[http://www.ipums.org][IPUMS-CS]], I was able to create the following graphic (which is
-presented in 1999 dollars, not the2014 dollars of the FT graph):
-
-**** Reproduce the display
+** Step one: reproduce the display
 
 #+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
@@ -262,11 +254,19 @@ presented in 1999 dollars, not the2014 dollars of the FT graph):
   <<looking.endbits>>
 #+END_SRC
 
+To understand the effects of the change in the distribution of income,
+it is useful to look at the (empirical) cumulative function ([[CDF]]) of
+the data for the years in question.  The following graphic (which is
+presented in 1999 dollars, not the 2014 dollars of the FT graph) using
+publicly available data from [[http://www.ipums.org][IPUMS-CS]], attempts to reproduce the FT
+graphic Blom tweeted:
 #+name: fig:repro
 [[file:repro.IMG]]
 
-This is not by any means exactly as the FT graphic Blom tweeted.
-However, if you squint, it is roughly the same.
+This is not by any means exactly as the FT graphic.  However, if you
+squint, it is roughly the same.
+
+** Looking closer at the data
 
 If you will grant me that the two graphs represent something like the
 same distribution of household incomes, then we can now look at the
@@ -349,17 +349,17 @@ each step centered on one (or more) of the points where the
 distribution takes on a new value.
 
 A common technique for continuous probability distributions
-(especially for a so-called "empirical cumulative distribution
-function", i.e., where one is looking not at the theoretical
-distribution, but rather the results of a number of experiments) is to
-form a histogram, "binning" the possible values (so that all the
-values from, e.g., 1-10 go in one bin, from 11-20 in another, etc.),
-and then assigning each bin a "probability" based on the number of
-counts in that bin divided by the total number of counts over all the
-bins.  This histogram can then be displayed, looking something like
-the rose-colored bars in the Financial Times [[fig:ftdisplay][display]] Blom posted.  In
-the FT display, in 2015, a household income of $50,000 has about a
-four percent chance of occurring.
+(especially for a so-called "empirical distribution function", i.e.,
+where one is looking not at the theoretical distribution, but rather
+the results of a number of experiments) is to form a histogram,
+"binning" the possible values (so that all the values from, e.g., 1-10
+are counted in one bin, from 11-20 counted in another, etc.), and then
+assigning each bin a "probability" based on the number of counts in
+that bin divided by the total number of counts over all the bins.
+This histogram can then be displayed, looking something like the
+rose-colored bars in the Financial Times [[fig:ftdisplay][display]] Blom posted.  For
+example, according to the FT display, in 2015, a household income of
+$50,000 has about a four percent chance of occurring.
 
 The "probability density function" (PDF -- looking something like the
 solid blue line floating "above" the bars in the FT [[fig:ftdisplay][display]]) is the
@@ -372,14 +372,31 @@ $75,000 in that same year).
 The plot of the histogram or the PDF is useful, showing, as it does,
 places where the likelihood is (locally) higher than in other places.
 
-But, there's another way of looking at a distribution, the "cumulative
-distribution function" (CDF).  The CDF can never go down -- it can
-only go up (or stay the same).  It is always in the range between zero
-and one; it starts at zero at negative infinity (say), and will have
-reached one by the time it arrives at positive infinity (often
-before).  The value of the CDF at a given point is probability that
-the a sample taken from the distribution will be less than or equal to
-that point.  Oof -- what does that mean?
+As mentioned above, similar as to the fact there are two types of
+*distributions* (discrete and continuous), there are two types of
+distribution *functions*: theoretical and empirical.  The theoretical
+distribution function of a distribution, as the name says, is what the
+distribution would look like if it followed its theoretical
+distribution.  On the other hand, the empirical distribution function
+describes the results of a series of experiments, a long series of
+"draws" from the distribution in question.  While the theory of
+statistics guarantees (XXX) that over the long run, the empirical
+distribution of a series of draws from a given distribution will
+approach the theoretical distribution, it is also the case that, as
+Keynes said, in the long run we will all be dead.  And, as it is often
+the case, looking at real world "experiments", that we aren't really
+certain of what theoretical distribution we are looking at, it is
+sometimes more valuable to look at empirical distributions.
+
+In addition to the probability distribution function, there's another
+way of looking at a distribution, the "cumulative distribution
+function" (CDF).  The CDF can never go down -- it can only go up (or
+stay the same).  It is always in the range between zero and one; it
+starts at zero at negative infinity (say), and will have reached one
+by the time it arrives at positive infinity (often before).  The value
+of the CDF at a given point is probability that the a sample taken
+from the distribution will be less than or equal to that point.  Oof
+-- what does that mean?
 
 Take a look at the [[fig:ecdf2][closeup CDF]].  Notice that the 1972 and the 2016
 lines cross at about 30% of the population, and that this corresponds
