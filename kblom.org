@@ -270,7 +270,7 @@ squint, it is roughly the same.
 
 If you will grant me that the two graphs represent something like the
 same distribution of household incomes, then we can now look at the
-CDF of the dataset underlying the second graphic:
+CDF of the dataset underlying the graphic:
 
 #+BEGIN_SRC sh :tangle create.ecdf :shebang "#!/bin/sh" :results none :eval never :exports none
   ./create.ecdf.common $*
@@ -327,13 +327,16 @@ Pick a tab, any tab...
 
 *** TODO CDF
 
-Statistical distributions come in two basic forms: discrete and
-continuous.  In a discrete distribution, the probability of an event
-happening at a given point is either zero or positive (not zero and
-less than one, but only for an at-most countable number of points,
-presumably).  At least *one* point has a positive probability, and the
-sum of the probabilities of all the points at which the probability is
-positive adds to one; i.e., *some* outcome occurs.
+Statistical distributions [fn::In this note, we are discussing
+distributions over the real numbers] come in two basic forms: discrete
+and continuous.  In a discrete distribution, the probability of an
+event happening at a given point is either zero, or a positive number
+greater than zero but less than one; the probability will only be
+non-zero for an at-most countable number of points, presumably (XXX
+continuum hypothesis); at least *one* point has a positive
+probability; and the sum of the probabilities of all the points at
+which the probability is positive adds to one; i.e., *some* outcome
+occurs.
 
 In a continuous distribution, in contrast, the probability of a given
 outcome can be zero for *all* outcomes (points), but still, the
@@ -384,12 +387,12 @@ describes the results of a series of experiments, a long series of
 statistics, in particular the law of large numbers, guarantees that
 over the long run, the empirical distribution of a series of draws
 from a given distribution will approach the theoretical distribution,
-it is also the case that, as Keynes said, "But this long run is a
+it is also the case that, as [[https://en.wikiquote.org/wiki/John_Maynard_Keynes][Keynes said]], "But this long run is a
 misleading guide to current affairs.  In the long run we are all
 dead".  And, as it is often the case, looking at real world
-"experiments", that we aren't really certain of what theoretical
-distribution we are looking at, it is sometimes more valuable to look
-at empirical distributions.
+"experiments", we aren't even certain of which theoretical
+distribution, with which parameters, we are looking at, it is often
+more valuable to look at empirical distributions.
 
 In addition to the probability density function, there's another way
 of looking at, characterizing, a distribution, the "cumulative
