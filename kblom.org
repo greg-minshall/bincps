@@ -357,7 +357,7 @@ A common technique for continuous probability distributions
 (especially for a "[[https://en.wikipedia.org/wiki/Frequency_distribution][frequency distribution]]", or a so-called "[[https://en.wikipedia.org/wiki/Empirical_distribution_function][empirical
 distribution function]]", i.e., for cases where one is looking not at
 the theoretical distribution, but rather the results of a number of
-experiments) is to form a histogram, "binning" the possible values (so
+experiments) is to form a [[https://en.wikipedia.org/wiki/Histogram][histogram]], "binning" the possible values (so
 that all the values from, e.g., 1-10 are counted in one bin, from
 11-20 counted in another, etc.), and then assigning each bin a
 "probability" based on the number of counts in that bin divided by the
@@ -367,15 +367,15 @@ Financial Times [[fig:ftdisplay][display]] Blom posted.  For example, according 
 display, in 2015, a household income of $50,000 has about a four
 percent chance of occurring.
 
-The "probability density function" (PDF -- looking something like the
+The "[[https://en.wikipedia.org/wiki/Probability_mass_function][probability mass function]]" (PMF -- looking something like the
 solid blue line floating "above" the bars in the FT [[fig:ftdisplay][display]]) is the
 curve you would get if you let the "width" of the histogram bins "go
-to" zero, i.e., get thinner and thinner, approaching a limit.  In the
-FT display, in 1971, a household income of about $10,000 had about a
-four percent chance of occurring (as did a household income of about
-$75,000 in that same year).
+to" zero, i.e., get thinner and thinner, approaching a width of zero.
+In the FT display, in 1971, a household income of about $10,000 had
+about a four percent chance of occurring (as did a household income of
+about $75,000 in that same year).
 
-The plot of the histogram or the PDF is useful, showing, as it does,
+The plot of the histogram or the PMF is useful, showing, as it does,
 places where the likelihood is (locally) higher than in other places.
 
 As mentioned above, similar as to the fact there are two types of
@@ -396,22 +396,23 @@ dead".  And, as it is often the case, looking at real world
 distribution, with which parameters, we are looking at, it is often
 more valuable to look at empirical distributions.
 
-In addition to the probability density function, there's another way
-of looking at, characterizing, a distribution, the "[[https://en.wikipedia.org/wiki/Cumulative_distribution_function][cumulative
-distribution function]]" (CDF).  The CDF can never go down -- it can
-only go up (or stay the same; we say the function is "monotonic", but
-not "strictly monotonic").  It is always in the range between zero and
-one; it starts at zero at negative infinity (say), and will have
-reached one by the time it arrives at positive infinity (often
-before).  The value of the CDF at a given point is probability that
-the a sample taken from the distribution will be less than or equal to
-that point.  Oof -- what does that mean?
+In addition to the PMF (or, for continuous distributions, the
+"[[https://en.wikipedia.org/wiki/Probability_density_function][probability density function]]", PDF), there's another way of looking
+at, characterizing, a distribution, the "[[https://en.wikipedia.org/wiki/Cumulative_distribution_function][cumulative distribution
+function]]" (CDF).  The CDF can never go down -- it can only go up (or
+stay the same; we say the function is "[[https://en.wikipedia.org/wiki/Monotonic_function][monotonic]]", but not "strictly
+monotonic").  It is always in the range between zero and one; it
+starts at zero at negative infinity (say), and will have reached one
+by the time it arrives at positive infinity (often before).  The value
+of the cumulative distribution function at a given point is
+probability that the a sample taken from the distribution will be less
+than or equal to that point.  Oof -- what does that mean?
 
 Take a look at the [[fig:ecdf2][closeup CDF]].  Notice that the 1972 and the 2016
-lines cross at about 30% of the population, and that this corresponds
-to a household income of about $30,000.  What this means is that in
-both 1972 and in 2016, about 30% of the population had an income of
-less than, or equal to, $30,000.
+lines cross at about 30% of the population (ranked by household
+income), and that this corresponds to a household income of about
+$30,000.  What this means is that in both 1972 and in 2016, about 30%
+of the population had an income of less than, or equal to, $30,000.
 
 (In a plot of the CDF, by the way, places where the likelihood is
 locally higher than in other places is seen by a place where the slope
