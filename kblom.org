@@ -3,7 +3,12 @@
 #+title: A small confirmation of some fairly well-known facts regarding the distribution of (household) incomes in the US
 #+property: header-args :noweb yes
 #+property: header-args:R :session ss
-#+html_head_extra: <link href="lib/tl/kbstyle.css" rel="stylesheet"/>
+#+HTML_DOCTYPE: html5
+#+OPTIONS: html-link-use-abs-url:nil html-postamble:auto
+#+OPTIONS: html-preamble:t html-scripts:t html-style:t
+#+OPTIONS: html5-fancy:t
+#+OPTIONS: toc:nil
+#+html_head_extra: <link href="kbstyle.css" rel="stylesheet"/>
 to change how the result is "wrapped", customize the variable
 org-babel-inline-result-wrap.  the following means that the results of
 inline calls are "raw".
@@ -180,8 +185,9 @@ do better, should we be worried about the growing inequality?
 Blom showed the following graphic, apparently from a video from the
 Financial Times.
 
+#+caption: (Click on the image to see the original.)
 #+name: fig:ftdisplay
-[[file:DPCIA2AUQAEO0lv.jpg]]
+[[file:DPCIA2AUQAEO0lv.jpg][file:DPCIA2AUQAEO0lv-small.jpg]]
 
 While Blom's question was asking for a qualitative answer, here I
 treat the question technically.

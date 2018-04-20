@@ -22,6 +22,16 @@ values.iecdf
 create.tidistr
 lookup
 lookup-one
+create.tidistrbybracket
+create.tincdistrbybracket
+kbcode.js
+kbstyle.css
+looking.ecdf
+looking.replot
+looking.tiles
+     
+
+DPCIA2AUQAEO0lv-small.jpg
 
 ipums/cps_00006.csv.gz
 
@@ -40,3 +50,5 @@ repro.pdf
 repro.png
 tidistr.pdf
 tidistr.png
+tincdistrbybracket.pdf
+tincdistrbybracket.png

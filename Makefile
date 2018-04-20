@@ -22,13 +22,23 @@ histo.hhbracket99-both.OPTIONS = ${histo.hhbracket99.OPTIONS} \
 		--years ${FYEAR},${LYEAR}
 histo.hhbracket99-1972.OPTIONS = ${histo.hhbracket99.OPTIONS} --years 1972
 
+FTLARGE = DPCIA2AUQAEO0lv.jpg
+FTSMALL = DPCIA2AUQAEO0lv-small.jpg
+# chop the FT image
+FT_X_LOW = 0
+FT_X_HIGH = 675
+FT_Y_LOW = 430
+FT_Y_HIGH = 770
+FT_X_WIDTH = $(shell expr ${FT_X_HIGH} - ${FT_X_LOW})
+FT_Y_HEIGHT = $(shell expr ${FT_Y_HIGH} - ${FT_Y_LOW})
+
 
 GRAPHSPDF = $(GRAPHS:=.pdf)
 GRAPHSPNG = $(GRAPHS:=.png)
 
 GRAPHSALL = ${GRAPHSPDF} ${GRAPHSPNG}
 
-all: ${GRAPHSPDF} ${GRAPHSPNG}
+all: ${GRAPHSPDF} ${GRAPHSPNG} ${FTSMALL}
 
 ${GRAPHSPDF}: Makefile ${BINS}
 	./create.$(subst .pdf,,$@) ${$(subst .pdf,.OPTIONS,$@)} \
@@ -37,6 +47,9 @@ ${GRAPHSPDF}: Makefile ${BINS}
 ${GRAPHSPNG}: Makefile ${BINS}
 	./create.$(subst .png,,$@) ${$(subst .png,.OPTIONS,$@)} \
 				${CREATEOPTS} ${PNGOPTS} --gfile $@ --graphics png
+
+${FTSMALL}: ${FTLARGE}
+	convert -crop ${FT_X_WIDTH}x${FT_Y_HEIGHT}+${FT_X_LOW}+${FT_Y_LOW} $< $@
 
 # convenience targets
 fyear:
@@ -50,6 +63,6 @@ bins:
 
 clean:
 	@echo run \"make realclean\" to remove $(BINS)
-	@rm -f ${GRAPHSALL}
+	@rm -f ${GRAPHSALL} ${FTSMALL}
 realclean:
 	rm $(BINS)
