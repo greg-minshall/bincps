@@ -183,9 +183,9 @@ Blom asked, given that the past forty-plus years has seen *everyone*
 do better, should we be worried about the growing inequality?
 
 Blom showed the following graphic, apparently from a video from the
-Financial Times.
+Financial Times (click on the image to see the original):
 
-#+caption: (Click on the image to see the original.)
+
 #+name: fig:ftdisplay
 [[file:DPCIA2AUQAEO0lv.jpg][file:DPCIA2AUQAEO0lv-small.jpg]]
 
