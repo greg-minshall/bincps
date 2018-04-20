@@ -327,16 +327,16 @@ Pick a tab, any tab...
 
 *** TODO CDF
 
-Statistical distributions [fn::In this note, we are discussing
-distributions over the real numbers] come in two basic forms: discrete
-and continuous.  In a discrete distribution, the probability of an
-event happening at a given point is either zero, or a positive number
-greater than zero but less than one; the probability will only be
-non-zero for an at-most countable number of points, presumably (XXX
-continuum hypothesis); at least *one* point has a positive
-probability; and the sum of the probabilities of all the points at
-which the probability is positive adds to one; i.e., *some* outcome
-occurs.
+[[https://en.wikipedia.org/wiki/Probability_distribution][Probability distributions]] [fn::In this note, we are discussing
+distributions over the real numbers, as opposed to, say, over some
+geographic region] come in two basic forms: discrete and continuous.
+In a discrete distribution, the probability of an event happening at a
+given point is either zero, or a positive number greater than zero but
+less than one; the probability will only be non-zero for an at-most
+countable number of points, presumably (XXX continuum hypothesis); at
+least *one* point has a positive probability; and the sum of the
+probabilities of all the points at which the probability is positive
+adds to one; i.e., *some* outcome occurs.
 
 In a continuous distribution, in contrast, the probability of a given
 outcome can be zero for *all* possible outcomes (points), but still,
@@ -354,17 +354,18 @@ each step centered on one (or more) of the points where the
 distribution takes on a new value.
 
 A common technique for continuous probability distributions
-(especially for a so-called "empirical distribution function", i.e.,
-where one is looking not at the theoretical distribution, but rather
-the results of a number of experiments) is to form a histogram,
-"binning" the possible values (so that all the values from, e.g., 1-10
-are counted in one bin, from 11-20 counted in another, etc.), and then
-assigning each bin a "probability" based on the number of counts in
-that bin divided by the total number of counts over all the bins.
-This histogram can then be displayed, looking something like the
-rose-colored bars in the Financial Times [[fig:ftdisplay][display]] Blom posted.  For
-example, according to the FT display, in 2015, a household income of
-$50,000 has about a four percent chance of occurring.
+(especially for a "[[https://en.wikipedia.org/wiki/Frequency_distribution][frequency distribution]]", or a so-called "[[https://en.wikipedia.org/wiki/Empirical_distribution_function][empirical
+distribution function]]", i.e., for cases where one is looking not at
+the theoretical distribution, but rather the results of a number of
+experiments) is to form a histogram, "binning" the possible values (so
+that all the values from, e.g., 1-10 are counted in one bin, from
+11-20 counted in another, etc.), and then assigning each bin a
+"probability" based on the number of counts in that bin divided by the
+total number of counts over all the bins.  This histogram can then be
+displayed, looking something like the rose-colored bars in the
+Financial Times [[fig:ftdisplay][display]] Blom posted.  For example, according to the FT
+display, in 2015, a household income of $50,000 has about a four
+percent chance of occurring.
 
 The "probability density function" (PDF -- looking something like the
 solid blue line floating "above" the bars in the FT [[fig:ftdisplay][display]]) is the
@@ -385,7 +386,7 @@ distribution would look like if it followed its theoretical
 distribution.  On the other hand, the empirical distribution function
 describes the results of a series of experiments, a long series of
 "draws" from the distribution in question.  While the theory of
-statistics, in particular the law of large numbers, guarantees that
+statistics, in particular [[https://en.wikipedia.org/wiki/Law_of_large_numbers][the law of large numbers]], guarantees that
 over the long run, the empirical distribution of a series of draws
 from a given distribution will approach the theoretical distribution,
 it is also the case that, as [[https://en.wikiquote.org/wiki/John_Maynard_Keynes][Keynes said]], "But this long run is a
@@ -396,8 +397,8 @@ distribution, with which parameters, we are looking at, it is often
 more valuable to look at empirical distributions.
 
 In addition to the probability density function, there's another way
-of looking at, characterizing, a distribution, the "cumulative
-distribution function" (CDF).  The CDF can never go down -- it can
+of looking at, characterizing, a distribution, the "[[https://en.wikipedia.org/wiki/Cumulative_distribution_function][cumulative
+distribution function]]" (CDF).  The CDF can never go down -- it can
 only go up (or stay the same; we say the function is "monotonic", but
 not "strictly monotonic").  It is always in the range between zero and
 one; it starts at zero at negative infinity (say), and will have
