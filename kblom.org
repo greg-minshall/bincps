@@ -532,34 +532,49 @@ incomes that people tend to report?
 
 #+name: mostreported
 #+BEGIN_SRC R :results table :colnames yes :exports results :cache yes :var years=years
-  mostreported <- function(rset, years) {
-      cyears <- c(as.numeric(unlist(strsplit(years, "[ ,]+"))))
+      mostreported <- function(rset, years) {
+          cyears <- c(as.numeric(unlist(strsplit(years, "[ ,]+"))))
 
-      df <- data.frame()
-      for (year in cyears) {
-          raw <- length(rset$HHINCOME)           # [1] 345582
-          uni <- length(unique(rset$HHIINCOME))   # [1] 55297
-          x <- rset[rset$YEAR==year,]$HHINCOME
-          z <- tabulate(x)
-          zz <- sort.int(z, index.return=TRUE, decreasing=TRUE)
-          zz$ix <- zz$ix[zz$x != 0]
-          zz$x <- zz$x[zz$x != 0]
-          df <- rbind(df, c(year, zz$ix[1:30]))
+          df <- data.frame()
+          for (year in cyears) {
+              yset <- rset[rset$YEAR==year,]        # choose our year
+              raw <- length(yset)                   # [1] 345582
+              uni <- length(unique(yset$HHIINCOME)) # [1] 55297
+              z <- tabulate(yset$HHINCOME)
+              zz <- order(z, decreasing=TRUE)
+              df <- rbind(df, t(c(raw, uni, zz[1:30])))
+          }
+          colnames(df) <- c("raw", "uni", 1:30)
+          rownames(df) <- cyears
+          return(df)
       }
-      return(df);
-  }
 
-  # how to display?  [[https://flowingdata.com/2010/01/07/11-ways-to-visualize-changes-over-time-a-guide/][time matrix]]
-  # no https://datatodisplay.com/blog/chart-design/communicating-changes-rank-time/
-  # nice, but http://blog.plot.ly/post/117105992082/time-series-graphs-eleven-stunning-ways-you-can
-  # i thought, "not a bump chart", but maybe it is: http://www.sirvizalot.com/2016/03/color-popularity-for-new-cars-2000-2015.html
-  # here, called "tier list ranking chart" http://www.bagoum.com/rankgraph.html
-  # maybe https://www.r-bloggers.com/stacked-bar-charts-in-r/
-  # barplots in R: https://www.r-bloggers.com/using-r-barplot-with-ggplot2/
-  # ditto: http://ggplot2.tidyverse.org/reference/geom_bar.html
+      # how to display?  [[https://flowingdata.com/2010/01/07/11-ways-to-visualize-changes-over-time-a-guide/][time matrix]]
 
-  rset <- read.csv("ipums/cps_00006.csv.gz", header=TRUE);
-  mostreported(rset, years)
+      # no https://datatodisplay.com/blog/chart-design/communicating-changes-rank-time/
+
+      # nice, but http://blog.plot.ly/post/117105992082/time-series-graphs-eleven-stunning-ways-you-can
+
+      # i thought, "not a bump chart", but maybe it is: http://www.sirvizalot.com/2016/03/color-popularity-for-new-cars-2000-2015.html
+
+      # here, called "tier list ranking chart" http://www.bagoum.com/rankgraph.html
+
+      # maybe https://www.r-bloggers.com/stacked-bar-charts-in-r/
+
+      # barplots in R: https://www.r-bloggers.com/using-r-barplot-with-ggplot2/
+
+      # ditto: http://ggplot2.tidyverse.org/reference/geom_bar.html
+
+      bompplot <- function(df) {
+          "given a dataframe, do a persistence box plot"
+
+          "df has columns for successive 'years' (the column labels show the 'year')"
+
+
+      }
+
+  #    rset <- read.csv("ipums/cps_00006.csv.gz", header=TRUE);
+  #    mostreported(rset, years)
 
 #+end_src
 
