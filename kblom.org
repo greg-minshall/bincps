@@ -20,7 +20,7 @@ inline calls are "raw".
 make binned
 #+END_SRC
 
-#+RESULTS[f43f76bafeb827b627f0a9cc98f177c4a94a9594]: ifile
+#+RESULTS[f43f76bafeb827b627f0a9cc98f177c4a94a9594]: ifile :cache yes
 : ./ipums/cps_00006.1962-2017-binned.csv
 
 # our years
@@ -478,6 +478,13 @@ households in 2016 were making *less* than in 1972.
   <<looking.endbits>>
 
 #+END_SRC
+
+#+begin_src sh :tangle bin/create.histo.hhbracket99-both :shebang "#!/bin/sh" :results none :eval no-export :exports none
+./bin/create.histo.hhbracket99 $*
+#+end_src
+#+begin_src sh :tangle bin/create.histo.hhbracket99-1972 :shebang "#!/bin/sh" :results none :eval no-export :exports none
+./bin/create.histo.hhbracket99 $*
+#+end_src
 
 It's tricky trying to get reliable data at the high end of the income
 scale (XXX Piketty, Saez, et al.)  In the following graphic, we show
