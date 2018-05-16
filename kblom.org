@@ -267,11 +267,11 @@ quantitatively.
 #+END_SRC
 
 To understand the effects of the change in the distribution of income,
-it is useful to look at the (empirical) cumulative function ([[CDF]]) of
-the data for the years in question.  The following graphic (which is
-presented in 1999 dollars, not the 2014 dollars of the FT graph) using
-publicly available data from [[http://www.ipums.org][IPUMS-CS]], attempts to reproduce the FT
-graphic Blom tweeted:
+it is useful to look at the (empirical) cumulative distribution
+function ([[CDF]]) of the data for the years in question.  The following
+graphic (which is presented in 1999 dollars, not the 2014 dollars of
+the FT graph) using publicly available data from [[http://www.ipums.org][IPUMS-CS]], attempts to
+reproduce the FT graphic Blom tweeted:
 #+name: fig:repro
 [[file:graphs/repro.IMG]]
 
@@ -510,23 +510,58 @@ quality of life may be highly influenced by social "safety net"
 (welfare) programs.  So, loss of N% over 40 years may not translate to
 an N% lower quality of life, as the social safety net in the US has
 changed dramatically over that period of time.  We are not experts in
-this area, and so cannot make any pronouncements about how these
-changes may either offset or reinforce the trend seen in household
-income over this period of time (The Economist has [[https://www.economist.com/news/finance-and-economics/21739662-estimates-income-growth-vary-greatly-depending-methodology-average][something to say]] on
-this point).
+this area, and so cannot make any certain pronouncements about how
+these changes may either offset or reinforce the trend seen in
+household income over this period of time (The Economist has [[https://www.economist.com/news/finance-and-economics/21739662-estimates-income-growth-vary-greatly-depending-methodology-average][something
+to say]] on this point).
 
-On the other hand, our charts tend to emphasize the *percentage*
-difference between two groups, or between the same group over two
-different years.  For middle- and high-income families, that may be very
-reasonable.  However, for low-income families
+However, our charts tend to emphasize the *percentage* difference
+between two groups, or between the same group over two different
+years.  For middle- and high-income families, that may be very
+reasonable, but for low-income families, a small *percentage*
+difference in income may well be very significant in terms of, e.g.,
+the ability to manage monthly expenses.
 
 *** TODO Most reported incomes
 
 The IPUMS data, the Census American Community Survey data, is based on
 self-reporting.  While the Census Bureau will try to obtain valid
-responses, citizens will likely, at the very least, estimate their
+responses, respondents will likely, at the very least, estimate their
 annual income, rather than give a precise answer.  What are the
 incomes that people tend to report?
+
+#+name: mostreported
+#+BEGIN_SRC R :results table :colnames yes :exports results :cache yes :var years=years
+  mostreported <- function(rset, years) {
+      cyears <- c(as.numeric(unlist(strsplit(years, "[ ,]+"))))
+
+      df <- data.frame()
+      for (year in cyears) {
+          raw <- length(rset$HHINCOME)           # [1] 345582
+          uni <- length(unique(rset$HHIINCOME))   # [1] 55297
+          x <- rset[rset$YEAR==year,]$HHINCOME
+          z <- tabulate(x)
+          zz <- sort.int(z, index.return=TRUE, decreasing=TRUE)
+          zz$ix <- zz$ix[zz$x != 0]
+          zz$x <- zz$x[zz$x != 0]
+          df <- rbind(df, c(year, zz$ix[1:30]))
+      }
+      return(df);
+  }
+
+  # how to display?  [[https://flowingdata.com/2010/01/07/11-ways-to-visualize-changes-over-time-a-guide/][time matrix]]
+  # no https://datatodisplay.com/blog/chart-design/communicating-changes-rank-time/
+  # nice, but http://blog.plot.ly/post/117105992082/time-series-graphs-eleven-stunning-ways-you-can
+  # i thought, "not a bump chart", but maybe it is: http://www.sirvizalot.com/2016/03/color-popularity-for-new-cars-2000-2015.html
+  # here, called "tier list ranking chart" http://www.bagoum.com/rankgraph.html
+  # maybe https://www.r-bloggers.com/stacked-bar-charts-in-r/
+  # barplots in R: https://www.r-bloggers.com/using-r-barplot-with-ggplot2/
+  # ditto: http://ggplot2.tidyverse.org/reference/geom_bar.html
+
+  rset <- read.csv("ipums/cps_00006.csv.gz", header=TRUE);
+  mostreported(rset, years)
+
+#+end_src
 
 *** Who gets what percent of the national income?
 
