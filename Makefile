@@ -19,9 +19,9 @@ GRAPHS = repro ecdf ecdf2 tidistr tincdistrbybracket \
 # extra options any of those need
 ${GDIR}/totalincome.distribution.OPTIONS = --maxhh 10e8
 ${GDIR}/histo.hhbracket99.OPTIONS = --maxhh 10e8 --bracket HHBRACKET99
-${GDIR}/histo.hhbracket99-both.OPTIONS = ${histo.hhbracket99.OPTIONS} \
+${GDIR}/histo.hhbracket99-both.OPTIONS = ${${GDIR}/histo.hhbracket99.OPTIONS} \
 		--years ${FYEAR},${LYEAR}
-${GDIR}/histo.hhbracket99-1972.OPTIONS = ${histo.hhbracket99.OPTIONS} --years 1972
+${GDIR}/histo.hhbracket99-1972.OPTIONS = ${${GDIR}/histo.hhbracket99.OPTIONS} --years 1972
 
 FTLARGE = images/DPCIA2AUQAEO0lv.jpg
 FTSMALL = images/DPCIA2AUQAEO0lv-small.jpg
@@ -46,7 +46,7 @@ ${GRAPHSPDF}: Makefile ${BINNED}
 				${CREATEOPTS} ${PDFOPTS} --gfile $@ --graphics pdf
 
 ${GRAPHSPNG}: Makefile ${BINNED}
-	./create.$(subst ${GDIR}/,,$(subst .png,,$@)) ${$(subst .png,.OPTIONS,$@)} \
+	./bin/create.$(subst ${GDIR}/,,$(subst .png,,$@)) ${$(subst .png,.OPTIONS,$@)} \
 				${CREATEOPTS} ${PNGOPTS} --gfile $@ --graphics png
 
 ${FTSMALL}: ${FTLARGE}
