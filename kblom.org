@@ -8,7 +8,7 @@
 #+OPTIONS: html-preamble:t html-scripts:t html-style:t
 #+OPTIONS: html5-fancy:t
 #+OPTIONS: toc:nil
-#+html_head_extra: <link href="kbstyle.css" rel="stylesheet"/>
+#+html_head_extra: <link href="lib/kbstyle.css" rel="stylesheet"/>
 to change how the result is "wrapped", customize the variable
 org-babel-inline-result-wrap.  the following means that the results of
 inline calls are "raw".
@@ -17,7 +17,7 @@ inline calls are "raw".
 # our canonical file name...
 #+name: ifile
 #+BEGIN_SRC sh :cache yes
-make bins
+make binned
 #+END_SRC
 
 #+RESULTS[f43f76bafeb827b627f0a9cc98f177c4a94a9594]: ifile
@@ -69,7 +69,7 @@ under the sun.
 #+END_SRC
 ** javascript, css                                                 :noexport:
 
-#+begin_src js :exports none :tangle kbcode.js
+#+begin_src js :exports none :tangle lib/kbcode.js
   // tabbed info-box, from
   // https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Practical_positioning_examples
 
@@ -121,7 +121,7 @@ under the sun.
   tabbedloaded();                 // just in case
 #+end_src
 
-#+begin_src css :exports none :tangle kbstyle.css
+#+begin_src css :exports none :tangle lib/kbstyle.css
   /* https://stackoverflow.com/a/5887767 */
   table {
       table-layout:fixed;
@@ -136,7 +136,7 @@ under the sun.
 
 [[https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Practical_positioning_examples][tabbed info-box]]
 
-#+begin_src css :exports none :tangle kbstyle.css
+#+begin_src css :exports none :tangle lib/kbstyle.css
   .appendix {
     min-width: 960px;             /* to fit timeline */
   }
@@ -197,7 +197,7 @@ people do better, should we be worried about the growing inequality?
 Blom showed the following graphic, apparently from a video from the
 Financial Times (click on the image to see the original):
 #+name: fig:ftdisplay
-[[file:DPCIA2AUQAEO0lv.jpg][file:DPCIA2AUQAEO0lv-small.jpg]]
+[[file:images/DPCIA2AUQAEO0lv.jpg][file:images/DPCIA2AUQAEO0lv-small.jpg]]
 
 While Blom's question was asking for a qualitative answer (given that
 the issues are really sociological), here I treat the question
@@ -205,7 +205,7 @@ quantitatively.
 
 ** Step one: reproduce the display
 
-#+BEGIN_SRC R :tangle create.repro :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle bin/create.repro :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -273,7 +273,7 @@ presented in 1999 dollars, not the 2014 dollars of the FT graph) using
 publicly available data from [[http://www.ipums.org][IPUMS-CS]], attempts to reproduce the FT
 graphic Blom tweeted:
 #+name: fig:repro
-[[file:repro.IMG]]
+[[file:graphs/repro.IMG]]
 
 This is not by any means exactly as the FT graphic.  However, if you
 squint, it is roughly the same.
@@ -284,24 +284,24 @@ If you will grant me that the two graphs represent something like the
 same distribution of household incomes, then we can now look at the
 CDF of the dataset underlying the graphic:
 
-#+BEGIN_SRC sh :tangle create.ecdf :shebang "#!/bin/sh" :results none :eval never :exports none
-  ./create.ecdf.common $*
+#+BEGIN_SRC sh :tangle bin/create.ecdf :shebang "#!/bin/sh" :results none :eval never :exports none
+  ./bin/create.ecdf.common $*
 #+END_SRC
 
 #+name: fig:ecdf
-[[file:ecdf.IMG]]
+[[file:graphs/ecdf.IMG]]
 
 In the above, we see that about 30% of US households have not done
 much better in the years since 1972 (compared to how well they were
 doing in 1972).  If we blow up the section for household incomes below
 $50,000, we can see what happens around that area in more detail:
 
-#+BEGIN_SRC sh :tangle create.ecdf2 :shebang "#!/bin/sh" :results none :eval never :exports none
-  ./create.ecdf.common $* --maxhh 50000
+#+BEGIN_SRC sh :tangle bin/create.ecdf2 :shebang "#!/bin/sh" :results none :eval never :exports none
+  ./bin/create.ecdf.common $* --maxhh 50000
 #+END_SRC
 
 #+name: fig:ecdf2
-[[file:ecdf2.IMG]]
+[[file:graphs/ecdf2.IMG]]
 
 Here it becomes clearer that the lowest 30% of US households (ranked
 by income) are doing worse in 2016 than they had been doing in 1972.
@@ -448,7 +448,7 @@ households in 2016 were making *less* than in 1972.
 
 **** TODO High income issues
 
-#+BEGIN_SRC R :tangle create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle bin/create.histo.hhbracket99 :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -484,7 +484,7 @@ scale (XXX Piketty, Saez, et al.)  In the following graphic, we show
 number of data points per income group (i.e., *not* multiplied by the
 weighting factor [[https://cps.ipums.org/cps-action/variables/HWTSUPP#codes_section][HWTSUPP]]).
 
-file:histo.hhbracket99-both.IMG
+file:graphs/histo.hhbracket99-both.IMG
 
 Ignoring the hump around 200,000 dollars for the year 1972 (see the
 section [[Oddities]]), it is clear that very few respondents have high
@@ -494,7 +494,7 @@ While it's not apparent in this graphic, incomes below around 5,000,
 6,000 dollars also have a small number of respondents.  If we just
 look at 1972, we see this:
 
-file:histo.hhbracket99-1972.IMG
+file:graphs/histo.hhbracket99-1972.IMG
 
 **** TODO Low income issues
 
@@ -570,12 +570,12 @@ Now we look at the same data, however looking at the total income
 earned by each household income bracket.
 
 #+name: tincdistrbybracket
-#+BEGIN_SRC sh :tangle create.tincdistrbybracket :shebang "#!/bin/sh" :results none :exports none :eval never :var years=years
-  ./create.ecdf.common $* --years ${years} --tgt.in.key %totalincome:bracket --maxhh 220000
+#+BEGIN_SRC sh :tangle bin/create.tincdistrbybracket :shebang "#!/bin/sh" :results none :exports none :eval never :var years=years
+  ./bin/create.ecdf.common $* --years ${years} --tgt.in.key %totalincome:bracket --maxhh 220000
 #+END_SRC
 
 #+caption: How the total US income in 1972 and in 2016 was distributed across US households (sorted by income)
-[[file:tincdistrbybracket.IMG]]
+[[file:graphs/tincdistrbybracket.IMG]]
 
 *** Where have all the flowers gone
 
@@ -650,12 +650,12 @@ population?
 The following graphic shows how the extra money earned in 2016 (over
 that earned in 1972) has been shared among the income deciles in the US.
 
-#+BEGIN_SRC sh :tangle create.tidistr :shebang "#!/bin/sh" :results none :eval never :exports none
-  ./create.ecdf.common $* --years 1972,2016 --tgt.in.key %totalincome:%population --delta --maxhh 2e14
+#+BEGIN_SRC sh :tangle bin/create.tidistr :shebang "#!/bin/sh" :results none :eval never :exports none
+  ./bin/create.ecdf.common $* --years 1972,2016 --tgt.in.key %totalincome:%population --delta --maxhh 2e14
 #+END_SRC
 
 #+caption: How the increase in incomes of US households in 2016 over 1972 was distributed across deciles of the US popuation (sorted by income)
-[[file:tidistr.IMG]]
+[[file:graphs/tidistr.IMG]]
 
 While the above graphic may look to be the graph of a cumulative
 distribution, it is not (it looks like a CDF because, well, "the rich
@@ -732,6 +732,8 @@ URL https://www.R-project.org/.
 
 Third, my approach to anything statistical is indebted to [[https://en.wikipedia.org/wiki/John_Tukey][John Tukey]]'s
 [[https://en.wikipedia.org/wiki/Exploratory_data_analysis][/Exploratory Data Analysis/]], a book I highly recommend.
+
+#+html: <script src="lib/kbcode.js"></script>
 
 ** explorations, etc. :noexport:
 *** where to find data?
@@ -1336,7 +1338,7 @@ the input is a matrix with 2 columns, the first being the value, the
 second the number of elements with that value.
 
 #+name: stats.binned
-#+BEGIN_SRC R :tangle stats.binned :results none :eval no-export :exports none
+#+BEGIN_SRC R bin/stats.binned :results none :eval no-export :exports none
   <<warning>>
 
   require(Hmisc, warn.conflicts=FALSE, quietly=TRUE)
@@ -1498,7 +1500,7 @@ run something like this:
 : ./bincps --ifile ipums/cps_00006.csv.gz --ofile foo.csv --rfile goo.csv
 
 #+name: bincps
-#+BEGIN_SRC R :tangle bincps :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle bin/bincps :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<stats.binned>>
 
@@ -2167,7 +2169,7 @@ get the dataset
     p <- arg_parser(name)
     if ("ifile" %in% need) {
       need <- subset(need, need!= "ifile")
-      p <- add_argument(p, "--ifile", type="character", default=system("make -s bins", intern=TRUE),
+      p <- add_argument(p, "--ifile", type="character", default=system("make -s binned", intern=TRUE),
                         help="name of input file")
     }
     if ("maxhh" %in% need) {
@@ -2380,7 +2382,7 @@ get the dataset
 
 **** create.ecdf.common (called by shell scripts)
 
-#+BEGIN_SRC R :tangle create.ecdf.common :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle bin/create.ecdf.common :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -2466,7 +2468,7 @@ get the dataset
 
 **** create.tiles
 #+name: create.tiles
-#+BEGIN_SRC R :tangle create.tiles :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle bin/create.tiles :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -2513,7 +2515,7 @@ get the dataset
 **** lookup
 
 #+name: lookup
-#+BEGIN_SRC R :tangle lookup :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle bin/lookup :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<warning>>
   <<looking.bits>>
   <<stats.binned>>
@@ -2556,7 +2558,7 @@ get the dataset
   <<looking.endbits>>
 #+END_SRC
 
-#+BEGIN_SRC sh :tangle lookup-one :shebang "#!/bin/sh" :results none :eval never :exports none
+#+BEGIN_SRC sh :tangle bin/lookup-one :shebang "#!/bin/sh" :results none :eval never :exports none
   # like lookup, but only return the value (for scripting ease)
   ./lookup $* | awk 'NR > 1 { print $3 }'
 #+END_SRC
