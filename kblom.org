@@ -1338,7 +1338,7 @@ the input is a matrix with 2 columns, the first being the value, the
 second the number of elements with that value.
 
 #+name: stats.binned
-#+BEGIN_SRC R bin/stats.binned :results none :eval no-export :exports none
+#+BEGIN_SRC R :results none :eval no-export :exports none
   <<warning>>
 
   require(Hmisc, warn.conflicts=FALSE, quietly=TRUE)
