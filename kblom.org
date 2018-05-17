@@ -530,66 +530,6 @@ responses, respondents will likely, at the very least, estimate their
 annual income, rather than give a precise answer.  What are the
 incomes that people tend to report?
 
-#+name: mostreported
-#+BEGIN_SRC R :results table :colnames yes :exports results :cache yes :var years=years
-  mostreported <- function(rset, years) {
-      cyears <- c(as.numeric(unlist(strsplit(years, "[ ,]+"))))
-
-      df <- data.frame()
-      for (year in cyears) {
-          yset <- rset[rset$YEAR==year,]        # choose our year
-          raw <- length(yset)                   # [1] 345582
-          uni <- length(unique(yset$HHIINCOME)) # [1] 55297
-          z <- tabulate(yset$HHINCOME)
-          zz <- order(z, decreasing=TRUE)
-          df <- rbind(df, t(c(raw, uni, zz[1:30])))
-      }
-      colnames(df) <- c("raw", "uni", 1:30)
-      rownames(df) <- cyears
-      return(df)
-  }
-
-  # how to display?  [[https://flowingdata.com/2010/01/07/11-ways-to-visualize-changes-over-time-a-guide/][time matrix]]
-
-  # no https://datatodisplay.com/blog/chart-design/communicating-changes-rank-time/
-
-  # nice, but http://blog.plot.ly/post/117105992082/time-series-graphs-eleven-stunning-ways-you-can
-
-  # i thought, "not a bump chart", but maybe it is: http://www.sirvizalot.com/2016/03/color-popularity-for-new-cars-2000-2015.html
-
-  # here, called "tier list ranking chart" http://www.bagoum.com/rankgraph.html
-
-  # maybe https://www.r-bloggers.com/stacked-bar-charts-in-r/
-
-  # barplots in R: https://www.r-bloggers.com/using-r-barplot-with-ggplot2/
-
-  # ditto: http://ggplot2.tidyverse.org/reference/geom_bar.html
-
-  ggbompplot <- function(df) {
-      "given a dataframe, do a persistence box plot (using ggplot2)"
-
-      "df has columns for successive 'years' (the column labels show the 'year')"
-       # https://stackoverflow.com/a/33080804/1527747
-      data=data.frame(s=c(10,13,17,8),
-                      pr=c("a","b","a","b"),
-                      m=c(rep(as.Date('01.01.2015','%d.%m.%Y'),2),
-                          rep(as.Date('01.02.2015','%d.%m.%Y'),2)))
-      ggplot(data = data, aes(x = as.factor(m), y = s,fill=pr ,ymax = max(s)*1.1)) + 
-          geom_bar(position = "dodge", stat="identity") + 
-          geom_text(aes(y=s/2,label=paste(round(s,3),"%")),position = position_dodge(.9)) + 
-          scale_x_discrete(labels = function(x) format(as.Date(x), "%m/%y")) + 
-          xlab("m")
-  }
-
-  grbomplot <- function(df) {
-
-
-
-  #    rset <- read.csv("ipums/cps_00006.csv.gz", header=TRUE);
-  #    mostreported(rset, years)
-
-#+end_src
-
 *** Who gets what percent of the national income?
 
 A lot of money is paid out in income in the United States.  How is
@@ -2655,6 +2595,69 @@ run by, e.g.,
 
   <<looking.endbits>>
 #+END_SRC
+
+**** bumpplots
+
+
+#+name: mostreported
+#+BEGIN_SRC R :results table :colnames yes :exports results :cache yes :var years=years
+  mostreported <- function(rset, years) {
+      cyears <- c(as.numeric(unlist(strsplit(years, "[ ,]+"))))
+
+      df <- data.frame()
+      for (year in cyears) {
+          yset <- rset[rset$YEAR==year,]        # choose our year
+          raw <- length(yset)                   # [1] 345582
+          uni <- length(unique(yset$HHIINCOME)) # [1] 55297
+          z <- tabulate(yset$HHINCOME)
+          zz <- order(z, decreasing=TRUE)
+          df <- rbind(df, t(c(raw, uni, zz[1:30])))
+      }
+      colnames(df) <- c("raw", "uni", 1:30)
+      rownames(df) <- cyears
+      return(df)
+  }
+
+  # how to display?  [[https://flowingdata.com/2010/01/07/11-ways-to-visualize-changes-over-time-a-guide/][time matrix]]
+
+  # no https://datatodisplay.com/blog/chart-design/communicating-changes-rank-time/
+
+  # nice, but http://blog.plot.ly/post/117105992082/time-series-graphs-eleven-stunning-ways-you-can
+
+  # i thought, "not a bump chart", but maybe it is: http://www.sirvizalot.com/2016/03/color-popularity-for-new-cars-2000-2015.html
+
+  # here, called "tier list ranking chart" http://www.bagoum.com/rankgraph.html
+
+  # maybe https://www.r-bloggers.com/stacked-bar-charts-in-r/
+
+  # barplots in R: https://www.r-bloggers.com/using-r-barplot-with-ggplot2/
+
+  # ditto: http://ggplot2.tidyverse.org/reference/geom_bar.html
+
+  ggbompplot <- function(df) {
+      "given a dataframe, do a persistence box plot (using ggplot2)"
+
+      "df has columns for successive 'years' (the column labels show the 'year')"
+       # https://stackoverflow.com/a/33080804/1527747
+      data=data.frame(s=c(10,13,17,8),
+                      pr=c("a","b","a","b"),
+                      m=c(rep(as.Date('01.01.2015','%d.%m.%Y'),2),
+                          rep(as.Date('01.02.2015','%d.%m.%Y'),2)))
+      ggplot(data = data, aes(x = as.factor(m), y = s,fill=pr ,ymax = max(s)*1.1)) + 
+          geom_bar(position = "dodge", stat="identity") + 
+          geom_text(aes(y=s/2,label=paste(round(s,3),"%")),position = position_dodge(.9)) + 
+          scale_x_discrete(labels = function(x) format(as.Date(x), "%m/%y")) + 
+          xlab("m")
+  }
+
+  grbomplot <- function(df) {
+
+
+
+  #    rset <- read.csv("ipums/cps_00006.csv.gz", header=TRUE);
+  #    mostreported(rset, years)
+
+#+end_src
 
 ** local variables :noexport:
 # Local Variables:
