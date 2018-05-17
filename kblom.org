@@ -2599,6 +2599,102 @@ run by, e.g.,
 **** bumpplots
 
 
+want [[http://www.visualcapitalist.com/the-historical-returns-by-asset-class-over-the-last-decade/][something]] like what financial services people use to show change
+in top-performing assets over time.  ([[http://www.visualcapitalist.com/periodic-table-commodity-returns-2017/][here]] it is called a "periodic
+table of X"; points at a nice, if slightly confusing, [[http://www.usfunds.com/interactive/the-periodic-table-of-commodity-returns-2017][interactive
+chart]].)
+
+how to display?  [[http://www.math.yorku.ca/SCS/Gallery/images/LAoz.gif][time matrix]] (pointed at by [[https://flowingdata.com/2010/01/07/11-ways-to-visualize-changes-over-time-a-guide/][11 Ways to Visualize
+Changes Over Time]])
+
+[[https://datatodisplay.com/blog/chart-design/communicating-changes-rank-time/][Communicating changes in rank over time: bumps charts and slopegraphs]]
+
+[[http://blog.plot.ly/post/117105992082/time-series-graphs-eleven-stunning-ways-you-can][Time Series Graphs & Eleven Stunning Ways You Can Use Them]] (but, not
+what we looking for!).
+
+[[http://www.sirvizalot.com/2016/03/color-popularity-for-new-cars-2000-2015.html][Using Ranks to Create Bump Charts in Tableau]] (in tableau).  i thought,
+"i don't want a bump chart", but maybe i do?
+
+[[http://www.bagoum.com/rankgraph.html]["tier list ranking chart"]]
+
+[[https://www.r-bloggers.com/stacked-bar-charts-in-r/][stacked bar charts in R]]; [[https://www.r-bloggers.com/using-r-barplot-with-ggplot2/][barplots in R]] (with ggplot2); [[http://ggplot2.tidyverse.org/reference/geom_bar.html][in R]]
+
+then, there are barcharts (we want "stacked") in [[https://www.statmethods.net/advgraphs/trellis.html][lattice]].
+
+one wants an interface that provides a dataframe of labels.  to
+display labels, a dataframe of background colors, label text
+attributes (font, size, style, color).  and, margins (horizontal and
+vertical) between grid elements.  the chessboard will be NxM, just as
+is the dataframe.
+
+i was thinking of using the interface to [[https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Grids][CSS grids]] as a template for
+the interface to this, but it doesn't really seem to have that much of
+an interface.  but, for borders, margins, etc., maybe might be a good
+template to keep in mind.
+
+actually, R's base graphics has "grid", "abline", text.
+
+#+begin_src R
+  compatiblep <- function(a,b) {
+      "is the matrix A compatible with B?  i.e., are the number of rows, columns of B an integer multiple of those of A?"
+
+      if ((nrow(b) %% nrow(a)) != 0) {
+          return(FALSE)
+      } else if ((ncol(b) %% ncol(a)) != 0) {
+          return(FALSE)
+      } else {
+          return(TRUE)
+      }
+  }
+
+  cboarddraw <- function(labels, background=NULL, textattributes=NULL,
+                          boxattributes=NULL) {
+      "plots MxN LABELS, each with its own BACKGROUND color, with each label printing using common TEXTATTRIBUTES (font, size, style, color), in MxN boxes with common BOXATTRIBUTES (horizontal, vertical margins, border, padding, etc.)"
+
+      ## check input arguments
+      if (!is.null(background)) {
+          stopifnot(compatiblep(background, labels))
+      }
+      ## what is the size of our canvas?  (probe underlying graphics?)
+      ## divide into MxN chunks
+      ## for each chunk
+
+      ## given two sets, compute lower, upper points of rectangle
+      m <- ncol(labels)
+      n <- nrow(labels)
+      lg <- expand.grid(0:(m-1),0:(n-1))       # zero-based
+      lx <- lg[,1]/m
+      ly <- lg[,2]/n
+      ug <- expand.grid(1:m, 1:n)
+      ux <- ug[,1]/m
+      uy <- ug[,2]/n
+      ## now, generate our squares
+      plot.new()
+      rect(lx, ly, ux, uy, asp=1, col=background)
+  }
+
+  rankboard <- function(labels, palette=NULL) {
+      "LABEL is presented sorted by rank; colnames are the time points.  PALETTE, if non-null, is the color palette to use (must be as long as the number of unique"
+
+      uni <- sort(unique(as.vector(as.matrix(labels))))           # number of unique labels
+      ## (we sort uni so caller can maybe predict in case they care a
+      ## lot about which color maps to which label value)
+      if (is.null(palette)) {
+          palette <- rainbow(length(uni))
+      } else {
+          stopifnot(length(palette) >= length(uni))
+      }
+      ## for match: http://r.789695.n4.nabble.com/Associative-array-tp1588978p1593950.html
+      background <- matrix(palette[match(as.matrix(labels), uni)], nrow=nrow(labels))
+
+      cboarddraw(labels, background)
+  }
+
+
+#+end_src
+
+#+RESULTS:
+
 #+name: mostreported
 #+BEGIN_SRC R :results table :colnames yes :exports results :cache yes :var years=years
   mostreported <- function(rset, years) {
@@ -2617,22 +2713,6 @@ run by, e.g.,
       rownames(df) <- cyears
       return(df)
   }
-
-  # how to display?  [[https://flowingdata.com/2010/01/07/11-ways-to-visualize-changes-over-time-a-guide/][time matrix]]
-
-  # no https://datatodisplay.com/blog/chart-design/communicating-changes-rank-time/
-
-  # nice, but http://blog.plot.ly/post/117105992082/time-series-graphs-eleven-stunning-ways-you-can
-
-  # i thought, "not a bump chart", but maybe it is: http://www.sirvizalot.com/2016/03/color-popularity-for-new-cars-2000-2015.html
-
-  # here, called "tier list ranking chart" http://www.bagoum.com/rankgraph.html
-
-  # maybe https://www.r-bloggers.com/stacked-bar-charts-in-r/
-
-  # barplots in R: https://www.r-bloggers.com/using-r-barplot-with-ggplot2/
-
-  # ditto: http://ggplot2.tidyverse.org/reference/geom_bar.html
 
   ggbompplot <- function(df) {
       "given a dataframe, do a persistence box plot (using ggplot2)"
