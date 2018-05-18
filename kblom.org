@@ -2676,12 +2676,18 @@ actually, R's base graphics has "grid", "abline", text.
       ## now, generate our squares
       plot.new()
       rect(lx, ly, ux, uy, asp=1, col=as.vector(background))
+
+      ## now, label each square
+      txs <- lx+((ux-lx)/2)
+      tys <- ly+((uy-ly)/2)
+      text(x=txs, y=tys, labels=as.vector(labels))
   }
 
   rankboard <- function(labels, palette=NULL) {
-      "LABEL is presented sorted by rank; colnames are the time points.  PALETTE, if non-null, is the color palette to use (must be as long as the number of unique"
+      "LABELS is presented sorted by rank; colnames are the time points.  PALETTE, if non-null, is the color palette to use (must be as long as the number of unique"
 
-      uni <- sort(unique(as.vector(as.matrix(labels))))           # number of unique labels
+      labels <- as.matrix(labels)                       # data frame need not apply
+      uni <- sort(unique(as.vector(labels)))           # number of unique labels
       ## (we sort uni so caller can maybe predict in case they care a
       ## lot about which color maps to which label value)
       if (is.null(palette)) {
@@ -2690,7 +2696,7 @@ actually, R's base graphics has "grid", "abline", text.
           stopifnot(length(palette) >= length(uni))
       }
       ## for match: http://r.789695.n4.nabble.com/Associative-array-tp1588978p1593950.html
-      background <- matrix(palette[match(as.matrix(labels), uni)], nrow=nrow(labels))
+      background <- matrix(palette[match(labels, uni)], nrow=nrow(labels))
 
       cboarddraw(labels, background)
   }
