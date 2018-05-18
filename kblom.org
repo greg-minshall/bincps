@@ -2691,7 +2691,7 @@ actually, R's base graphics has "grid", "abline", text.
       ## (we sort uni so caller can maybe predict in case they care a
       ## lot about which color maps to which label value)
       if (is.null(palette)) {
-          palette <- rainbow(length(uni))
+          palette <- rainbow(length(uni), s=0.5)
       } else {
           stopifnot(length(palette) >= length(uni))
       }
