@@ -2670,7 +2670,7 @@ actually, R's base graphics has "grid", "abline", text.
       uy <- ug[,2]/n
       ## now, generate our squares
       plot.new()
-      rect(lx, ly, ux, uy, asp=1, col=background)
+      rect(lx, ly, ux, uy, asp=1, col=as.vector(background))
   }
 
   rankboard <- function(labels, palette=NULL) {
