@@ -2662,12 +2662,15 @@ actually, R's base graphics has "grid", "abline", text.
       ## given two sets, compute lower, upper points of rectangle
       m <- ncol(labels)
       n <- nrow(labels)
-      lg <- expand.grid(0:(m-1),0:(n-1))       # zero-based
-      lx <- lg[,1]/m
-      ly <- lg[,2]/n
-      ug <- expand.grid(1:m, 1:n)
-      ux <- ug[,1]/m
-      uy <- ug[,2]/n
+      ## what's going on here?  the tricky bit for me is getting the
+      ## coordinates in the same sequence as the background colors.  the
+      ## following, using the col() and row() functions -- which i
+      ## learned about at https://stackoverflow.com/a/15287206/1527747
+      ## -- does it for me (once i figured out exactly the incantation)
+      lx <- as.vector((col(labels)-1)/m)
+      ly <- as.vector((n-row(labels))/n)
+      ux <- as.vector(col(labels)/m)
+      uy <- as.vector(((n+1)-row(labels))/n)
       ## now, generate our squares
       plot.new()
       rect(lx, ly, ux, uy, asp=1, col=as.vector(background))
