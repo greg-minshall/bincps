@@ -2634,6 +2634,8 @@ template to keep in mind.
 
 actually, R's base graphics has "grid", "abline", text.
 
+([[file:///home/minshall/usr/lib/R/x86_64-pc-linux-gnu-library/tidyr/doc/tidy-data.html][very nice intro]] to H Wickham's long versus wide.)
+
 #+begin_src R
   compatiblep <- function(a,b) {
       "is the matrix A compatible with B?  i.e., are the number of rows, columns of B an integer multiple of those of A?"
