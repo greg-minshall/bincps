@@ -2779,15 +2779,20 @@ get the data set of reported incomes
   <<reported.bits>>
 
   mostreported <- function(rset, years, keep=30) {
-      df <- data.frame()
+      vals <- matrix(ncol=keep, nrow=0)
+      freqs <- matrix(ncol=keep, nrow=0)
       for (year in years) {
           yset <- rset[rset$YEAR==year,]        # choose our year
           zz <- yset$HHINCOME[order(yset$COUNT, decreasing=TRUE)]
-          df <- rbind(df, t(c(year, zz[1:keep])))
+          fr <- yset$COUNT[order(yset$COUNT, decreasing=TRUE)]
+          vals <- rbind(vals, zz[1:keep])
+          freqs <- rbind(freqs, fr[1:keep])
       }
-      colnames(df) <- c("year", 1:keep)
-      rownames(df) <- years
-      return(df)
+      colnames(vals) <- 1:keep
+      colnames(freqs) <- 1:keep
+      rownames(vals) <- years
+      rownames(freqs) <- years
+      return(list(vals, freqs))
   }
 
 
@@ -2798,9 +2803,9 @@ get the data set of reported incomes
                               "height", "width",
                               "years"),
                        args)
-      df <- mostreported(dset, years=attr(dset, "years"))
+      res <- mostreported(dset, years=attr(dset, "years"))
       endup(dset)
-      df
+      res
   }
 
   main <- function(args=NULL) {
