@@ -38,6 +38,9 @@ ipums/cps_00006.csv.gz
 mrx.csv
 
 
+graphs/
+graphs/mostreported.pdf
+graphs/mostreported.png
 graphs/ecdf.pdf
 graphs/ecdf.png
 graphs/ecdf2.pdf
