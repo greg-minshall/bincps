@@ -2777,6 +2777,7 @@ get the data set of reported incomes
 #+name: mostreported
 #+BEGIN_SRC R :tangle bin/mostreported :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<reported.bits>>
+  <<rankboard>>
 
   mostreported <- function(rset, years, keep=30) {
       vals <- matrix(ncol=keep, nrow=0)
@@ -2804,6 +2805,7 @@ get the data set of reported incomes
                               "years"),
                        args)
       res <- mostreported(dset, years=attr(dset, "years"))
+      rankboard(t(res[[1]]))
       endup(dset)
       res
   }
