@@ -2243,6 +2243,11 @@ get the dataset
       p <- add_argument(p, "--width", type="numeric", default=NA,
                         help="width of graphic output")
     }
+    if ("keep" %in% need) {
+      need <- subset(need, need!="keep")
+      p <- add_argument(p, "--keep", type="numeric", default=10,
+                        help="how many of top incomes to display")
+    }
     if ("gopts" %in% need) {
       need <- subset(need, need!="gopts")
       p <- add_argument(p, "--gopts", type="character", default="",
@@ -2657,6 +2662,19 @@ actually, R's base graphics has "grid", "abline", text.
 
 ([[file:///home/minshall/usr/lib/R/x86_64-pc-linux-gnu-library/tidyr/doc/tidy-data.html][very nice intro]] to H Wickham's long versus wide.)
 
+XXX todo:
+- XXX column (top and/or bottom) labels (from rownames)
+- XXX separate identifier for getting palette right from labels (so we
+  can say, "50,000 (10%)" for one year, and different percentage for a
+  different year)
+- allow user to inset figure a specified amount inside the graphic
+  region
+- [[https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Box_Model/Introduction_to_the_CSS_box_model][CSS box model]] for the boxes: margin, border, padding, as if size
+  were for entire cell.
+- so, also, color, size of border line (if any)
+- XXX figure out if the text fits in the boxes, maybe shrink the font
+  size, or print a warning, if not.
+
 #+name: rankboard
 #+begin_src R :exports none
   compatiblep <- function(a,b) {
@@ -2799,12 +2817,12 @@ get the data set of reported incomes
 
   reported.main <- function(args=NULL) {
       dset <- doparser(name="reported",
-                       need=c("reported",
+                       need=c("reported", "keep",
                               "graphics", "gfile", "gopts",
                               "height", "width",
                               "years"),
                        args)
-      res <- mostreported(dset, years=attr(dset, "years"))
+      res <- mostreported(dset, years=attr(dset, "years"), keep=attr(dset, "keep"))
       rankboard(t(res[[1]]))
       endup(dset)
       res
