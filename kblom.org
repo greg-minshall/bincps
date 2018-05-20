@@ -2649,14 +2649,46 @@ actually, R's base graphics has "grid", "abline", text.
       }
   }
 
+  gsetup <- function(labels) {
+      "figure out the size we can use on the current graphics device,
+  how big the boxes will each be (for an aspect ratio of 1:1), the
+  x- and y-offsets from the edge of the graphics device to the array
+  of boxes, etc.  we *SHOULD* also figure out any spacing between
+  boxes, etc., as requested by the user.  we should also figure out
+  if the text fits in the boxes, maybe shrink the font size, or print
+  a warning, if not."
+
+      plot.new()                          # so we can get size
+      dimxy <- dev.size("px")             # get size of graphics device
+      xpx <- dimxy[1];
+      ypx <- dimxy[2];
+      par(usr=c(0, xpx, 0, ypx))          # set user coordinate space
+
+      cellpx <- min(ypx/nrow(labels), xpx/ncol(labels)) # size of a square
+      xoffpx <- (xpx - (cellpx*ncol(labels)))/2         # x offset for lower left
+      yoffpx <- (ypx - (cellpx*nrow(labels)))/2         # y ditto
+
+      return(c(cellpx=cellpx, xoffpx=xoffpx, yoffpx=yoffpx))
+  }
+
   cboarddraw <- function(labels, background=NULL, textattributes=NULL,
                           boxattributes=NULL) {
-      "plots MxN LABELS, each with its own BACKGROUND color, with each label printing using common TEXTATTRIBUTES (font, size, style, color), in MxN boxes with common BOXATTRIBUTES (horizontal, vertical margins, border, padding, etc.)"
+      "plots MxN LABELS, each with its own BACKGROUND color,
+  with each label printing using common TEXTATTRIBUTES (font,
+  size, style, color), in MxN boxes with common BOXATTRIBUTES
+  (horizontal, vertical margins, border, padding, etc.)"
 
       ## check input arguments
       if (!is.null(background)) {
           stopifnot(compatiblep(background, labels))
       }
+
+      gp <- gsetup(labels)
+      print(gp)
+      cellpx <- gp['cellpx']
+      xoffpx <- gp['xoffpx']
+      yoffpx <- gp['yoffpx']
+
       ## what is the size of our canvas?  (probe underlying graphics?)
       ## divide into MxN chunks
       ## for each chunk
@@ -2669,12 +2701,11 @@ actually, R's base graphics has "grid", "abline", text.
       ## following, using the col() and row() functions -- which i
       ## learned about at https://stackoverflow.com/a/15287206/1527747
       ## -- does it for me (once i figured out exactly the incantation)
-      lx <- as.vector((col(labels)-1)/m)
-      ly <- as.vector((n-row(labels))/n)
-      ux <- as.vector(col(labels)/m)
-      uy <- as.vector(((n+1)-row(labels))/n)
+      lx <- ((as.vector(col(labels)-1))  *cellpx)+xoffpx
+      ly <- ((as.vector(n-row(labels)))  *cellpx)+yoffpx
+      ux <- (as.vector(col(labels))      *cellpx)+xoffpx
+      uy <- (as.vector((n+1)-row(labels))*cellpx)+yoffpx
       ## now, generate our squares
-      plot.new()
       rect(lx, ly, ux, uy, asp=1, col=as.vector(background))
 
       ## now, label each square
