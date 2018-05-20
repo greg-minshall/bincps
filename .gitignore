@@ -8,6 +8,7 @@ kblom.html
 kblom.pdf
 kblom.tex
 
+bin/
 bin/create.ecdf
 bin/create.ecdf.common
 bin/create.ecdf2
@@ -34,6 +35,7 @@ lib/kbstyle.css
 images/DPCIA2AUQAEO0lv-small.jpg
 
 ipums/cps_00006.csv.gz
+mrx.csv
 
 
 graphs/ecdf.pdf

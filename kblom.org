@@ -2737,6 +2737,68 @@ actually, R's base graphics has "grid", "abline", text.
 
 #+RESULTS:
 
+reduce a dataset to have only one entry per reported hhincome/year.
+the CPS dataset has multiple, one for each "category" (represented by,
+e.g., hwtsupp) at the same income.
+
+#+begin_src awk :tangle bin/reported :shebang "#!/usr/bin/awk -f" :results none :eval no-export :exports none
+  BEGIN {
+      FS = "[,]"
+      seen = 0
+  }
+
+  NR == 1 {
+      hhincome = ""
+      year = ""
+      for (i = 1; i <= NF; i++) {
+          if ($i == "\"YEAR\"") {
+              year = i
+          }
+          if ($i == "\"HHINCOME\"") {
+              hhincome = i
+          }
+      }
+      if (year == "") {
+          print "didn't find YEAR column in .csv header" > "/dev/stderr"
+          exit 1
+      }
+      if (hhincome == "") {
+          print "didn't find HHINCOME column in .csv header" > "/dev/stderr"
+          exit 1
+      }
+      next                        # move on to next record
+  }
+
+  function closeyear() {
+      # print "closeyear", $0
+      if (!headerprinted) {
+          printf("\"YEAR\",\"HHINCOME\",\"COUNT\"\n")
+          headerprinted = 1
+      }
+      for (i in households) {
+          printf("%s,%s,%s\n", cyear, i, households[i])
+      }
+      delete households
+      seen = 0
+  }
+
+  $year != cyear {
+      closeyear()
+      cyear = $year
+  }
+
+  {
+      seen++;
+      households[$hhincome]++
+  }
+
+  END {
+      if (seen > 0) {
+          closeyear()
+      }
+  }
+#+end_src
+
 #+name: mostreported
 #+BEGIN_SRC R :results table :colnames yes :exports results :cache yes :var years=years
   mostreported <- function(rset, years) {
