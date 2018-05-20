@@ -2706,7 +2706,7 @@ actually, R's base graphics has "grid", "abline", text.
       }
 
       gp <- gsetup(labels)
-      print(gp)
+
       cellpx <- gp['cellpx']
       xoffpx <- gp['xoffpx']
       yoffpx <- gp['yoffpx']
@@ -2811,7 +2811,7 @@ get the data set of reported incomes
   }
 
   main <- function(args=NULL) {
-      print(reported.main(args), row.names=FALSE)
+      reported.main(args)
   }
 
   <<looking.endbits>>
