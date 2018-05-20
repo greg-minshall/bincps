@@ -27,7 +27,8 @@ ${GDIR}/histo.hhbracket99.OPTIONS = --maxhh 10e8 --bracket HHBRACKET99
 ${GDIR}/histo.hhbracket99-both.OPTIONS = ${${GDIR}/histo.hhbracket99.OPTIONS} \
 		--years ${FYEAR},${LYEAR}
 ${GDIR}/histo.hhbracket99-1972.OPTIONS = ${${GDIR}/histo.hhbracket99.OPTIONS} --years 1972
-${GDIR}/mostreported.OPTIONS = --years ${FYEAR}:${LYEAR}
+# get the years
+${GDIR}/mostreported.OPTIONS = --years $(shell Rscript -e 'seq(${FYEAR},${LYEAR},floor((${LYEAR}-${FYEAR})/4))' | sed 's/^[[][^]][]] *//;s/  */,/g')
 
 # for most reported, default height, width isn't that good.  but,
 # maybe shouldn't try to fit so much?  maybe create the big one as a
