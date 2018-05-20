@@ -2301,7 +2301,7 @@ get the dataset
     ## certain arguments)
     for (i in c("years", "tiles", "keys")) {
       if ((!is.null(argv[[i]])) && !is.na(argv[[i]])) {
-        argv[i] <- list(as.numeric(unlist(strsplit(argv[[i]], "[ ,]+"))))
+        argv[i] <- list(eval(parse(text=paste("c(", argv[[i]], ")"))))
       }
     }
 
@@ -2775,7 +2775,7 @@ get the data set of reported incomes
 #+END_SRC
 
 #+name: mostreported
-#+BEGIN_SRC R :tangle bin/mostreported :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
+#+BEGIN_SRC R :tangle bin/create.mostreported :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<reported.bits>>
   <<rankboard>>
 
