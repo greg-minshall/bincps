@@ -1956,6 +1956,16 @@ down in pieces
   <<looking.graph>>
 #+END_SRC
 
+# the bits we need for most reported incomes
+#+name: reported.bits
+#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
+  <<warning>>
+  <<looking.parser>>
+  <<looking.graph>>
+  <<reported.dset>>
+#+END_SRC
+
+
 get the dataset
 #+name: looking.dset
 #+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
@@ -2177,9 +2187,16 @@ get the dataset
 
     p <- arg_parser(name)
     if ("ifile" %in% need) {
-      need <- subset(need, need!= "ifile")
-      p <- add_argument(p, "--ifile", type="character", default=system("make -s binned", intern=TRUE),
+      need <- subset(need, need!="ifile")
+      p <- add_argument(p, "--ifile", type="character",
+                        default=system("make -s binned", intern=TRUE),
                         help="name of input file")
+    }
+    if ("reported" %in% need) {
+        need <- subset(need, need!="reported");
+        p <- add_argument(p, "--reported", type="character",
+                          default=system("make -s reported", intern=TRUE),
+                          help="name of income frequencies file")
     }
     if ("maxhh" %in% need) {
       need <- subset(need, need!="maxhh")
@@ -2296,7 +2313,11 @@ get the dataset
               gopts=argv$gopts)
     }
 
-    looking.dset(argv)
+    if (!is.null(argv$ifile)) {
+        return(looking.dset(argv))
+    } else if (!is.null(argv$reported)) {
+        return(reported.dset(argv))
+    }
   }
 #+END_SRC
 
@@ -2636,7 +2657,8 @@ actually, R's base graphics has "grid", "abline", text.
 
 ([[file:///home/minshall/usr/lib/R/x86_64-pc-linux-gnu-library/tidyr/doc/tidy-data.html][very nice intro]] to H Wickham's long versus wide.)
 
-#+begin_src R
+#+name: rankboard
+#+begin_src R :exports none
   compatiblep <- function(a,b) {
       "is the matrix A compatible with B?  i.e., are the number of rows, columns of B an integer multiple of those of A?"
 
@@ -2735,13 +2757,72 @@ actually, R's base graphics has "grid", "abline", text.
 
 #+end_src
 
-#+RESULTS:
+get the data set of reported incomes
+#+name: reported.dset
+#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
+  reported.dset <- function(argv) {        # command line args
+    dset <- read.csv(argv$reported, header=TRUE)
+    dset <- dset[dset$YEAR>=min(argv$years),]  # before 1967, NA data
+
+    ## now, remember parameters in attributes
+    for (a in names(argv)) {
+      if (a != "") {
+        attr(dset, a) <- argv[[a]]
+      }
+    }
+    dset
+  }
+#+END_SRC
+
+#+name: mostreported
+#+BEGIN_SRC R :tangle bin/mostreported :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
+  <<reported.bits>>
+
+  mostreported <- function(rset, years, keep=30) {
+      df <- data.frame()
+      for (year in years) {
+          yset <- rset[rset$YEAR==year,]        # choose our year
+          zz <- yset$HHINCOME[order(yset$COUNT, decreasing=TRUE)]
+          df <- rbind(df, t(c(year, zz[1:keep])))
+      }
+      colnames(df) <- c("year", 1:keep)
+      rownames(df) <- years
+      return(df)
+  }
+
+
+  reported.main <- function(args=NULL) {
+      dset <- doparser(name="reported",
+                       need=c("reported",
+                              "graphics", "gfile", "gopts",
+                              "height", "width",
+                              "years"),
+                       args)
+      df <- mostreported(dset, years=attr(dset, "years"))
+      endup(dset)
+      df
+  }
+
+  main <- function(args=NULL) {
+      print(reported.main(args), row.names=FALSE)
+  }
+
+  <<looking.endbits>>
+#+end_src
+
+**** reported (awk script)                                         :noexport:
 
 reduce a dataset to have only one entry per reported hhincome/year.
 the CPS dataset has multiple, one for each "category" (represented by,
-e.g., hwtsupp) at the same income.
+e.g., hwtsupp) at the same income.  each line of the output dataset
+consists of three fields
+- YEAR the year
+- HHINCOME the household income reported
+- COUNT the number of times *this* household income was reported
+  during this year
 
 #+begin_src awk :tangle bin/reported :shebang "#!/usr/bin/awk -f" :results none :eval no-export :exports none
+  <<warning>>
   BEGIN {
       FS = "[,]"
       seen = 0
@@ -2797,50 +2878,6 @@ e.g., hwtsupp) at the same income.
           closeyear()
       }
   }
-#+end_src
-
-#+name: mostreported
-#+BEGIN_SRC R :results table :colnames yes :exports results :cache yes :var years=years
-  mostreported <- function(rset, years) {
-      cyears <- c(as.numeric(unlist(strsplit(years, "[ ,]+"))))
-
-      df <- data.frame()
-      for (year in cyears) {
-          yset <- rset[rset$YEAR==year,]        # choose our year
-          raw <- length(yset)                   # [1] 345582
-          uni <- length(unique(yset$HHIINCOME)) # [1] 55297
-          z <- tabulate(yset$HHINCOME)
-          zz <- order(z, decreasing=TRUE)
-          df <- rbind(df, t(c(raw, uni, zz[1:30])))
-      }
-      colnames(df) <- c("raw", "uni", 1:30)
-      rownames(df) <- cyears
-      return(df)
-  }
-
-  ggbompplot <- function(df) {
-      "given a dataframe, do a persistence box plot (using ggplot2)"
-
-      "df has columns for successive 'years' (the column labels show the 'year')"
-       # https://stackoverflow.com/a/33080804/1527747
-      data=data.frame(s=c(10,13,17,8),
-                      pr=c("a","b","a","b"),
-                      m=c(rep(as.Date('01.01.2015','%d.%m.%Y'),2),
-                          rep(as.Date('01.02.2015','%d.%m.%Y'),2)))
-      ggplot(data = data, aes(x = as.factor(m), y = s,fill=pr ,ymax = max(s)*1.1)) + 
-          geom_bar(position = "dodge", stat="identity") + 
-          geom_text(aes(y=s/2,label=paste(round(s,3),"%")),position = position_dodge(.9)) + 
-          scale_x_discrete(labels = function(x) format(as.Date(x), "%m/%y")) + 
-          xlab("m")
-  }
-
-  grbomplot <- function(df) {
-
-
-
-  #    rset <- read.csv("ipums/cps_00006.csv.gz", header=TRUE);
-  #    mostreported(rset, years)
-
 #+end_src
 
 ** local variables :noexport:
