@@ -11,14 +11,15 @@ REPORTED = mrx.csv
 FYEAR = 1972
 LYEAR = 2016
 
-CREATEOPTS = --ifile ${BINNED}
+CREATEOPTS = 
 PNGOPTS = --width 852 --height 480
 PDFOPTS = --width 7 --height 4
 
 # graphs for our text
 GDIR = graphs
 GRAPHS = repro ecdf ecdf2 tidistr tincdistrbybracket \
-		histo.hhbracket99-both histo.hhbracket99-1972
+		histo.hhbracket99-both histo.hhbracket99-1972 \
+		mostreported
 
 # extra options any of those need
 ${GDIR}/totalincome.distribution.OPTIONS = --maxhh 10e8
@@ -26,6 +27,14 @@ ${GDIR}/histo.hhbracket99.OPTIONS = --maxhh 10e8 --bracket HHBRACKET99
 ${GDIR}/histo.hhbracket99-both.OPTIONS = ${${GDIR}/histo.hhbracket99.OPTIONS} \
 		--years ${FYEAR},${LYEAR}
 ${GDIR}/histo.hhbracket99-1972.OPTIONS = ${${GDIR}/histo.hhbracket99.OPTIONS} --years 1972
+${GDIR}/mostreported.OPTIONS = --years ${FYEAR}:${LYEAR}
+
+# for most reported, default height, width isn't that good.  but,
+# maybe shouldn't try to fit so much?  maybe create the big one as a
+# separate link (for both pdf and png)?
+
+# good for most reported pdf is: --width 18 --height 12
+# for png (slightly big):    --width 2852 --height 1480
 
 FTLARGE = images/DPCIA2AUQAEO0lv.jpg
 FTSMALL = images/DPCIA2AUQAEO0lv-small.jpg
@@ -68,6 +77,8 @@ years:
 	@echo "${FYEAR},${LYEAR}"
 binned:
 	@echo ${BINNED}
+reported:
+	@echo ${REPORTED}
 
 clean:
 	@echo run \"make realclean\" to remove $(BINNED)
