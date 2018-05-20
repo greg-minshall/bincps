@@ -2905,7 +2905,40 @@ consists of three fields
   }
 #+end_src
 
+
+** playing
+*** [[https://stackoverflow.com/q/33886629/1527747][stackexchange answer]]                                           :noexport:
+
+remembering Jeremy Kun's post
+https://jeremykun.com/2018/03/25/a-parlor-trick-for-set/ on Set helped
+me figure the hard part (for me) of this question.  i realized that
+diagonals on the board (what bishops move on) have a constant color.
+and, so, their Y-intercept (where they hit the Y-axis) will uniquely
+determine their color, and adjacent Y values will have different
+colors.  for a square at (x,y), the y intercept (since the slope is 1)
+will be at Y == (y-x).  since the parity is the same for addition as
+for subtraction, and i'm never sure which mod functions (in which
+languages) may give a negative result, i use "(x+y) %% 2".
+
+#+begin_src R
+  b <- matrix(nrow=8,ncol=8)              # basic board
+
+  colorindex <- (col(b)+row(b))%%2        # parity of the Y-intercept
+                                          # for each square
+  colors <- c("red", "white")[colorindex+1] # choose colors
+  side <- 1/8                               # side of one square
+  ux <- col(b)*side                         # upper x values
+  lx <- ux-side                             # lower x values
+  uy <- row(b)*side                         # upper y
+  ly <- uy-side                             # upper y
+  plot.new()                                # initialize R graphics
+  rect(lx, ly, ux, uy, col=colors, asp=1)   # draw the board
+#+end_src
+
+#+RESULTS:
+
 ** local variables :noexport:
 # Local Variables:
 # org-babel-inline-result-wrap: "%s"
 # End:
+
