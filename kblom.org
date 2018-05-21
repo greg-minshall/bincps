@@ -2807,9 +2807,12 @@ XXX todo:
       ## now, label each square
       txs <- lx+((ux-lx)/2)
       tys <- ly+((uy-ly)/2)
+      ## now, for drawing tic marks
+      justxs <- (((1:ncol(labels))-1)*cellpx)+xoffpx+(cellpx/2)
+      ## draw text
       text(x=txs, y=tys, labels=as.vector(labels))
       text(x=gp[["tlocx"]], y=gp[["tlocy"]], labels=title)
-      text(x=txs, y=gp[["alocy"]], labels=colnames(labels))
+      text(x=justxs, y=gp[["alocy"]], labels=colnames(labels))
   }
 
   rankboard <- function(labels, palette=NULL, ...) {
