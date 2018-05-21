@@ -2667,11 +2667,12 @@ XXX todo:
 - XXX separate identifier for getting palette right from labels (so we
   can say, "50,000 (10%)" for one year, and different percentage for a
   different year)
-- allow user to inset figure a specified amount inside the graphic
-  region
+- title
 - [[https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Box_Model/Introduction_to_the_CSS_box_model][CSS box model]] for the boxes: margin, border, padding, as if size
-  were for entire cell.
+  were for entire cell (e.g., [[https://developer.mozilla.org/en-US/docs/Web/CSS/box-sizing][box-sizing]] [[https://css-tricks.com/inheriting-box-sizing-probably-slightly-better-best-practice/]["border box"]] model).
 - so, also, color, size of border line (if any)
+- allow user to inset figure a specified amount inside the graphic
+  region (again, using CSS model-like)
 - XXX figure out if the text fits in the boxes, maybe shrink the font
   size, or print a warning, if not.
 
@@ -2689,7 +2690,20 @@ XXX todo:
       }
   }
 
-  gsetup <- function(labels) {
+  gchmax <- function(strings) {
+      "apply strwidth(), strheight(), to figure out the most amount
+   of space (in user coordinates) taken by the strings STRINGS"
+
+      return(c(maxwidth=max(strwidth(strings)),
+               maxheight=max(strheight(strings))))
+  }
+
+
+  gsetup <- function(labels, title="",
+                     titlefrac=0.33333,   # where title is horizontally
+                     titledescent=1,      # title spaces above title
+                     axisticascent=1,     # axis tic mark spaces below axis tic mark
+                     ) {
       "figure out the size we can use on the current graphics device,
   how big the boxes will each be (for an aspect ratio of 1:1), the
   x- and y-offsets from the edge of the graphics device to the array
@@ -2704,30 +2718,65 @@ XXX todo:
       ypx <- dimxy[2];
       par(usr=c(0, xpx, 0, ypx))          # set user coordinate space
 
-      cellpx <- min(ypx/nrow(labels), xpx/ncol(labels)) # size of a square
-      xoffpx <- (xpx - (cellpx*ncol(labels)))/2         # x offset for lower left
-      yoffpx <- (ypx - (cellpx*nrow(labels)))/2         # y ditto
+      ## size of labels in boxes, title, axis tic marks
+      lsize <- gchmax(labels)
+      tsize <- gchmax(title)
+      asize <- gchmax(colnames(labels))
 
-      return(c(cellpx=cellpx, xoffpx=xoffpx, yoffpx=yoffpx))
+      ## where does title go?
+      tlocx <- max(xpx*titlefrac, (tsize$width/2)+2) # in case title too
+                                          # long
+      if(tlocx+(tsize$width*.5) > xpx) { # make sure big enough
+          stop(sprintf("title width (%d) too large for canvas (%d)",
+                       tsize$width, xpx))
+      }
+      tlocy <- ypx - (tsize$height*(titledescent+1))
+      ## now, reserve this space by subtracting a bit more than this)
+      if (ypx <= (tsize$height*(titledescent+2)) {
+          stop(sprintf("title height (%d) * titledescent (%d) +2 > canvas height (%d)",
+                       tsize$height, titledescent, ypx))
+      }
+      ypx <- ypx - (tsize$height*(titledescent+2))
+
+      ## where do axis tic marks go (in terms of Y)?
+      alocy <- asize$height*axisticascent
+      if (alocy >= ypx) {
+          ## XXX we've confused things by decreasing ypx above...
+          stop(sprintf("axis height (%d) * axisticascent (%d) >= room left in canvas height (%d)"))
+      }
+      ## and, reserve some room for this
+      yoffpx <- alocy
+    
+      cellpx <- min(yoffpx/nrow(labels), xpx/ncol(labels)) # size of a square
+      xoffpx <- (xpx - (cellpx*ncol(labels)))/2 # x offset for lower left
+      yoffpx <- yoffpx + (ypx - (cellpx*nrow(labels)))/2 # y ditto
+
+      ## now, does the text fit?  axis tic marks?  title?
+      lmaxx <- max(strwidth(labels))
+      lmaxy <- max(strheight(labels))
+
+
+      return(list(cellpx=cellpx, 
+                  xoffpx=xoffpx,
+                  yoffpx=yoffpx,
+                  lsize=lsize,
+                  tsize=tsize,
+                  asize=asize))
   }
 
-  cboarddraw <- function(labels, background=NULL, textattributes=NULL,
-                          boxattributes=NULL) {
+  cboarddraw <- function(labels, background=NULL, title="") {
       "plots MxN LABELS, each with its own BACKGROUND color,
   with each label printing using common TEXTATTRIBUTES (font,
   size, style, color), in MxN boxes with common BOXATTRIBUTES
   (horizontal, vertical margins, border, padding, etc.)"
 
-      ## check input arguments
-      if (!is.null(background)) {
-          stopifnot(compatiblep(background, labels))
-      }
+      stopifnot(compatiblep(background, labels))
 
-      gp <- gsetup(labels)
+      gp <- gsetup(labels=labels, title=title)
 
-      cellpx <- gp['cellpx']
-      xoffpx <- gp['xoffpx']
-      yoffpx <- gp['yoffpx']
+      cellpx <- gp[['cellpx']]
+      xoffpx <- gp[['xoffpx']]
+      yoffpx <- gp[['yoffpx']]
 
       ## what is the size of our canvas?  (probe underlying graphics?)
       ## divide into MxN chunks
@@ -2754,7 +2803,7 @@ XXX todo:
       text(x=txs, y=tys, labels=as.vector(labels))
   }
 
-  rankboard <- function(labels, palette=NULL) {
+  rankboard <- function(labels, palette=NULL, ...) {
       "LABELS is presented sorted by rank; colnames are the time points.  PALETTE, if non-null, is the color palette to use (must be as long as the number of unique"
 
       labels <- as.matrix(labels)                       # data frame need not apply
@@ -2769,11 +2818,13 @@ XXX todo:
       ## for match: http://r.789695.n4.nabble.com/Associative-array-tp1588978p1593950.html
       background <- matrix(palette[match(labels, uni)], nrow=nrow(labels))
 
-      cboarddraw(labels, background)
+      cboarddraw(labels, background, ...)
   }
 
 
 #+end_src
+
+#+RESULTS: rankboard
 
 get the data set of reported incomes
 #+name: reported.dset
