@@ -2293,7 +2293,7 @@ get the dataset
       argv <- parse_args(p)
     } else {
       if (length(args) == 1) {
-        args <- unlist(strsplit(x=args, split=" "))
+        args <- unlist(strsplit(x=args, split="[ \n]+"))
       }
       argv <- parse_args(p, args)
     }
@@ -2692,16 +2692,16 @@ XXX todo:
       }
   }
 
-  gchmax <- function(strings) {
+  gchmax <- function(strings, ...) {
       "apply strwidth(), strheight(), to figure out the most amount
    of space (in user coordinates) taken by the strings STRINGS"
 
-      return(c(width=max(strwidth(strings)),
-               height=max(strheight(strings))))
+      return(c(width=max(strwidth(strings, ...)),
+               height=max(strheight(strings, ...))))
   }
 
 
-  gsetup <- function(labels) {
+  gsetup <- function(labels, ...) {
       "figure out the size we can use on the current graphics device,
   how big the boxes will each be (for an aspect ratio of 1:1), the
   x- and y-offsets from the edge of the graphics device to the array
@@ -2719,7 +2719,7 @@ XXX todo:
       lines(c(0, xpx, xpx, 0, 0), c(0, 0, ypx, ypx, 0)) # XXX debugging
 
       ## size of labels in boxes
-      lsize <- gchmax(labels)
+      lsize <- gchmax(labels, ...)
 
       cellpx <- min(ypx/nrow(labels), xpx/ncol(labels)) # size of a square
       xoffpx <- (xpx - (cellpx*ncol(labels)))/2 # x offset for lower left
@@ -2735,7 +2735,7 @@ XXX todo:
                   yoffpx=yoffpx))         # left y offset
       }
 
-  cboarddraw <- function(labels, background=NULL) {
+  cboarddraw <- function(labels, background=NULL, ...) {
       "plots MxN LABELS, each with its own BACKGROUND color,
   with each label printing using common TEXTATTRIBUTES (font,
   size, style, color), in MxN boxes with common BOXATTRIBUTES
@@ -2745,7 +2745,7 @@ XXX todo:
 
       stopifnot(compatiblep(background, labels))
 
-      gp <- gsetup(labels=labels)
+      gp <- gsetup(labels=labels, ...)
 
       cellpx <- gp[['cellpx']]
       xoffpx <- gp[['xoffpx']]
@@ -2768,13 +2768,13 @@ XXX todo:
       ux <- (as.vector(col(labels))      *cellpx)+xoffpx
       uy <- (as.vector((n+1)-row(labels))*cellpx)+yoffpx
       ## now, generate our squares
-      rect(lx, ly, ux, uy, asp=1, col=as.vector(background))
+      rect(lx, ly, ux, uy, asp=1, col=as.vector(background), ...)
 
       ## now, label each square
       txs <- lx+((ux-lx)/2)
       tys <- ly+((uy-ly)/2)
       ## draw text
-      text(x=txs, y=tys, labels=as.vector(labels))
+      text(x=txs, y=tys, labels=as.vector(labels), ...)
 
       return(c(cellpx=cellpx, xoffpx=xoffpx, yoffpx=yoffpx))
   }
@@ -2794,9 +2794,10 @@ XXX todo:
       ## for match: http://r.789695.n4.nabble.com/Associative-array-tp1588978p1593950.html
       background <- matrix(palette[match(labels, uni)], nrow=nrow(labels))
       cb <- cboarddraw(labels, background, ...)
-      title(main=title)
       justxs <- (((1:ncol(labels))-1)*cb["cellpx"])+cb["xoffpx"]+(cb["cellpx"]/2)
-      axis(side=1, at=justxs, labels=colnames(labels))
+      ## do title, axis tick marks
+      title(main=title, ...)
+      axis(side=1, at=justxs, labels=colnames(labels), ...)
   }
 
 
@@ -2844,7 +2845,7 @@ get the data set of reported incomes
   }
 
 
-  reported.main <- function(args=NULL) {
+  reported.main <- function(args=NULL, ...) {
       dset <- doparser(name="reported",
                        need=c("reported", "keep",
                               "graphics", "gfile", "gopts",
@@ -2852,13 +2853,13 @@ get the data set of reported incomes
                               "years"),
                        args)
       res <- mostreported(dset, years=attr(dset, "years"), keep=attr(dset, "keep"))
-      rankboard(t(res[[1]]))
+      rankboard(t(res[[1]]), title="Most reported incomes for selected years", ...)
       endup(dset)
       res
   }
 
-  main <- function(args=NULL) {
-      reported.main(args)
+  main <- function(args=NULL, ...) {
+      reported.main(args, ...)
   }
 
   <<looking.endbits>>
