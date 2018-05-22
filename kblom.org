@@ -1993,6 +1993,7 @@ down in pieces
   <<looking.parser>>
   <<looking.graph>>
   <<reported.dset>>
+  <<mostreported>>
 #+END_SRC
 
 
@@ -2751,7 +2752,7 @@ XXX todo:
       ypx <- dimxy[2];
       par(usr=c(0, xpx, 0, ypx))          # set user coordinate space
 
-      lines(c(0, xpx, xpx, 0, 0), c(0, 0, ypx, ypx, 0)) # XXX debugging
+      # lines(c(0, xpx, xpx, 0, 0), c(0, 0, ypx, ypx, 0)) # XXX debugging
 
       cellpx <- min(ypx/nrow(labels), xpx/ncol(labels)) # size of a square
       xoffpx <- (xpx - (cellpx*ncol(labels)))/2 # x offset for lower left
@@ -2803,7 +2804,7 @@ XXX todo:
       ## now, do labels fit?
       if (any(lsize > cellpx)) {
           if (!silentshrink) {
-              warning(sprintf("at least one label is too large (%s) for box size (%d) -- shrinking font"), paste(lsize, collapse=","), cellpx)
+              warning(sprintf("at least one label is too large (%s) for box size (%f) -- shrinking font", paste(lsize, collapse=","), cellpx))
           }
           cex <- min(.9*(cellpx/lsize))   # okay, hope this works!
       }
@@ -2860,11 +2861,7 @@ get the data set of reported incomes
 #+END_SRC
 
 #+name: mostreported
-#+BEGIN_SRC R :tangle bin/create.mostreported :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
-  <<reported.bits>>
-  <<topcodealpha>>
-  <<rankboard>>
-
+#+BEGIN_SRC R :results none :eval no-export :exports none
   mostreported <- function(rset, years, keep=30) {
       vals <- matrix(ncol=keep, nrow=0)
       freqs <- matrix(ncol=keep, nrow=0)
@@ -2881,7 +2878,12 @@ get the data set of reported incomes
       rownames(freqs) <- years
       return(list(vals=vals, freqs=freqs))
   }
+#+end_src
 
+#+BEGIN_SRC R :tangle bin/create.mostreported :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
+  <<reported.bits>>
+  <<topcodealpha>>
+  <<rankboard>>
 
   reported.main <- function(args=NULL, ...) {
       dset <- doparser(name="reported",
