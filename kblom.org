@@ -998,26 +998,26 @@ something about the respondent
 |    99999 |  525 |
 | 99999999 | 2704 |
 
-between the two web sites above, maybe these are the topcodes
-|--------+----------+-------------|
-|  99998 |  9999998 | Missing     |
-|  99999 |  9999999 | N.I.U.      |
-|  -9997 | -9999997 | Bottom Code |
+between the two web sites above, and the topcodes list above, maybe
+these are the topcodes
+|----------+-------------|
+| 99999999 | N.I.U.      |
+| -9999997 | Bottom Code |
 
 #+name: topcodealpha
 #+begin_src R :exports none :results none
-  x <- t(matrix(list(99998, "Missing",
-                     9999998, "Missing",
-                     99999, "N.I.U.",
-                     9999999, "N.I.U.",
-                     -9997, "< -9999",
-                     -9999997, "< -9999"),
-                nrow=2))
-  y <- as.data.frame(x)
-  colnames(y) <- c("value", "nomen")
-  y$value <- unlist(y$value)
-  y$nomen <- unlist(y$nomen)
-  topcodes <- y
+  tcodeprep <- function() {
+      x <- t(matrix(list(99999999, "N.I.U.",                     # (Not in Universe)
+                         -9999997, "< -$9999"),
+                    nrow=2))
+      y <- as.data.frame(x)
+      colnames(y) <- c("value", "nomen")
+      y$value <- unlist(y$value)
+      y$nomen <- unlist(y$nomen)
+      return(y)
+  }
+
+  topcodes <- tcodeprep()                 # make available globally
 
   topcodealpha <- function(vals) {
       "convert top (or bottom) codes in vals to some
