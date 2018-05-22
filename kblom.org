@@ -2243,6 +2243,11 @@ get the dataset
       p <- add_argument(p, "--width", type="numeric", default=NA,
                         help="width of graphic output")
     }
+    if ("silentshrink" %in% need) {
+      need <- subset(need, need!="silentshrink")
+      p <- add_argument(p, "--silentshrink", type="boolean", flag=TRUE,
+                        help="shrink font, but do *not* warn, if labels in rankboard are too big to fit")
+    }
     if ("keep" %in% need) {
       need <- subset(need, need!="keep")
       p <- add_argument(p, "--keep", type="numeric", default=10,
@@ -2727,7 +2732,7 @@ XXX todo:
                   yoffpx=yoffpx))         # left y offset
       }
 
-  cboarddraw <- function(labels, background=NULL, ...) {
+  cboarddraw <- function(labels, background=NULL, silentshrink, ...) {
       "plots MxN LABELS, each with its own BACKGROUND color,
   with each label printing using common TEXTATTRIBUTES (font,
   size, style, color), in MxN boxes with common BOXATTRIBUTES
@@ -2766,8 +2771,10 @@ XXX todo:
       cex <- par("cex", ...)               # in case we need to change
       lsize <- gchmax(labels, ...)
       ## now, do labels fit?
-      if ((lsize["height"] > cellpx) || (lsize["width"] > cellpx)) {
-          warning(sprintf("at least one label is too large for box size -- shrinking font"))
+      if (any(lsize > cellpx)) {
+          if (!silentshrink) {
+              warning(sprintf("at least one label is too large (%s) for box size (%d) -- shrinking font"), paste(lsize, collapse=","), cellpx)
+          }
           cex <- min(.9*(cellpx/lsize))   # okay, hope this works!
       }
       ## now, label each square
@@ -2779,7 +2786,7 @@ XXX todo:
       return(c(cellpx=cellpx, xoffpx=xoffpx, yoffpx=yoffpx))
   }
 
-  rankboard <- function(labels, palette=NULL, title="", ...) {
+  rankboard <- function(labels, palette=NULL, title="", silentshrink, ...) {
       "LABELS is presented sorted by rank; colnames are the time points.  PALETTE, if non-null, is the color palette to use (must be as long as the number of unique"
 
       labels <- as.matrix(labels)                       # data frame need not apply
@@ -2793,7 +2800,7 @@ XXX todo:
       }
       ## for match: http://r.789695.n4.nabble.com/Associative-array-tp1588978p1593950.html
       background <- matrix(palette[match(labels, uni)], nrow=nrow(labels))
-      cb <- cboarddraw(labels, background, ...)
+      cb <- cboarddraw(labels, background, silentshrink, ...)
       justxs <- (((1:ncol(labels))-1)*cb["cellpx"])+cb["xoffpx"]+(cb["cellpx"]/2)
       ## do title, axis tick marks
       title(main=title, ...)
@@ -2850,10 +2857,14 @@ get the data set of reported incomes
                        need=c("reported", "keep",
                               "graphics", "gfile", "gopts",
                               "height", "width",
+                              "silentshrink",
                               "years"),
                        args)
       res <- mostreported(dset, years=attr(dset, "years"), keep=attr(dset, "keep"))
-      rankboard(t(res[[1]]), title="Most reported incomes for selected years", ...)
+      rankboard(t(res[[1]]),
+                title="Most reported incomes for selected years",
+                silentshrink=attr(dset, "silentshrink"),
+                ...)
       endup(dset)
       res
   }
