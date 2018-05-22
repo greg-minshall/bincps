@@ -974,7 +974,7 @@ ipums [[https://cps.ipums.org/cps-action/variables/HHINCOME#codes_section][HHINC
 exceptions.  the popular "99999999" means "Not in universe" (NIU) --
 something about the respondent
 
-#+name: topcodes
+#+name: foundtopcodes
 #+BEGIN_SRC sh :eval no-export :exports none
   zcat ipums/cps_00006.csv.gz | \
       awk 'BEGIN{FS=","} {print $7}' | \
@@ -997,6 +997,36 @@ something about the respondent
 |    99998 |   12 |
 |    99999 |  525 |
 | 99999999 | 2704 |
+
+between the two web sites above, maybe these are the topcodes
+|--------+----------+-------------|
+|  99998 |  9999998 | Missing     |
+|  99999 |  9999999 | N.I.U.      |
+|  -9997 | -9999997 | Bottom Code |
+
+#+name: topcodealpha
+#+begin_src R :exports none :results none
+  x <- t(matrix(list(99998, "Missing",
+                     9999998, "Missing",
+                     99999, "N.I.U.",
+                     9999999, "N.I.U.",
+                     -9997, "< -9999",
+                     -9999997, "< -9999"),
+                nrow=2))
+  y <- as.data.frame(x)
+  colnames(y) <- c("value", "nomen")
+  y$value <- unlist(y$value)
+  y$nomen <- unlist(y$nomen)
+  topcodes <- y
+
+  topcodealpha <- function(vals) {
+      "convert top (or bottom) codes in vals to some
+  identifying character string"
+      z <- match(vals, topcodes$value)
+      vals[!is.na(z)] <- topcodes[z[!is.na(z)],]$nomen
+      vals
+  }
+#+end_src
 
 *** deflating
 
@@ -2832,6 +2862,7 @@ get the data set of reported incomes
 #+name: mostreported
 #+BEGIN_SRC R :tangle bin/create.mostreported :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<reported.bits>>
+  <<topcodealpha>>
   <<rankboard>>
 
   mostreported <- function(rset, years, keep=30) {
@@ -2848,7 +2879,7 @@ get the data set of reported incomes
       colnames(freqs) <- 1:keep
       rownames(vals) <- years
       rownames(freqs) <- years
-      return(list(vals, freqs))
+      return(list(vals=vals, freqs=freqs))
   }
 
 
@@ -2861,7 +2892,8 @@ get the data set of reported incomes
                               "years"),
                        args)
       res <- mostreported(dset, years=attr(dset, "years"), keep=attr(dset, "keep"))
-      rankboard(t(res[[1]]),
+      vals <- topcodealpha(res$vals)
+      rankboard(t(vals),
                 title="Most reported incomes for selected years",
                 silentshrink=attr(dset, "silentshrink"),
                 ...)
