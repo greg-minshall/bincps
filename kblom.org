@@ -2718,18 +2718,10 @@ XXX todo:
 
       lines(c(0, xpx, xpx, 0, 0), c(0, 0, ypx, ypx, 0)) # XXX debugging
 
-      ## size of labels in boxes
-      lsize <- gchmax(labels, ...)
-
       cellpx <- min(ypx/nrow(labels), xpx/ncol(labels)) # size of a square
       xoffpx <- (xpx - (cellpx*ncol(labels)))/2 # x offset for lower left
       yoffpx <- (ypx - (cellpx*nrow(labels)))/2 # y ditto
 
-      ## now, do labels fit?
-      if ((lsize["height"] > cellpx) || (lsize["width"] > cellpx)) {
-          stop(sprintf("at least one label is too large for box size"))
-          ## too lazy to help the user...
-      }
       return(list(cellpx=cellpx,          # size of a square
                   xoffpx=xoffpx,          # bottom x offset
                   yoffpx=yoffpx))         # left y offset
@@ -2770,11 +2762,19 @@ XXX todo:
       ## now, generate our squares
       rect(lx, ly, ux, uy, asp=1, col=as.vector(background), ...)
 
+      ## size of labels in boxes
+      cex <- par("cex", ...)               # in case we need to change
+      lsize <- gchmax(labels, ...)
+      ## now, do labels fit?
+      if ((lsize["height"] > cellpx) || (lsize["width"] > cellpx)) {
+          warning(sprintf("at least one label is too large for box size -- shrinking font"))
+          cex <- min(.9*(cellpx/lsize))   # okay, hope this works!
+      }
       ## now, label each square
       txs <- lx+((ux-lx)/2)
       tys <- ly+((uy-ly)/2)
       ## draw text
-      text(x=txs, y=tys, labels=as.vector(labels), ...)
+      text(x=txs, y=tys, labels=as.vector(labels), cex=cex, ...)
 
       return(c(cellpx=cellpx, xoffpx=xoffpx, yoffpx=yoffpx))
   }
