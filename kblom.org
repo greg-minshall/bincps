@@ -2739,7 +2739,9 @@ XXX todo:
       "plots MxN LABELS, each with its own BACKGROUND color,
   with each label printing using common TEXTATTRIBUTES (font,
   size, style, color), in MxN boxes with common BOXATTRIBUTES
-  (horizontal, vertical margins, border, padding, etc.)"
+  (horizontal, vertical margins, border, padding, etc.).  this
+  returns the cell size, and the (lower left) X and Y offsets
+  (in pixels)"
 
       stopifnot(compatiblep(background, labels))
 
@@ -2773,6 +2775,8 @@ XXX todo:
       tys <- ly+((uy-ly)/2)
       ## draw text
       text(x=txs, y=tys, labels=as.vector(labels))
+
+      return(c(cellpx=cellpx, xoffpx=xoffpx, yoffpx=yoffpx))
   }
 
   rankboard <- function(labels, palette=NULL, title="", ...) {
@@ -2789,8 +2793,10 @@ XXX todo:
       }
       ## for match: http://r.789695.n4.nabble.com/Associative-array-tp1588978p1593950.html
       background <- matrix(palette[match(labels, uni)], nrow=nrow(labels))
-      cboarddraw(labels, background, ...)
+      cb <- cboarddraw(labels, background, ...)
       title(main=title)
+      justxs <- (((1:ncol(labels))-1)*cb["cellpx"])+cb["xoffpx"]+(cb["cellpx"]/2)
+      axis(side=1, at=justxs, labels=colnames(labels))
   }
 
 
