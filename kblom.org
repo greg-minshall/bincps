@@ -2662,6 +2662,8 @@ actually, R's base graphics has "grid", "abline", text.
 
 ([[file:///home/minshall/usr/lib/R/x86_64-pc-linux-gnu-library/tidyr/doc/tidy-data.html][very nice intro]] to H Wickham's long versus wide.)
 
+[[http://sphaerula.com/legacy/R/placingTextInPlots.html][placing text in R plots]]; [[https://www.stat.auckland.ac.nz/~paul/R/fonts.html][specifying fonts in R]]
+
 XXX todo:
 - XXX column (top and/or bottom) labels (from rownames)
 - XXX separate identifier for getting palette right from labels (so we
