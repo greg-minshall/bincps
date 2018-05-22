@@ -2701,11 +2701,7 @@ XXX todo:
   }
 
 
-  gsetup <- function(labels, title="",
-                     titlefrac=0.33333,   # where title is horizontally
-                     titledescent=1,      # title spaces above title
-                     axisticascent=1      # axis tic mark spaces below axis tic mark
-                     ) {
+  gsetup <- function(labels) {
       "figure out the size we can use on the current graphics device,
   how big the boxes will each be (for an aspect ratio of 1:1), the
   x- and y-offsets from the edge of the graphics device to the array
@@ -2720,60 +2716,26 @@ XXX todo:
       ypx <- dimxy[2];
       par(usr=c(0, xpx, 0, ypx))          # set user coordinate space
 
-      lines(c(0, xpx, xpx, 0, 0), c(0, 0, ypx, ypx, 0))
+      lines(c(0, xpx, xpx, 0, 0), c(0, 0, ypx, ypx, 0)) # XXX debugging
 
-      ## size of labels in boxes, title, axis tic marks
+      ## size of labels in boxes
       lsize <- gchmax(labels)
-      tsize <- gchmax(title)
-      asize <- gchmax(colnames(labels))
 
-      ## where does title go?
-      tlocx <- max(xpx*titlefrac, (tsize["width"]/2)+2) # in case title too
-                                          # long
-      if(tlocx+(tsize["width"]*.5) > xpx) { # make sure big enough
-          stop(sprintf("title width (%d) too large for canvas (%d)",
-                       tsize["width"], xpx))
-      }
-      tlocy <- ypx - (tsize["height"]*(titledescent+1))
-      ## now, reserve this space by subtracting a bit more than this)
-      if (ypx <= (tsize["height"]*(titledescent+2))) {
-          stop(sprintf("title height (%d) * titledescent (%d) +2 > canvas height (%d)",
-                       tsize["height"], titledescent, ypx))
-      }
-      ypx <- ypx - (tsize["height"]*(titledescent+2))
-
-      ## where do axis tic marks go (in terms of Y)?
-      alocy <- asize["height"]*axisticascent
-      if (alocy >= ypx) {
-          ## XXX we've confused things by decreasing ypx above...
-          stop(sprintf("axis height (%d) * axisticascent (%d) >= room left in canvas height (%d)"))
-      }
-      ## and, reserve some room for this
-      yoffpx <- alocy
-
-      cellpx <- min((ypx-yoffpx)/nrow(labels), xpx/ncol(labels)) # size of a square
+      cellpx <- min(ypx/nrow(labels), xpx/ncol(labels)) # size of a square
       xoffpx <- (xpx - (cellpx*ncol(labels)))/2 # x offset for lower left
-      yoffpx <- yoffpx + (ypx - (cellpx*nrow(labels)))/2 # y ditto
+      yoffpx <- (ypx - (cellpx*nrow(labels)))/2 # y ditto
 
       ## now, do labels fit?
       if ((lsize["height"] > cellpx) || (lsize["width"] > cellpx)) {
           stop(sprintf("at least one label is too large for box size"))
           ## too lazy to help the user...
       }
-      ## what about axis tic marks?
-      if (asize["width"] > cellpx) {
-          stop(sprintf("at least one axis tic mark is too wide for box size"))
-      }
-
       return(list(cellpx=cellpx,          # size of a square
                   xoffpx=xoffpx,          # bottom x offset
-                  yoffpx=yoffpx,          # left y offset
-                  tlocx=tlocx,            # x loc of title
-                  tlocy=tlocy,            # y loc of title
-                  alocy=alocy))           # y loc of axis tic marks
+                  yoffpx=yoffpx))         # left y offset
       }
 
-  cboarddraw <- function(labels, background=NULL, title="") {
+  cboarddraw <- function(labels, background=NULL) {
       "plots MxN LABELS, each with its own BACKGROUND color,
   with each label printing using common TEXTATTRIBUTES (font,
   size, style, color), in MxN boxes with common BOXATTRIBUTES
@@ -2781,7 +2743,7 @@ XXX todo:
 
       stopifnot(compatiblep(background, labels))
 
-      gp <- gsetup(labels=labels, title=title)
+      gp <- gsetup(labels=labels)
 
       cellpx <- gp[['cellpx']]
       xoffpx <- gp[['xoffpx']]
@@ -2809,15 +2771,11 @@ XXX todo:
       ## now, label each square
       txs <- lx+((ux-lx)/2)
       tys <- ly+((uy-ly)/2)
-      ## now, for drawing tic marks
-      justxs <- (((1:ncol(labels))-1)*cellpx)+xoffpx+(cellpx/2)
       ## draw text
       text(x=txs, y=tys, labels=as.vector(labels))
-      text(x=gp[["tlocx"]], y=gp[["tlocy"]], labels=title)
-      text(x=justxs, y=gp[["alocy"]], labels=colnames(labels))
   }
 
-  rankboard <- function(labels, palette=NULL, ...) {
+  rankboard <- function(labels, palette=NULL, title="", ...) {
       "LABELS is presented sorted by rank; colnames are the time points.  PALETTE, if non-null, is the color palette to use (must be as long as the number of unique"
 
       labels <- as.matrix(labels)                       # data frame need not apply
@@ -2831,8 +2789,8 @@ XXX todo:
       }
       ## for match: http://r.789695.n4.nabble.com/Associative-array-tp1588978p1593950.html
       background <- matrix(palette[match(labels, uni)], nrow=nrow(labels))
-
       cboarddraw(labels, background, ...)
+      title(main=title)
   }
 
 
