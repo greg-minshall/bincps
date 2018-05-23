@@ -2809,9 +2809,44 @@ XXX todo:
       return(c(cellpx=cellpx, xoffpx=xoffpx, yoffpx=yoffpx))
   }
 
+  fillincolors <- function(labels, colors, palette, indices, tags) {
+      "check correctness of parameters, and produce an appropriately
+  shaped and valued COLORS matrix"
+
+      if (!is.null(colors)) {
+          stopifnot(is.null(palette), is.null(indices), is.null(tags))
+          return(colors)                  # that was easy
+      }
+      if (is.null(indices)) {      #if no indices
+          if (is.null(tags)) {
+              tags <- labels
+          } else {
+              tags <- as.matrix(tags)
+          }
+          ## (we sort uni so caller can maybe predict in case they care a
+          ## lot about which color maps to which label value)
+          uni <- sort(unique(as.vector(tags))) # number of unique labels
+          ## generate indices
+          indices <- match(tags, uni) # compute them
+      } else {
+          stopifnot(is.null(tags))    # constraint
+      }
+      if (is.null(palette)) {             # fill in palette
+          palette <- rainbow(max(indices), s=0.5)
+      } else {
+          stopifnot(length(palette) >= max(indices))
+      }
+      ## for match: http://r.789695.n4.nabble.com/Associative-array-tp1588978p1593950.html
+      colors <- matrix(palette[match(tags, uni)], nrow=nrow(labels))
+      return(colors)
+  }
+
+
   rankboard <- function(labels, # matrix: text to go in boxes
+                        colors=NULL, # matrix: color for each box
                         palette=NULL, # matrix: color for each box
-                        partition=NULL, # matrix: partition of boxes by color
+                        indices=NULL, # matrix: index for each box into PALETTE
+                        tags=NULL, # matrix: unique identifiers to create indices
                         title="", # title
                         silentshrink, # don't issue warning when labels shrinking font
                         ...) {
@@ -2829,51 +2864,63 @@ XXX todo:
   colnames are the time points.  the values of LABELS will be
   written in the boxes in the graph produced by rankboard.
 
-  if the PARTITION matrix is null, it receives its value from the
-  LABELS matrix.
+  if the COLORS matrix is non-null, it has the same shape as LABELS,
+  and each entry specifies a color for the corresponding entry
+  in LABELS.
 
-  PARTITION's values will be used to compute an \"index\" into an
-  array of colors for the boxes.  i.e., each unique value of
-  PARTITION receives its own color, and that color is used for
-  each box of the rankboard with that value of PARTITION.
+  if COLORS is non-null, PALETTE, INDICES, and TAGS should *not* be
+  specified.
 
-  the vector PALETTE, if specified, must be at least as long as
-  the number of unique values in PARTITION.
-
-  if PALETTE is null, it is assigned a vector of colors generated
-  by rankboard (currently rainbow, s=0.5).
+  however, in the case COLORS *is* null:
 
   PALETTE is a vector of colors to use for the background of the
   boxes.
 
-  indexing into PALETTE is done by computing the index in a *sorted*
-  version of the unique values of PARTITION (or LABELS, if PARTITION
-  is null).  i.e., if PARTITION[1,1] has value \"this and that\",
-  and in the sorted list of unique values from PARTITION,
-  \"this and that\" is the third element, then the top left box of
-  the resulting graph will have the color specified by the third
-  element of PALETTE."
+  if PALETTE is null, it is assigned a vector of colors generated
+  by rankboard (currently rainbow, s=0.5).
 
+  if the INDICES matrix is non-null, each entry specifies an index
+  into PALETTE (the color table).  in this case, TAGS must be null.
+
+  if INDICES is null, and the TAGS matrix is *also* null, the TAGS
+  matrix first receives its values from the LABELS matrix.  then,
+  an INDICES matrix is computed by assigning to each entry in it a
+  value that is common to the value assigned to all other elements
+  with the same value in the TAGS matrix, and distinct from all
+  other elements with a distinct value in the TAGS matrix.  i.e.,
+  the TAGS matrix is used to partition the numbers
+  1:length(unique(TAGS)).
+
+  in effecting this partition, the unique values in the TAGS matrix
+  are first sorted; then the resulting index of each tag value is
+  used to index into the PALETTE vector.
+
+  in summary: if COLORS is non-null, (PALETTE, INDICES, TAGS) must
+  all be null; if INDICES is non-null, TAGS must be null.  in all
+  cases, (PALETTE, INDICES, TAGS) *may* all be null.
+
+  TITLE is the title given to the graph.
+
+  SILENTSHRINK prevents rankboard from issuing a warning when it
+  reduces the font size (see par(\"cex\")) in order to fit LABELS
+  into the boxes (in case, for example, the using program normally
+  runs with options(warn=2)).
+  "
       labels <- as.matrix(labels)         # data frame need not apply
-      if (is.null(partition)) {
-          partition <- labels
-      } else {
-          partition <- as.matrix(partition)
-      }
-      ## (we sort uni so caller can maybe predict in case they care a
-      ## lot about which color maps to which label value)
-      uni <- sort(unique(as.vector(partition))) # number of unique labels
-      if (is.null(palette)) {
-          palette <- rainbow(length(uni), s=0.5)
-      } else {
-          stopifnot(length(palette) >= length(uni))
-      }
-      ## for match: http://r.789695.n4.nabble.com/Associative-array-tp1588978p1593950.html
-      background <- matrix(palette[match(partition, uni)], nrow=nrow(partition))
-      cb <- cboarddraw(labels, background, silentshrink, ...)
-      justxs <- (((1:ncol(labels))-1)*cb["cellpx"])+cb["xoffpx"]+(cb["cellpx"]/2)
-      ## do title, axis tick marks
+
+      ## enforce constraints
+      colors <- fillincolors(colors=colors,
+                             labels=labels,
+                             palette=palette,
+                             indices=indices,
+                             tags=tags)
+
+      cb <- cboarddraw(labels, colors, silentshrink, ...)
+      ## do title
       title(main=title, ...)
+      ## compute a vector of x-locations for columns
+      justxs <- (((1:ncol(labels))-1)*cb["cellpx"])+cb["xoffpx"]+(cb["cellpx"]/2)
+      ## do axis tick marks
       axis(side=1, at=justxs, labels=colnames(labels), ...)
   }
 #+end_src
