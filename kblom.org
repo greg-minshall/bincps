@@ -1005,7 +1005,7 @@ these are the topcodes
 | -9999997 | Bottom Code |
 
 #+name: topcodealpha
-#+begin_src R :exports none :results none
+#+begin_src R :exports none :results none :eval none
   tcodeprep <- function() {
       x <- t(matrix(list(99999999, "N.I.U.",                     # (Not in Universe)
                          -9999997, "< -$9999"),
@@ -2707,7 +2707,7 @@ XXX todo:
   different year)
 
 #+name: rankboard
-#+begin_src R :exports none
+#+begin_src R :exports none :results none :eval none
   compatiblep <- function(a,b) {
       "is the matrix A compatible with B?  i.e., are the number of rows, columns of B an integer multiple of those of A?"
 
@@ -2924,8 +2924,6 @@ XXX todo:
       axis(side=1, at=justxs, labels=colnames(labels), ...)
   }
 #+end_src
-
-#+RESULTS: rankboard
 
 get the data set of reported incomes
 #+name: reported.dset
