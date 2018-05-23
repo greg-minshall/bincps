@@ -2658,6 +2658,7 @@ run by, e.g.,
   <<looking.endbits>>
 #+END_SRC
 
+*** most reported incomes
 **** bumpplots
 
 
@@ -2701,18 +2702,9 @@ actually, R's base graphics has "grid", "abline", text.
 [[http://sphaerula.com/legacy/R/placingTextInPlots.html][placing text in R plots]]; [[https://www.stat.auckland.ac.nz/~paul/R/fonts.html][specifying fonts in R]]
 
 XXX todo:
-- XXX column (top and/or bottom) labels (from rownames)
 - XXX separate identifier for getting palette right from labels (so we
   can say, "50,000 (10%)" for one year, and different percentage for a
   different year)
-- title
-- [[https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Box_Model/Introduction_to_the_CSS_box_model][CSS box model]] for the boxes: margin, border, padding, as if size
-  were for entire cell (e.g., [[https://developer.mozilla.org/en-US/docs/Web/CSS/box-sizing][box-sizing]] [[https://css-tricks.com/inheriting-box-sizing-probably-slightly-better-best-practice/]["border box"]] model).
-- so, also, color, size of border line (if any)
-- allow user to inset figure a specified amount inside the graphic
-  region (again, using CSS model-like)
-- XXX figure out if the text fits in the boxes, maybe shrink the font
-  size, or print a warning, if not.
 
 #+name: rankboard
 #+begin_src R :exports none
@@ -2817,28 +2809,73 @@ XXX todo:
       return(c(cellpx=cellpx, xoffpx=xoffpx, yoffpx=yoffpx))
   }
 
-  rankboard <- function(labels, palette=NULL, title="", silentshrink, ...) {
-      "LABELS is presented sorted by rank; colnames are the time points.  PALETTE, if non-null, is the color palette to use (must be as long as the number of unique"
+  rankboard <- function(labels, # matrix: text to go in boxes
+                        palette=NULL, # matrix: color for each box
+                        partition=NULL, # matrix: partition of boxes by color
+                        title="", # title
+                        silentshrink, # don't issue warning when labels shrinking font
+                        ...) {
+      "
+  rankboard produces an eponymously-named \"rankboard\", an
+  object that looks somewhat like a multi-colored chessboard,
+  where typically each column represents a different point in
+  time, and the elements (drawn from some underlying, unspecified,
+  universe) in a given column are ranked by some unspecified
+  metric.  different columns can contain elements from the same
+  different subsets from the universe; typically, any given element
+  will appear at most once in any column.
 
-      labels <- as.matrix(labels)                       # data frame need not apply
-      uni <- sort(unique(as.vector(labels)))           # number of unique labels
+  the LABELS matrix is presented with each column sorted by rank;
+  colnames are the time points.  the values of LABELS will be
+  written in the boxes in the graph produced by rankboard.
+
+  if the PARTITION matrix is null, it receives its value from the
+  LABELS matrix.
+
+  PARTITION's values will be used to compute an \"index\" into an
+  array of colors for the boxes.  i.e., each unique value of
+  PARTITION receives its own color, and that color is used for
+  each box of the rankboard with that value of PARTITION.
+
+  the vector PALETTE, if specified, must be at least as long as
+  the number of unique values in PARTITION.
+
+  if PALETTE is null, it is assigned a vector of colors generated
+  by rankboard (currently rainbow, s=0.5).
+
+  PALETTE is a vector of colors to use for the background of the
+  boxes.
+
+  indexing into PALETTE is done by computing the index in a *sorted*
+  version of the unique values of PARTITION (or LABELS, if PARTITION
+  is null).  i.e., if PARTITION[1,1] has value \"this and that\",
+  and in the sorted list of unique values from PARTITION,
+  \"this and that\" is the third element, then the top left box of
+  the resulting graph will have the color specified by the third
+  element of PALETTE."
+
+      labels <- as.matrix(labels)         # data frame need not apply
+      if (is.null(partition)) {
+          partition <- labels
+      } else {
+          partition <- as.matrix(partition)
+      }
       ## (we sort uni so caller can maybe predict in case they care a
       ## lot about which color maps to which label value)
+      uni <- sort(unique(as.vector(partition))) # number of unique labels
       if (is.null(palette)) {
           palette <- rainbow(length(uni), s=0.5)
       } else {
           stopifnot(length(palette) >= length(uni))
       }
       ## for match: http://r.789695.n4.nabble.com/Associative-array-tp1588978p1593950.html
-      background <- matrix(palette[match(labels, uni)], nrow=nrow(labels))
+      background <- matrix(palette[match(partition, uni)], nrow=nrow(partition))
       cb <- cboarddraw(labels, background, silentshrink, ...)
       justxs <- (((1:ncol(labels))-1)*cb["cellpx"])+cb["xoffpx"]+(cb["cellpx"]/2)
       ## do title, axis tick marks
       title(main=title, ...)
       axis(side=1, at=justxs, labels=colnames(labels), ...)
   }
-
-
 #+end_src
 
 #+RESULTS: rankboard
@@ -2979,7 +3016,6 @@ consists of three fields
       }
   }
 #+end_src
-
 
 ** playing
 *** [[https://stackoverflow.com/q/33886629/1527747][stackexchange answer]]                                           :noexport:
