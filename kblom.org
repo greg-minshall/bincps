@@ -2813,6 +2813,7 @@ XXX todo:
       "check correctness of parameters, and produce an appropriately
   shaped and valued COLORS matrix"
 
+      ## enforce constraints
       if (!is.null(colors)) {
           stopifnot(is.null(palette), is.null(indices), is.null(tags))
           return(colors)                  # that was easy
@@ -2908,7 +2909,6 @@ XXX todo:
   "
       labels <- as.matrix(labels)         # data frame need not apply
 
-      ## enforce constraints
       colors <- fillincolors(colors=colors,
                              labels=labels,
                              palette=palette,
@@ -2952,7 +2952,7 @@ get the data set of reported incomes
       for (year in years) {
           yset <- rset[rset$YEAR==year,]        # choose our year
           zz <- yset$HHINCOME[order(yset$COUNT, decreasing=TRUE)]
-          fr <- yset$COUNT[order(yset$COUNT, decreasing=TRUE)]
+          fr <- yset$COUNT[order(yset$COUNT, decreasing=TRUE)]/sum(yset$COUNT)
           vals <- rbind(vals, zz[1:keep])
           freqs <- rbind(freqs, fr[1:keep])
       }
@@ -2978,8 +2978,12 @@ get the data set of reported incomes
                               "years"),
                        args)
       res <- mostreported(dset, years=attr(dset, "years"), keep=attr(dset, "keep"))
-      vals <- topcodealpha(res$vals)
-      rankboard(t(vals),
+      tags <- t(res$vals)
+      vals <- t(topcodealpha(res$vals))
+      freqs <- t(res$freqs)*100           # convert to percentage (still << 1!)
+      labels <- matrix(sprintf("%s\n(%0.02f%%)", vals, freqs), nrow=nrow(vals))
+      colnames(labels) <- colnames(vals)
+      rankboard(labels=labels, tags=tags,
                 title="Most reported incomes for selected years",
                 silentshrink=attr(dset, "silentshrink"),
                 ...)
