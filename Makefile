@@ -21,14 +21,22 @@ GRAPHS = repro ecdf ecdf2 tidistr tincdistrbybracket \
 		histo.hhbracket99-both histo.hhbracket99-1972 \
 		mostreported
 
+# okay, these are the default options, first for invoking the program
+$(foreach GRAPH,${GRAPHS},$(eval ${GDIR}/${GRAPH}.OPTIONS = ${CREATEOPTS}))
+# then for PDF, PNG graphics options
+$(foreach GRAPH,${GRAPHS},$(eval ${GDIR}/${GRAPH}.PDFOPTS = ${PDFOPTS}))
+$(foreach GRAPH,${GRAPHS},$(eval ${GDIR}/${GRAPH}.PNGOPTS = ${PNGOPTS}))
+
 # extra options any of those need
-${GDIR}/totalincome.distribution.OPTIONS = --maxhh 10e8
-${GDIR}/histo.hhbracket99.OPTIONS = --maxhh 10e8 --bracket HHBRACKET99
-${GDIR}/histo.hhbracket99-both.OPTIONS = ${${GDIR}/histo.hhbracket99.OPTIONS} \
+${GDIR}/totalincome.distribution.OPTIONS += --maxhh 10e8
+${GDIR}/histo.hhbracket99.OPTIONS += --maxhh 10e8 --bracket HHBRACKET99
+${GDIR}/histo.hhbracket99-both.OPTIONS += ${${GDIR}/histo.hhbracket99.OPTIONS} \
 		--years ${FYEAR},${LYEAR}
-${GDIR}/histo.hhbracket99-1972.OPTIONS = ${${GDIR}/histo.hhbracket99.OPTIONS} --years 1972
+${GDIR}/histo.hhbracket99-1972.OPTIONS += ${${GDIR}/histo.hhbracket99.OPTIONS} --years 1972
 # get the years
-${GDIR}/mostreported.OPTIONS = --silentshrink --keep 15 --years $(shell Rscript -e 'seq(${FYEAR},${LYEAR},floor((${LYEAR}-${FYEAR})/10))' | sed 's/^ *[[][^]][]] *//;s/  */,/g')
+${GDIR}/mostreported.OPTIONS += --silentshrink --keep 15 --years $(shell Rscript -e 'seq(${FYEAR},${LYEAR},floor((${LYEAR}-${FYEAR})/10))' | sed 's/^ *[[][^]][]] *//;s/  */,/g')
+# now, mostreported.pdf wants to be an odd size
+${GDIR}/mostreported.PDFOPTS = --width 7 --height 7
 
 # for most reported, default height, width isn't that good.  but,
 # maybe shouldn't try to fit so much?  maybe create the big one as a
@@ -57,16 +65,12 @@ all: ${GRAPHSPDF} ${GRAPHSPNG} ${FTSMALL} ${REPORTED}
 
 ${GRAPHSPDF}: Makefile ${BINNED}
 	./bin/create.$(subst ${GDIR}/,,$(subst .pdf,,$@)) \
-				${CREATEOPTS} \
-				${PDFOPTS} \
-				${$(subst .pdf,.OPTIONS,$@)} \
+				${$(subst .pdf,.PDFOPTS,$@)} ${$(subst .pdf,.OPTIONS,$@)} \
 				--gfile $@ --graphics pdf
 
 ${GRAPHSPNG}: Makefile ${BINNED}
 	./bin/create.$(subst ${GDIR}/,,$(subst .png,,$@)) \
-				${CREATEOPTS} \
-				${PNGOPTS} \
-				${$(subst .png,.OPTIONS,$@)} \
+				${$(subst .png,.PNGOPTS,$@)} ${$(subst .png,.OPTIONS,$@)} \
 				--gfile $@ --graphics png
 
 ${FTSMALL}: ${FTLARGE}
