@@ -536,6 +536,8 @@ these most popular answers).
 
 file:graphs/mostreported.IMG
 
+
+
 *** Who gets what percent of the national income?
 
 A lot of money is paid out in income in the United States.  How is
@@ -2941,7 +2943,7 @@ actually, R's base graphics has "grid", "abline", text.
           stopifnot(length(palette) >= max(indices))
       }
       ## for match: http://r.789695.n4.nabble.com/Associative-array-tp1588978p1593950.html
-      colors <- matrix(palette[match(tags, uni)], nrow=nrow(labels))
+      colors <- matrix(palette[indices], nrow=nrow(labels))
       return(colors)
   }
 
@@ -3087,7 +3089,7 @@ actually, R's base graphics has "grid", "abline", text.
 #+end_src
 
 ** playing :noexport:
-*** [[https://stackoverflow.com/q/33886629/1527747][stackexchange answer]]                                           :noexport:
+*** [[https://stackoverflow.com/q/33886629/1527747][stackexchange answer]]
 
 remembering Jeremy Kun's post
 https://jeremykun.com/2018/03/25/a-parlor-trick-for-set/ on Set helped
