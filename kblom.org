@@ -194,10 +194,10 @@ in a [[https://twitter.com/kltblom/status/932394678241988609][Tweet]] from 19 No
 Blom asked, given that the past forty-plus years has seen so many
 people do better, should we be worried about the growing inequality?
 
-Blom showed the following graphic, apparently from a video from the
-Financial Times (click on the image to see the original):
+Blom showed the following [[file:images/DPCIA2AUQAEO0lv.IMG][graphic]], apparently taken from a video from
+the Financial Times:
 #+name: fig:ftdisplay
-[[file:images/DPCIA2AUQAEO0lv.jpg][file:images/DPCIA2AUQAEO0lv-small.jpg]]
+[[file:images/DPCIA2AUQAEO0lv-small.IMG]]
 
 While Blom's question was asking for a qualitative answer (given that
 the issues are really sociological), here I treat the question
@@ -528,7 +528,11 @@ The IPUMS data, the Census American Community Survey data, is based on
 self-reporting.  While the Census Bureau will try to obtain valid
 responses, respondents will likely, at the very least, estimate their
 annual income, rather than give a precise answer.  What are the
-incomes that people tend to report?
+incomes that people tend to report?  The following "rankboard" display
+shows the answer for several years during the period of interest.  In
+the display, each column shows the most popular household income
+answers, from top (the most popular) to bottom (least popular among
+these most popular answers).
 
 file:graphs/mostreported.IMG
 
@@ -3082,7 +3086,7 @@ actually, R's base graphics has "grid", "abline", text.
   <<looking.endbits>>
 #+end_src
 
-** playing
+** playing :noexport:
 *** [[https://stackoverflow.com/q/33886629/1527747][stackexchange answer]]                                           :noexport:
 
 remembering Jeremy Kun's post
