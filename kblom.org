@@ -530,6 +530,8 @@ responses, respondents will likely, at the very least, estimate their
 annual income, rather than give a precise answer.  What are the
 incomes that people tend to report?
 
+file:graphs/mostreported.IMG
+
 *** Who gets what percent of the national income?
 
 A lot of money is paid out in income in the United States.  How is
@@ -2731,12 +2733,24 @@ consists of three fields
 
 **** reported.dset
 
+this is separated out from reported.dset so we can call it outside the
+framework.
+#+name: reported.dset.read
+#+BEGIN_SRC R :results none :eval no-export :exports none
+  reported.dset.read <- function(reported, years) {
+      dset <- read.csv(reported, header=TRUE)
+      dset <- dset[dset$YEAR >= min(years),]  # before 1967, NA data
+      dset
+  }
+#+END_SRC
+
+
 read in the data set of reported incomes
 #+name: reported.dset
-#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
+#+BEGIN_SRC R :results none :eval no-export :exports none
+  <<reported.dset.read>>
   reported.dset <- function(argv) {        # command line args
-    dset <- read.csv(argv$reported, header=TRUE)
-    dset <- dset[dset$YEAR>=min(argv$years),]  # before 1967, NA data
+    dset <- reported.dset.read(argv$reported, argv$years)
 
     ## now, remember parameters in attributes
     for (a in names(argv)) {
@@ -2789,12 +2803,8 @@ actually, R's base graphics has "grid", "abline", text.
 
 [[http://sphaerula.com/legacy/R/placingTextInPlots.html][placing text in R plots]]; [[https://www.stat.auckland.ac.nz/~paul/R/fonts.html][specifying fonts in R]]
 
-XXX todo:
-- XXX separate identifier for getting palette right from labels (so we
-  can say, "50,000 (10%)" for one year, and different percentage for a
-  different year)
-
 ***** code
+****** rankboard code
 #+name: rankboard
 #+begin_src R :exports none :results none :eval none
   compatiblep <- function(a,b) {
@@ -3014,6 +3024,8 @@ XXX todo:
   }
 #+end_src
 
+****** mostreported code
+
 #+name: mostreported
 #+BEGIN_SRC R :results none :eval no-export :exports none
   mostreported <- function(rset, years, keep=30) {
@@ -3033,6 +3045,8 @@ XXX todo:
       return(list(vals=vals, freqs=freqs))
   }
 #+end_src
+
+#+name: 
 
 #+BEGIN_SRC R :tangle bin/create.mostreported :shebang "#!/usr/bin/env Rscript" :results none :eval no-export :exports none
   <<reported.bits>>

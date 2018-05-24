@@ -28,7 +28,7 @@ ${GDIR}/histo.hhbracket99-both.OPTIONS = ${${GDIR}/histo.hhbracket99.OPTIONS} \
 		--years ${FYEAR},${LYEAR}
 ${GDIR}/histo.hhbracket99-1972.OPTIONS = ${${GDIR}/histo.hhbracket99.OPTIONS} --years 1972
 # get the years
-${GDIR}/mostreported.OPTIONS = --silentshrink --years $(shell Rscript -e 'seq(${FYEAR},${LYEAR},floor((${LYEAR}-${FYEAR})/4))' | sed 's/^[[][^]][]] *//;s/  */,/g')
+${GDIR}/mostreported.OPTIONS = --silentshrink --keep 15 --years $(shell Rscript -e 'seq(${FYEAR},${LYEAR},floor((${LYEAR}-${FYEAR})/10))' | sed 's/^ *[[][^]][]] *//;s/  */,/g')
 
 # for most reported, default height, width isn't that good.  but,
 # maybe shouldn't try to fit so much?  maybe create the big one as a
@@ -56,12 +56,18 @@ GRAPHSALL = ${GRAPHSPDF} ${GRAPHSPNG}
 all: ${GRAPHSPDF} ${GRAPHSPNG} ${FTSMALL} ${REPORTED}
 
 ${GRAPHSPDF}: Makefile ${BINNED}
-	./bin/create.$(subst ${GDIR}/,,$(subst .pdf,,$@)) ${$(subst .pdf,.OPTIONS,$@)} \
-				${CREATEOPTS} ${PDFOPTS} --gfile $@ --graphics pdf
+	./bin/create.$(subst ${GDIR}/,,$(subst .pdf,,$@)) \
+				${CREATEOPTS} \
+				${PDFOPTS} \
+				${$(subst .pdf,.OPTIONS,$@)} \
+				--gfile $@ --graphics pdf
 
 ${GRAPHSPNG}: Makefile ${BINNED}
-	./bin/create.$(subst ${GDIR}/,,$(subst .png,,$@)) ${$(subst .png,.OPTIONS,$@)} \
-				${CREATEOPTS} ${PNGOPTS} --gfile $@ --graphics png
+	./bin/create.$(subst ${GDIR}/,,$(subst .png,,$@)) \
+				${CREATEOPTS} \
+				${PNGOPTS} \
+				${$(subst .png,.OPTIONS,$@)} \
+				--gfile $@ --graphics png
 
 ${FTSMALL}: ${FTLARGE}
 	convert -crop ${FT_X_WIDTH}x${FT_Y_HEIGHT}+${FT_X_LOW}+${FT_Y_LOW} $< $@
