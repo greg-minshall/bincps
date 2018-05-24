@@ -2659,9 +2659,97 @@ run by, e.g.,
 #+END_SRC
 
 *** most reported incomes
-**** bumpplots
+**** reported (awk script)                                         :noexport:
 
+reduce a dataset to have only one entry per reported hhincome/year.
+the CPS dataset has multiple, one for each "category" (represented by,
+e.g., hwtsupp) at the same income.  each line of the output dataset
+consists of three fields
+- YEAR the year
+- HHINCOME the household income reported
+- COUNT the number of times *this* household income was reported
+  during this year
 
+#+begin_src awk :tangle bin/reported :shebang "#!/usr/bin/awk -f" :results none :eval no-export :exports none
+  <<warning>>
+  BEGIN {
+      FS = "[,]"
+      seen = 0
+  }
+
+  NR == 1 {
+      hhincome = ""
+      year = ""
+      for (i = 1; i <= NF; i++) {
+          if ($i == "\"YEAR\"") {
+              year = i
+          }
+          if ($i == "\"HHINCOME\"") {
+              hhincome = i
+          }
+      }
+      if (year == "") {
+          print "didn't find YEAR column in .csv header" > "/dev/stderr"
+          exit 1
+      }
+      if (hhincome == "") {
+          print "didn't find HHINCOME column in .csv header" > "/dev/stderr"
+          exit 1
+      }
+      next                        # move on to next record
+  }
+
+  function closeyear() {
+      # print "closeyear", $0
+      if (!headerprinted) {
+          printf("\"YEAR\",\"HHINCOME\",\"COUNT\"\n")
+          headerprinted = 1
+      }
+      for (i in households) {
+          printf("%s,%s,%s\n", cyear, i, households[i])
+      }
+      delete households
+      seen = 0
+  }
+
+  $year != cyear {
+      closeyear()
+      cyear = $year
+  }
+
+  {
+      seen++;
+      households[$hhincome]++
+  }
+
+  END {
+      if (seen > 0) {
+          closeyear()
+      }
+  }
+#+end_src
+
+**** reported.dset
+
+read in the data set of reported incomes
+#+name: reported.dset
+#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
+  reported.dset <- function(argv) {        # command line args
+    dset <- read.csv(argv$reported, header=TRUE)
+    dset <- dset[dset$YEAR>=min(argv$years),]  # before 1967, NA data
+
+    ## now, remember parameters in attributes
+    for (a in names(argv)) {
+      if (a != "") {
+        attr(dset, a) <- argv[[a]]
+      }
+    }
+    dset
+  }
+#+END_SRC
+
+**** rankboard
+***** invvestigaton, thoughts, links
 want [[http://www.visualcapitalist.com/the-historical-returns-by-asset-class-over-the-last-decade/][something]] like what financial services people use to show change
 in top-performing assets over time.  ([[http://www.visualcapitalist.com/periodic-table-commodity-returns-2017/][here]] it is called a "periodic
 table of X"; points at a nice, if slightly confusing, [[http://www.usfunds.com/interactive/the-periodic-table-of-commodity-returns-2017][interactive
@@ -2706,6 +2794,7 @@ XXX todo:
   can say, "50,000 (10%)" for one year, and different percentage for a
   different year)
 
+***** code
 #+name: rankboard
 #+begin_src R :exports none :results none :eval none
   compatiblep <- function(a,b) {
@@ -2925,23 +3014,6 @@ XXX todo:
   }
 #+end_src
 
-get the data set of reported incomes
-#+name: reported.dset
-#+BEGIN_SRC R :results none :eval no-export :exports none :var ifile=ifile
-  reported.dset <- function(argv) {        # command line args
-    dset <- read.csv(argv$reported, header=TRUE)
-    dset <- dset[dset$YEAR>=min(argv$years),]  # before 1967, NA data
-
-    ## now, remember parameters in attributes
-    for (a in names(argv)) {
-      if (a != "") {
-        attr(dset, a) <- argv[[a]]
-      }
-    }
-    dset
-  }
-#+END_SRC
-
 #+name: mostreported
 #+BEGIN_SRC R :results none :eval no-export :exports none
   mostreported <- function(rset, years, keep=30) {
@@ -2994,76 +3066,6 @@ get the data set of reported incomes
   }
 
   <<looking.endbits>>
-#+end_src
-
-**** reported (awk script)                                         :noexport:
-
-reduce a dataset to have only one entry per reported hhincome/year.
-the CPS dataset has multiple, one for each "category" (represented by,
-e.g., hwtsupp) at the same income.  each line of the output dataset
-consists of three fields
-- YEAR the year
-- HHINCOME the household income reported
-- COUNT the number of times *this* household income was reported
-  during this year
-
-#+begin_src awk :tangle bin/reported :shebang "#!/usr/bin/awk -f" :results none :eval no-export :exports none
-  <<warning>>
-  BEGIN {
-      FS = "[,]"
-      seen = 0
-  }
-
-  NR == 1 {
-      hhincome = ""
-      year = ""
-      for (i = 1; i <= NF; i++) {
-          if ($i == "\"YEAR\"") {
-              year = i
-          }
-          if ($i == "\"HHINCOME\"") {
-              hhincome = i
-          }
-      }
-      if (year == "") {
-          print "didn't find YEAR column in .csv header" > "/dev/stderr"
-          exit 1
-      }
-      if (hhincome == "") {
-          print "didn't find HHINCOME column in .csv header" > "/dev/stderr"
-          exit 1
-      }
-      next                        # move on to next record
-  }
-
-  function closeyear() {
-      # print "closeyear", $0
-      if (!headerprinted) {
-          printf("\"YEAR\",\"HHINCOME\",\"COUNT\"\n")
-          headerprinted = 1
-      }
-      for (i in households) {
-          printf("%s,%s,%s\n", cyear, i, households[i])
-      }
-      delete households
-      seen = 0
-  }
-
-  $year != cyear {
-      closeyear()
-      cyear = $year
-  }
-
-  {
-      seen++;
-      households[$hhincome]++
-  }
-
-  END {
-      if (seen > 0) {
-          closeyear()
-      }
-  }
 #+end_src
 
 ** playing
