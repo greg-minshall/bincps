@@ -359,32 +359,63 @@ occurring, but the sum of the probabilities over all such points will
 be less than one (otherwise, the distribution would, in fact, be a
 discrete distribution).
 
-When displaying a discrete probability distribution, it is common to
-show a series of "stair steps", going up and down, up and down, with
-each step centered on one (or more) of the points where the
+When displaying a discrete probability distribution, one method is to
+display the values with non-zero probability as points on a line; this
+especially makes sense if all these non-zero probabilities are the
+same.
+
+XXX figure of one-dimensional display
+
+Normally, though, when displaying a discrete probability distribution
+with only a small number of possible values, it is common to show a
+barchart, a series of "stair steps", going up and down, up and down,
+with each step centered on one (or more) of the points where the
 distribution takes on a new value.
 
-A common technique for continuous probability distributions
-(especially for a "[[https://en.wikipedia.org/wiki/Frequency_distribution][frequency distribution]]", or a so-called "[[https://en.wikipedia.org/wiki/Empirical_distribution_function][empirical
-distribution function]]", i.e., for cases where one is looking not at
-the theoretical distribution, but rather the results of a number of
-experiments) is to form a [[https://en.wikipedia.org/wiki/Histogram][histogram]], "binning" the possible values (so
-that all the values from, e.g., 1-10 are counted in one bin, from
-11-20 counted in another, etc.), and then assigning each bin a
-"probability" based on the number of counts in that bin divided by the
-total number of counts over all the bins.  This histogram can then be
-displayed, looking something like the rose-colored bars in the
-Financial Times [[fig:ftdisplay][display]] Blom posted.  For example, according to the FT
+XXX figure of distribution of 10 values, with differing probabilities
+
+However, when the number of possible values is large, this method may
+not be ideal, and often a line-graph XXX will be displayed.
+
+XXX such a figure, where the probabilities are relatively similar
+
+However, in the case where the probabilities of nearby values jump
+around a lot, this graphic, again, may not be ideal.
+
+XXX such a figure (maybe union of two distributions to get that
+behavior?)
+
+When there are a large number of data points, especially if they are
+distributed in a non-uniform (i.e., somewhat "clumpy") manner, a
+common technique is to form a [[https://en.wikipedia.org/wiki/Histogram][histogram]] from the data, "binning" the
+possible values (so that all the values from, e.g., 1-10 are counted
+in one bin, from 11-20 counted in another, etc.), and then assigning
+each bin a "probability" based on the number of counts in that bin
+divided by the total number of counts over all the bins.  This
+histogram can then be displayed, looking something like the
+rose-colored bars in the Financial Times display Blom posted
+(reproduced here for convenience).  For example, according to the FT
 display, in 2015, a household income of $50,000 has about a four
 percent chance of occurring.
 
-The "[[https://en.wikipedia.org/wiki/Probability_mass_function][probability mass function]]" (PMF -- looking something like the
-solid blue line floating "above" the bars in the FT [[fig:ftdisplay][display]]) is the
-curve you would get if you let the "width" of the histogram bins "go
-to" zero, i.e., get thinner and thinner, approaching a width of zero.
-In the FT display, in 1971, a household income of about $10,000 had
-about a four percent chance of occurring (as did a household income of
-about $75,000 in that same year).
+[[file:images/DPCIA2AUQAEO0lv-small.IMG]]
+
+We distinguish between displaying theoretical probability
+distributions ("[[https://en.wikipedia.org/wiki/Frequency_distribution][frequency distribution]]" XXX), and displaying the
+results of an experiment, i.e., drawing samples from a population
+assumed to be distributed in some manner ("[[https://en.wikipedia.org/wiki/Empirical_distribution_function][empirical distribution
+function]]").  The latter case, i.e., confronted with a data set listing
+a set of outcomes, looks very similar to a discrete distribution, even
+in the case where the underlying distribution is continuous.
+
+For a continuous distribution, the "[[https://en.wikipedia.org/wiki/Probability_mass_function][probability mass function]]" (PMF),
+which something like the solid blue line floating "above" the bars in
+the FT [[fig:ftdisplay][display]], is the curve you would get if you let the "width" of
+the histogram bins "go to" zero, i.e., get thinner and thinner,
+approaching a width of zero.[fn::Assuming you have a dense enough set
+of points]  In the FT display, in 1971, a household income of about
+$10,000 had about a four percent chance of occurring (as did a
+household income of about $75,000 in that same year).
 
 The plot of the histogram or the PMF is useful, showing, as it does,
 places where the likelihood is (locally) higher than in other places.
@@ -405,7 +436,7 @@ misleading guide to current affairs.  In the long run we are all
 dead".  And, as it is often the case, looking at real world
 "experiments", we aren't even certain of which theoretical
 distribution, with which parameters, we are looking at, it is often
-more valuable to look at empirical distributions.
+more valuable to think in terms of empirical distributions.
 
 In addition to the PMF (or, for continuous distributions, the
 "[[https://en.wikipedia.org/wiki/Probability_density_function][probability density function]]", PDF), there's another way of looking
@@ -413,11 +444,13 @@ at, characterizing, a distribution, the "[[https://en.wikipedia.org/wiki/Cumulat
 function]]" (CDF).  The CDF can never go down -- it can only go up (or
 stay the same; we say the function is "[[https://en.wikipedia.org/wiki/Monotonic_function][monotonic]]", but not "strictly
 monotonic").  It is always in the range between zero and one; it
-starts at zero at negative infinity (say), and will have reached one
-by the time it arrives at positive infinity (often before).  The value
-of the cumulative distribution function at a given point is
-probability that the a sample taken from the distribution will be less
-than or equal to that point.  Oof -- what does that mean?
+starts at zero at negative infinity, or, typically, at the left margin
+of the display, and will have reached one by the time it arrives at
+positive infinity (and, typically, by the right margin of the
+display).  The value of the cumulative distribution function at a
+given point is probability that the a sample taken from the
+distribution will be less than or equal to that point.  Oof -- what
+does that mean?
 
 Take a look at the [[fig:ecdf2][closeup CDF]].  Notice that the 1972 and the 2016
 lines cross at about 30% of the population (ranked by household
@@ -427,22 +460,33 @@ of the population had an income of less than, or equal to, $30,000.
 
 (In a plot of the CDF, by the way, places where the likelihood is
 locally higher than in other places is seen by a place where the slope
-of the curve is very high, i.e, where the curve is steep.)
+of the curve is relatively higher, i.e, where the curve is steeper.)
 
 It takes a while to understand what one is looking at with a plot of a
-CDF.  So, why bother?  I.e., what are the advantages of a CDF over a
-PDF?  One big advantage is when trying to compare two distributions.
-If one of the two PDFs isn't clearly below the other, i.e., if they
-alternate being larger, it's sometimes easier to understand
+CDF.
 
-In a case like the one we are looking [[fig:ecdf2][at]], we pointed out above that
-the 1972 and 2016 CDFs crossed at about $30,000.  Thus, about the same
-percentage of households in 2016 were making at least $30,000 as
-in 1972.  But, look at $25,000.  In 1972, almost exactly (fortuitous
-for expository purposes!) 25% of US households were making $25,000 or
-less.  On the other hand, in 2016, 26%, 27%, or so of US households
-were making $25,000 or less.  I.e., one or two percentage points of US
-households in 2016 were making *less* than in 1972.
+XXX show a normal bell curve, as a PMF ??? and as a CDF
+
+So, why bother?  I.e., what are the advantages of a CDF over a PDF?
+One big advantage is when trying to compare two distributions.  If one
+of the two PDFs isn't clearly below the other, i.e., if they alternate
+being larger, it's sometimes easier to understand a CDF.  
+
+Also, comparing two CDFs can help detect "shifts" in the distribution.
+The point we make in (what is supposed to be) the main part of this
+note is basically that the distribution has shifted in such a way that
+the number of households falling below some (lower) household income
+values has actually *increased* between 1972 and 2016.  This is not,
+at least to me, visible in the histograms presented in the FT display,
+but *is* visible looking at the CDFs.  In a case like the one we are
+looking [[fig:ecdf2][at]], we pointed out above that the 1972 and 2016 CDFs crossed
+at about $30,000.  Thus, about the same percentage of households in
+2016 were making at least $30,000 as in 1972.  But, look at $25,000.
+In 1972, almost exactly (fortuitous for expository purposes!) 25% of
+US households were making $25,000 or less.  On the other hand, in
+2016, 26%, 27%, or so of US households were making $25,000 or less.
+I.e., one or two percentage points of US households in 2016 were
+making *less* than in 1972.
 
 *** Methodological problems
 
