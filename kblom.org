@@ -2289,7 +2289,7 @@ get the dataset
     }
     if ("rbsqpadding" %in% need) {
       need <- subset(need, need!="rbsqpadding")
-      p <- add_argument(p, "--rbsqpadding", type="numeric", default=0.01,
+      p <- add_argument(p, "--rbsqpadding", type="numeric", default=0.1,
                         help="rankboard: padding around text in square (frac.)")
     }
     if ("keep" %in% need) {
@@ -2902,13 +2902,13 @@ actually, R's base graphics has "grid", "abline", text.
       cex <- par("cex", ...)               # in case we need to change
       lsize <- gchmax(labels, ...)
       ## now, do labels fit?
-      if (any(lsize > ((1-rbsqpadding)*cellpx))) {
+      if (any(lsize > ((1-(2*rbsqpadding))*cellpx))) {
           if (!silentshrink) {
               warning(sprintf("at least one label is too large (%s) for box size (%f) -- shrinking font", paste(lsize, collapse=","), cellpx))
           }
           ## we're here because either lsize is to big to fit in the box,
           ## or because it doesn't fit in the 
-          cex <- min((1-rbsqpadding)*(cellpx/lsize)) # okay, hope this works!
+          cex <- min(((1-(2*rbsqpadding))*cellpx)/lsize) # okay, hope this works!
       }
       ## now, label each square
       txs <- lx+((ux-lx)/2)
