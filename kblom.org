@@ -2285,12 +2285,17 @@ get the dataset
     if ("silentshrink" %in% need) {
       need <- subset(need, need!="silentshrink")
       p <- add_argument(p, "--silentshrink", type="boolean", flag=TRUE,
-                        help="shrink font, but do *not* warn, if labels in rankboard are too big to fit")
+                        help="rankboard: shrink font, but do *not* warn, if labels too big to fit")
+    }
+    if ("rbsqpadding" %in% need) {
+      need <- subset(need, need!="rbsqpadding")
+      p <- add_argument(p, "--rbsqpadding", type="numeric", default=0.01,
+                        help="rankboard: padding around text in square (frac.)")
     }
     if ("keep" %in% need) {
       need <- subset(need, need!="keep")
       p <- add_argument(p, "--keep", type="numeric", default=10,
-                        help="how many of top incomes to display")
+                        help="rankboard: how many of top incomes to display")
     }
     if ("gopts" %in% need) {
       need <- subset(need, need!="gopts")
@@ -2860,21 +2865,19 @@ actually, R's base graphics has "grid", "abline", text.
                   yoffpx=yoffpx))         # left y offset
       }
 
-  cboarddraw <- function(labels, background=NULL, silentshrink, ...) {
-      "plots MxN LABELS, each with its own BACKGROUND color,
-  with each label printing using common TEXTATTRIBUTES (font,
-  size, style, color), in MxN boxes with common BOXATTRIBUTES
-  (horizontal, vertical margins, border, padding, etc.).  this
-  returns the cell size, and the (lower left) X and Y offsets
-  (in pixels)"
+  cboarddraw <- function(labels, colors, rbsqpadding, silentshrink,
+      ...) {
+      "plots MxN LABELS, each with its own COLORS color;
+  this returns the cell size, and the (lower left) X
+  and Y offsets (in pixels)"
 
-      stopifnot(compatiblep(background, labels))
+      stopifnot(compatiblep(colors, labels))
 
       gp <- gsetup(labels=labels, ...)
 
-      cellpx <- gp[['cellpx']]
-      xoffpx <- gp[['xoffpx']]
-      yoffpx <- gp[['yoffpx']]
+      cellpx <- gp$cellpx
+      xoffpx <- gp$xoffpx
+      yoffpx <- gp$yoffpx
 
       ## what is the size of our canvas?  (probe underlying graphics?)
       ## divide into MxN chunks
@@ -2893,17 +2896,19 @@ actually, R's base graphics has "grid", "abline", text.
       ux <- (as.vector(col(labels))      *cellpx)+xoffpx
       uy <- (as.vector((n+1)-row(labels))*cellpx)+yoffpx
       ## now, generate our squares
-      rect(lx, ly, ux, uy, asp=1, col=as.vector(background), ...)
+      rect(lx, ly, ux, uy, asp=1, col=as.vector(colors), ...)
 
       ## size of labels in boxes
       cex <- par("cex", ...)               # in case we need to change
       lsize <- gchmax(labels, ...)
       ## now, do labels fit?
-      if (any(lsize > cellpx)) {
+      if (any(lsize > ((1-rbsqpadding)*cellpx))) {
           if (!silentshrink) {
               warning(sprintf("at least one label is too large (%s) for box size (%f) -- shrinking font", paste(lsize, collapse=","), cellpx))
           }
-          cex <- min(.9*(cellpx/lsize))   # okay, hope this works!
+          ## we're here because either lsize is to big to fit in the box,
+          ## or because it doesn't fit in the 
+          cex <- min((1-rbsqpadding)*(cellpx/lsize)) # okay, hope this works!
       }
       ## now, label each square
       txs <- lx+((ux-lx)/2)
@@ -2953,6 +2958,7 @@ actually, R's base graphics has "grid", "abline", text.
                         palette=NULL, # matrix: color for each box
                         indices=NULL, # matrix: index for each box into PALETTE
                         tags=NULL, # matrix: unique identifiers to create indices
+                        rbsqpadding=0.05, # numeric: % padding around text in squares
                         title="", # title
                         silentshrink, # don't issue warning when labels shrinking font
                         ...) {
@@ -3005,6 +3011,9 @@ actually, R's base graphics has "grid", "abline", text.
   all be null; if INDICES is non-null, TAGS must be null.  in all
   cases, (PALETTE, INDICES, TAGS) *may* all be null.
 
+  RBSQPADDING is how much of the sides of each box should be empty
+  of (LABELS) text, as a fraction.
+
   TITLE is the title given to the graph.
 
   SILENTSHRINK prevents rankboard from issuing a warning when it
@@ -3020,7 +3029,8 @@ actually, R's base graphics has "grid", "abline", text.
                              indices=indices,
                              tags=tags)
 
-      cb <- cboarddraw(labels, colors, silentshrink, ...)
+      cb <- cboarddraw(labels=labels, colors=colors,
+                       rbsqpadding=rbsqpadding, silentshrink=silentshrink, ...)
       ## do title
       title(main=title, ...)
       ## compute a vector of x-locations for columns
@@ -3064,7 +3074,7 @@ actually, R's base graphics has "grid", "abline", text.
                        need=c("reported", "keep",
                               "graphics", "gfile", "gopts",
                               "height", "width",
-                              "silentshrink",
+                              "silentshrink", "rbsqpadding",
                               "years"),
                        args)
       res <- mostreported(dset, years=attr(dset, "years"), keep=attr(dset, "keep"))
@@ -3076,6 +3086,7 @@ actually, R's base graphics has "grid", "abline", text.
       rankboard(labels=labels, tags=tags,
                 title="Most reported incomes for selected years",
                 silentshrink=attr(dset, "silentshrink"),
+                rbsqpadding=attr(dset, "rbsqpadding"),
                 ...)
       endup(dset)
       res
