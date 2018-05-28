@@ -412,11 +412,11 @@ around a lot, this graphic, again, may not be ideal.
 
 #+name: cdfwidely
 #+BEGIN_SRC R :results graphics :exports results :file-ext IMG
-  x <- sort(runif(100)*10)
+  x <- sort(rnorm(100,mean=5))
   doit <- function(a,b) {
       ifelse(b > 0.5, a, .1*a)
   }
-  z <- doit(1,rnorm(100))
+  z <- doit(dnorm(x,mean=5),rnorm(100))
   z <- z/sum(z)                           # normalize
   plot.new()
   plot(x,z,type="l")
