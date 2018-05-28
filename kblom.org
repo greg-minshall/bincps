@@ -364,25 +364,48 @@ display the values with non-zero probability as points on a line; this
 especially makes sense if all these non-zero probabilities are the
 same.
 
-#+name: testing
+#+name: cdfonedimen
 #+BEGIN_SRC R :results graphics :exports results :file-ext IMG
-plot(1:9, 1:9)
+x <- runif(100)*10 + rnorm(100,mean=5)
+x <- x/ceiling(max(x))*10
+plot.new()
+points(xy.coords(x,x/x))
+plot.window(c(0,10), c(0.9,1.1))
+points(xy.coords(x,x/x))
+axis(1)
 #+END_SRC
-
-XXX figure of one-dimensional display
 
 Normally, though, when displaying a discrete probability distribution
 with only a small number of possible values, it is common to show a
-barchart, a series of "stair steps", going up and down, up and down,
-with each step centered on one (or more) of the points where the
-distribution takes on a new value.
+barchart, where the height of each bar relates to the probability of
+that value occuring.
 
-XXX figure of distribution of 10 values, with differing probabilities
+#+name: cdfbarplot10
+#+BEGIN_SRC R :results graphics :exports results :file-ext IMG
+x <- runif(10)*10 + rnorm(10,mean=5)
+x <- x/ceiling(max(x))*10
+y <- dnorm(x, mean=5)
+y <- y/sum(y)
+plot.new()
+plot(x, y, type="h", xlab="", ylab="")
+#+END_SRC
+
+#+RESULTS: cdfbarplot10
+[[file:cdfbarplot10.IMG]]
 
 However, when the number of possible values is large, this method may
 not be ideal, and often a line-graph XXX will be displayed.
 
-XXX such a figure, where the probabilities are relatively similar
+#+name: cdfbarplot100
+#+BEGIN_SRC R :results graphics :exports results :file-ext IMG
+x <- runif(100)*10 + rnorm(100,mean=5)
+x <- x/ceiling(max(x))*10
+plot.new()
+plot(x,dnorm(x,mean=5), type="h", xlab="", ylab="")
+#+END_SRC
+
+#+RESULTS: cdfbarplot
+[[file:cdfbarplot.IMG]]
 
 However, in the case where the probabilities of nearby values jump
 around a lot, this graphic, again, may not be ideal.
