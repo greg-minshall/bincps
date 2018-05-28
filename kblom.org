@@ -364,12 +364,10 @@ display the values with non-zero probability as points on a line; this
 especially makes sense if all these non-zero probabilities are the
 same.
 
-#+name: cdfonedimen
-#+BEGIN_SRC R :results graphics :exports results :file-ext IMG
+#+BEGIN_SRC R :results graphics :exports results :file graphs/cdfonedimen.IMG
 x <- runif(100)*10 + rnorm(100,mean=5)
 x <- x/ceiling(max(x))*10
 plot.new()
-points(xy.coords(x,x/x))
 plot.window(c(0,10), c(0.9,1.1))
 points(xy.coords(x,x/x))
 axis(1)
@@ -380,53 +378,44 @@ with only a small number of possible values, it is common to show a
 barchart, where the height of each bar relates to the probability of
 that value occuring.
 
-#+name: cdfbarplot10
-#+BEGIN_SRC R :results graphics :exports results :file-ext IMG
+#+BEGIN_SRC R :results graphics :exports results :file graphs/cdfbarplot10.IMG
 x <- runif(10)*10 + rnorm(10,mean=5)
 x <- x/ceiling(max(x))*10
 y <- dnorm(x, mean=5)
 y <- y/sum(y)
-plot.new()
 plot(x, y, type="h", xlab="", ylab="")
 #+END_SRC
 
-#+RESULTS: cdfbarplot10
-[[file:cdfbarplot10.IMG]]
+#+RESULTS:
+[[file:graphs/cdfbarplot10.IMG]]
 
 However, when the number of possible values is large, this method may
 not be ideal, and often a line-graph XXX will be displayed.
 
-#+name: cdfbarplot100
-#+BEGIN_SRC R :results graphics :exports results :file-ext IMG
+#+BEGIN_SRC R :results graphics :exports results :file graphs/cdfbarplot100.IMG
 x <- sort(runif(100)*10 + rnorm(100,mean=5))
 x <- x/ceiling(max(x))*10
-plot.new()
 plot(x,dnorm(x,mean=5), type="l", xlab="", ylab="")
 #+END_SRC
 
-#+RESULTS: cdfbarplot100
-[[file:cdfbarplot100.IMG]]
+#+RESULTS:
+[[file:graphs/cdfbarplot100.IMG]]
 
 However, in the case where the probabilities of nearby values jump
 around a lot, this graphic, again, may not be ideal.
 
-#+name: cdfwidely
-#+BEGIN_SRC R :results graphics :exports results :file-ext IMG
+#+BEGIN_SRC R :results graphics :exports results :file graphs/cdfwidely.IMG
   x <- sort(rnorm(100,mean=5))
   doit <- function(a,b) {
       ifelse(b > 0.5, a, .1*a)
   }
   z <- doit(dnorm(x,mean=5),rnorm(100))
   z <- z/sum(z)                           # normalize
-  plot.new()
   plot(x,z,type="l")
 #+END_SRC
 
-#+RESULTS: cdfwidely
-[[file:cdfwidely.IMG]]
-
-XXX such a figure (maybe union of two distributions to get that
-behavior?)
+#+RESULTS:
+[[file:graphs/cdfwidely.IMG]]
 
 When there are a large number of data points, especially if they are
 distributed in a non-uniform (i.e., somewhat "clumpy") manner, a
