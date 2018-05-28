@@ -53,7 +53,7 @@ under the sun.
           (case-fold-search nil))
       (while (re-search-forward "[.]IMG\\>" nil t)
         (replace-match rment t))))
-  (add-hook 'org-export-before-parsing-hook 'get-image-names)
+  (add-hook 'org-export-before-processing-hook 'get-image-names)
 #+END_SRC
 
 
@@ -476,8 +476,8 @@ Also, comparing two CDFs can help detect "shifts" in the distribution.
 The point we make in (what is supposed to be) the main part of this
 note is basically that the distribution has shifted in such a way that
 the number of households falling below some (lower) household income
-values has actually *increased* between 1972 and 2016.  This is not,
-at least to me, visible in the histograms presented in the FT display,
+values has actually *increased* between 1972 and 2016.  At least to
+me, this is not visible in the histograms presented in the FT display,
 but *is* visible looking at the CDFs.  In a case like the one we are
 looking [[fig:ecdf2][at]], we pointed out above that the 1972 and 2016 CDFs crossed
 at about $30,000.  Thus, about the same percentage of households in
@@ -579,7 +579,6 @@ answers, from top (the most popular) to bottom (least popular among
 these most popular answers).
 
 file:graphs/mostreported.IMG
-
 
 
 *** Who gets what percent of the national income?
