@@ -49,9 +49,9 @@ under the sun.
 #+name: get-image-names
 #+BEGIN_SRC emacs-lisp :exports results :results none
   (defun get-image-names (backend)
-    (let ((rment (if (equal backend 'html) ".png" ".pdf"))
+    (let ((rment (if (equal backend 'html) "png" "pdf"))
           (case-fold-search nil))
-      (while (re-search-forward "[.]IMG\\>" nil t)
+      (while (re-search-forward "\\<IMG\\>" nil t)
         (replace-match rment t))))
   (add-hook 'org-export-before-processing-hook 'get-image-names)
 #+END_SRC
@@ -363,6 +363,11 @@ When displaying a discrete probability distribution, one method is to
 display the values with non-zero probability as points on a line; this
 especially makes sense if all these non-zero probabilities are the
 same.
+
+#+name: testing
+#+BEGIN_SRC R :results graphics :exports results :file-ext IMG
+plot(1:9, 1:9)
+#+END_SRC
 
 XXX figure of one-dimensional display
 
