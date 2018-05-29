@@ -423,8 +423,14 @@ common technique is to form a [[https://en.wikipedia.org/wiki/Histogram][histogr
 possible values (so that all the values from, e.g., 1-10 are counted
 in one bin, from 11-20 counted in another, etc.), and then assigning
 each bin a "probability" based on the number of counts in that bin
-divided by the total number of counts over all the bins.  This
-histogram can then be displayed, looking something like the
+divided by the total number of counts over all the bins.
+
+#+BEGIN_SRC R :results graphics :exports results :file graphs/cdfhisto.IMG
+x <- as.integer(rexp(1000, rate=1/5)*10+rexp(1000, rate=1/2)*10)
+#+END_SRC
+XXX show that, say in cdfbarplot100
+
+This histogram can then be displayed, looking something like the
 rose-colored bars in the Financial Times display Blom posted
 (reproduced here for convenience).  For example, according to the FT
 display, in 2015, a household income of $50,000 has about a four
