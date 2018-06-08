@@ -520,7 +520,12 @@ XXX show a normal bell curve, as a p.d.f. ??? and as a CDF
 
 #+BEGIN_SRC R :results graphics :exports results :file graphs/bellpdfcdf.IMG
 x <- sort(rnorm(1000))
-plot(x,dnorm(x), type="l", xlab="", ylab="")
+x <- seq(-5, 5, .01)
+y <- dnorm(x)
+plot(x, cumsum(y)/sum(y), xlab="", ylab="", type="l", lty=2)
+lines(x,y, type="l", lty=1)
+legend("topleft", c("p.d.f", "CDF"), lty=c(1,2), title = "normal distribution",
+            inset = .05)
 #+END_SRC
 
 #+RESULTS:
